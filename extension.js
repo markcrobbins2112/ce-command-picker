@@ -7,7 +7,7 @@ const jsonc = require('jsonc-parser'); // Run 'npm install jsonc-parser' in your
  * Translates standard VS Code shortcut syntax into shorthand custom formatting.
  * Handles single keys, chord sequences, and replaces special non-character keys.
  * 
- * Example: "ctrl+arrowdown"  -> "↓.c"
+ * Example: "ctrl+arrowdown"  -> "DOWN.c"
  * Example: "ctrl+k escape"    -> "K.c ESC"
  * Example: "shift+alt+f12"   -> "[F12].as"
  */
@@ -16,10 +16,10 @@ function formatToCustomShorthand(nativeKeybinding) {
 
     // Map raw VS Code key identifiers to cleaner, shorter UI characters
     const specialKeysMap = {
-        'arrowup': '↑',
-        'arrowdown': '↓',
-        'arrowleft': '←',
-        'arrowright': '→',
+        'arrowup': 'UP',
+        'arrowdown': 'DOWN',
+        'arrowleft': 'LEFT',
+        'arrowright': 'RIGHT',
         'escape': 'ESC',
         'enter': 'ENTER',
         'tab': 'TAB',
@@ -129,7 +129,10 @@ function activate(context) {
         const userKeybindings = loadUserKeybindings();
         const targetCommandIds = args;
 
-        const pickerItems = targetCommandIds.map(cmdId => {
+        // Step 1: Pre-calculate the maximum length of the custom shorthand strings for column padding
+        let maxShorthandLength = "unassigned".length; // Initial default column floor width
+        
+        const mappedItemsData = targetCommandIds.map(cmdId => {
             let humanLabel = cmdId
                 .replace(/^[\w-]+\./, '') 
                 .replace(/([A-Z])/g, ' $1') 
@@ -137,19 +140,32 @@ function activate(context) {
             
             humanLabel = humanLabel.charAt(0).toUpperCase() + humanLabel.slice(1);
 
-            // Process the keybinding string through our custom format utility
             const nativeShortcut = userKeybindings[cmdId];
             const shorthandShortcut = nativeShortcut ? formatToCustomShorthand(nativeShortcut) : '';
 
-            // Handle fallback labeling text if no keybinding is assigned
-            const prefixTag = shorthandShortcut ? `[${shorthandShortcut}] ` : '[Unassigned] ';
+            if (shorthandShortcut.length > maxShorthandLength) {
+                maxShorthandLength = shorthandShortcut.length;
+            }
 
             return {
-                // Combines {keybinding} and {command human readable} into the main visual label
-                label: `${prefixTag}${humanLabel}`,
-                // Description naturally pushes to the far right inside the native QuickPick panel layout
-                description: cmdId,
+                humanLabel,
+                shorthandShortcut,
                 commandId: cmdId
+            };
+        });
+
+        // Step 2: Construct final QuickPick items applying padEnd for rigid column text formatting
+        const pickerItems = mappedItemsData.map(item => {
+            const displayShortcut = item.shorthandShortcut ? item.shorthandShortcut : 'unassigned';
+            
+            // Pad the shortcut to the longest shortcut size + 2 buffer spaces for clean column split
+            const paddedShortcut = displayShortcut.padEnd(maxShorthandLength + 2, ' ');
+
+            return {
+                // Generates seamless grid-like columns: "{keybinding}  {human readable}"
+                label: `${paddedShortcut}${item.humanLabel}`,
+                description: item.commandId,
+                commandId: item.commandId
             };
         });
 

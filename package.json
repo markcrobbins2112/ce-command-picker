@@ -2,7 +2,7 @@
   "name": "ce-command-picker",
   "displayName": "CE Command Picker",
   "description": "Isolated command pickers via keybinding arguments.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "license": "MIT",
   "engines": {
     "vscode": "^1.75.0"
