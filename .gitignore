@@ -1,0 +1,4 @@
+*.vsix
+*.exe
+\!*.*
+node_modules/

@@ -1,0 +1,51 @@
+{
+  "name": "ce-command-picker",
+  "displayName": "CE Command Picker",
+  "description": "Isolated command pickers via keybinding arguments.",
+  "version": "1.0.2",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./extension.js",
+	"icon": "icon.jpg",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/markcrobbins2112/ce-command-picker.git"
+	},
+	"homepage": "https://github.com/markcrobbins2112/ce-command-picker",
+	"bugs": {
+		"url": "https://github.com/markcrobbins2112/ce-command-picker/issues"
+	},
+  "files": [
+    "extension.js",
+    "README.md",
+    "LICENSE",
+    "icon.jpg",
+    "node_modules/jsonc-parser/**"
+  ],
+  "scripts": {
+    "lint": "echo \"No lint configured yet\"",
+    "test": "echo \"No tests configured yet\"",
+    "package": "vsce package"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "ce-command-picker.show",
+        "title": "CE: Show Isolated Command Picker"
+      }
+    ]
+  },
+  "dependencies": {
+    "jsonc-parser": "^3.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "@types/vscode": "^1.70.0",
+    "@vscode/vsce": "^3.6.2"
+  }
+}
