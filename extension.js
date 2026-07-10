@@ -1944,11 +1944,11 @@ var require_extension_macros_html = __commonJS({
     </style>
 </head>
 <body>
-    <h2>Action Target: ${title}</h2>
+    <h2>Action Target: ${title || ""}</h2>
     
     <div class="form-group">
         <label for="baseKey">1. Character Base Key</label>
-        <input type="text" id="baseKey" value="${baseKey}" placeholder="e.g., X, F11, DOWN, ENTER">
+        <input type="text" id="baseKey" value="${baseKey || ""}" placeholder="e.g., X, F11, DOWN, ENTER">
     </div>
 
     <div class="form-group">
@@ -1963,12 +1963,12 @@ var require_extension_macros_html = __commonJS({
 
     <div class="form-group">
         <label for="shortcode">3. Synchronized Shortcode Box</label>
-        <input type="text" id="shortcode" value="${shorthand}" placeholder="Watching form matrices...">
+        <input type="text" id="shortcode" value="${shorthand || ""}" placeholder="Watching form matrices...">
     </div>
 
     <div class="form-group">
         <label for="whenClause">4. Context Clause Constraint (When)</label>
-        <input type="text" id="whenClause" value="${whenClause}" placeholder="e.g., editorTextFocus">
+        <input type="text" id="whenClause" value="${whenClause || ""}" placeholder="e.g., editorTextFocus">
     </div>
 
     <div id="statusBox" class="status-box"></div>
@@ -2101,12 +2101,20 @@ var require_extension_macros_form = __commonJS({
           targetToEdit = choice.raw;
         }
       }
+      let derivedTitle = commandItem.label;
+      if (!derivedTitle && commandItem.commandId) {
+        derivedTitle = commandItem.commandId.replace(/^[\w-]+\./, "").replace(/([A-Z])/g, " $1").replace(/[_-]/g, " ");
+        derivedTitle = derivedTitle.charAt(0).toUpperCase() + derivedTitle.slice(1);
+      }
+      if (!derivedTitle) {
+        derivedTitle = "Unknown Command";
+      }
       let initialBaseKey = "";
       let initialShorthand = "";
       let initialWhen = "editorTextFocus";
       if (targetToEdit) {
         initialShorthand = core.formatToCustomShorthand(targetToEdit.key);
-        initialWhen = targetToEdit.when || "";
+        initialWhen = targetToEdit.when || "editorTextFocus";
         const match = initialShorthand.match(/(.*)\.([wcas]*)$/);
         if (match) {
           initialBaseKey = match[1];
@@ -2114,18 +2122,17 @@ var require_extension_macros_form = __commonJS({
           initialBaseKey = initialShorthand;
         }
       }
-      const panelTitle = isEditMode ? `Edit Binding: ${commandItem.label}` : `Assign Key: ${commandItem.label}`;
+      const panelTitle = isEditMode ? `Edit Binding: ${derivedTitle}` : `Assign Key: ${derivedTitle}`;
       const panel = vscode.window.createWebviewPanel(
         "ceCommandPickerForm",
         panelTitle,
-        // ✅ FIXED: Passed clean evaluation string token straight into webview creation
         vscode.ViewColumn.Beside,
         {
           enableScripts: true,
           retainContextWhenHidden: true
         }
       );
-      panel.webview.html = htmlTemplate.getWebviewContent(commandItem.label, initialBaseKey, initialShorthand, initialWhen);
+      panel.webview.html = htmlTemplate.getWebviewContent(derivedTitle, initialBaseKey, initialShorthand, initialWhen);
       panel.webview.onDidReceiveMessage(
         async (message) => {
           switch (message.command) {

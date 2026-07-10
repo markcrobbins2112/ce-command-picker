@@ -74,9 +74,9 @@ function syncFromShortcode() {
         return;
     }
 
-    // ✅ FIXED: Lookbehind regex parsing guarantees trailing flag isolation for literal period assignments
     const match = text.match(/(.*)\.([wcas]*)$/i);
     if (match) {
+        // ✅ FIXED: Grab array element index 1 to accurately populate the text box elements
         baseInput.value = match[1].toUpperCase();
         setUIFlags(match[2] || '');
     } else {

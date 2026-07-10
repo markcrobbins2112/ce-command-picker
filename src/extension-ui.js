@@ -1,4 +1,5 @@
 // START OF FILE: src/extension-ui.js
+
 const vscode = require('vscode');
 const core = require('./extension-core');
 const formMacro = require('./extension-macros-form');
@@ -11,12 +12,12 @@ function activate(context) {
             vscode.window.showWarningMessage('CE Command Picker requires an array argument of command IDs.');
             return;
         }
-        renderPrimaryMenu(args);
+        renderPrimaryMenu(context, args);
     });
     context.subscriptions.push(disposable);
 }
 
-function renderPrimaryMenu(targetCommandIds) {
+function renderPrimaryMenu(context, targetCommandIds) {
     const fullBindings = core.loadFullKeybindingsArray();
     const quickPick = vscode.window.createQuickPick();
     const pickerItems = [];
@@ -46,8 +47,8 @@ function renderPrimaryMenu(targetCommandIds) {
     quickPick.title = core.getEditMode() ? 'CE Command Picker (Editing Framework)' : 'CE Command Picker';
 
     quickPick.onDidChangeActive((activeItems) => {
-        if (activeItems && activeItems.length > 0 && !activeItems[0].isControlItem) {
-            quickPick.title = activeItems[0].commandId;
+        if (activeItems && activeItems.length > 0 && !activeItems.isControlItem) {
+            quickPick.title = activeItems.commandId;
         } else {
             quickPick.title = core.getEditMode() ? 'CE Command Picker (Editing Framework)' : 'CE Command Picker';
         }
@@ -57,13 +58,14 @@ function renderPrimaryMenu(targetCommandIds) {
         const selectedItems = quickPick.selectedItems;
         if (!selectedItems || selectedItems.length === 0) return;
 
+        // ✅ FIXED: Safely unpack target object array indices into unified object variables
         const selection = selectedItems[0];
         
         if (selection.isControlItem) {
             core.setEditMode(!core.getEditMode());
             quickPick.hide();
             quickPick.dispose();
-            renderPrimaryMenu(targetCommandIds);
+            renderPrimaryMenu(context, targetCommandIds);
             return;
         }
 
@@ -71,7 +73,7 @@ function renderPrimaryMenu(targetCommandIds) {
         quickPick.dispose();
 
         if (core.getEditMode()) {
-            showSecondaryActionMenu(selection, targetCommandIds);
+            showSecondaryActionMenu(context, selection, targetCommandIds);
         } else {
             vscode.commands.executeCommand(selection.commandId);
         }
@@ -81,7 +83,7 @@ function renderPrimaryMenu(targetCommandIds) {
     quickPick.show();
 }
 
-function showSecondaryActionMenu(commandItem, originalArgs) {
+function showSecondaryActionMenu(context, commandItem, originalArgs) {
     const secondaryQuickPick = vscode.window.createQuickPick();
     
     secondaryQuickPick.items = [
@@ -108,7 +110,7 @@ function showSecondaryActionMenu(commandItem, originalArgs) {
 
         switch (action.actionKey) {
             case 'BACK':
-                renderPrimaryMenu(originalArgs);
+                renderPrimaryMenu(context, originalArgs);
                 break;
             case 'EXECUTE':
                 vscode.commands.executeCommand(commandItem.commandId);
@@ -116,25 +118,25 @@ function showSecondaryActionMenu(commandItem, originalArgs) {
             case 'COPY_CMD':
                 await vscode.env.clipboard.writeText(commandItem.commandId);
                 vscode.window.showInformationMessage(`Copied: ${commandItem.commandId}`);
-                renderPrimaryMenu(originalArgs);
+                renderPrimaryMenu(context, originalArgs);
                 break;
             case 'COPY_BIND':
                 const matches = core.loadFullKeybindingsArray().filter(b => b.command === commandItem.commandId);
                 await vscode.env.clipboard.writeText(JSON.stringify(matches, null, 4));
                 vscode.window.showInformationMessage(`Copied ${matches.length} layout block object profiles.`);
-                renderPrimaryMenu(originalArgs);
+                renderPrimaryMenu(context, originalArgs);
                 break;
             case 'ASSIGN_KEY':
-                formMacro.promptAssignKey(commandItem, originalArgs, false);
+                formMacro.promptAssignKey(context, commandItem, originalArgs, false);
                 break;
             case 'EDIT_BINDING':
-                formMacro.promptAssignKey(commandItem, originalArgs, true);
+                formMacro.promptAssignKey(context, commandItem, originalArgs, true);
                 break;
             case 'REMOVE_KEY':
-                purgeMacro.promptRemoveKey(commandItem, originalArgs);
+                purgeMacro.promptRemoveKey(context, commandItem, originalArgs);
                 break;
             case 'GOTO_JSON':
-                navMacro.navigateToBindingJson(commandItem, originalArgs);
+                navMacro.navigateToBindingJson(context, commandItem, originalArgs);
                 break;
         }
     });
@@ -145,5 +147,6 @@ function showSecondaryActionMenu(commandItem, originalArgs) {
 
 function deactivate() {}
 
-module.exports = { activate, renderPrimaryMenu };
+module.exports = { activate, deactivate, renderPrimaryMenu };
+
 // END OF FILE: src/extension-ui.js

@@ -5,7 +5,7 @@ const htmlTemplate = require('./extension-macros-html');
 
 /**
  * Presents a side-by-side adaptive form layout panel.
- * Includes explicit string fallback guards to guarantee fields never render as undefined.
+ * Extracts string segments safely using regular expressions to support literal period keys.
  */
 async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
     const core = require('./extension-core');
@@ -30,7 +30,6 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         }
     }
 
-    // ✅ FIXED: Robust fallback computation to derive title if commandItem.label is empty/missing
     let derivedTitle = commandItem.label;
     if (!derivedTitle && commandItem.commandId) {
         derivedTitle = commandItem.commandId
@@ -53,6 +52,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         
         const match = initialShorthand.match(/(.*)\.([wcas]*)$/);
         if (match) {
+            // ✅ FIXED: Grab text match group 1 to properly extract the base letter character string
             initialBaseKey = match[1];
         } else {
             initialBaseKey = initialShorthand;
@@ -71,7 +71,6 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         }
     );
 
-    // ✅ FIXED: Pass the verified derivedTitle variable into the HTML builder template parameters
     panel.webview.html = htmlTemplate.getWebviewContent(derivedTitle, initialBaseKey, initialShorthand, initialWhen);
 
     panel.webview.onDidReceiveMessage(
