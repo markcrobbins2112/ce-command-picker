@@ -98,6 +98,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
 
     let lastValidatedNativeKey = '';
     let isSynchronizing = false;
+    let isInitialLoad = true;
 
     function cleanBaseKeyInput(val) {
         if (!val) return '';
@@ -199,7 +200,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         
         const changedIndicator = document.getElementById('changedIndicator');
         if (changedIndicator) {
-            changedIndicator.style.display = changed ? 'inline-block' : 'none';
+            changedIndicator.style.display = (changed && !isInitialLoad) ? 'inline-block' : 'none';
         }
 
         if (!isValid) {
@@ -260,7 +261,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         const changed = hasBindingChanged();
         const changedIndicator = document.getElementById('changedIndicator');
         if (changedIndicator) {
-            changedIndicator.style.display = changed ? 'inline-block' : 'none';
+            changedIndicator.style.display = (changed && !isInitialLoad) ? 'inline-block' : 'none';
         }
 
         if (!textValue) {
@@ -799,6 +800,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
 
     function resetToInitial() {
         if (!window.CE_INITIAL_STATE) return;
+        isInitialLoad = true;
         isSynchronizing = true;
 
         let b1 = window.CE_INITIAL_STATE.chord1Base || '';
@@ -828,6 +830,10 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         whenInput.value = window.CE_INITIAL_STATE.whenClause !== undefined ? window.CE_INITIAL_STATE.whenClause : '';
         isSynchronizing = false;
         triggerValidation(true);
+
+        setTimeout(() => {
+            isInitialLoad = false;
+        }, 100);
     }
 
     if (btnReset) {

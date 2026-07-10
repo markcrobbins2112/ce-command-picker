@@ -41,6 +41,11 @@ title: VERSIONS
 ## 🚀 Stable Releases & Milestones
 [[#^toc-stable|TOC]]
 
+### 🏷️ v1.2.46 (2026-07-10) - Changed Indicator State Normalization Fix
+- **Fixed / Patched:**
+  - Patched validation status dispatch in the extension-macros-form controller to pass the validated `nativeKey` along during keybinding collisions/warnings.
+  - Implemented an elegant timing-isolated state normalization mechanism inside the webview JS that suppresses the 'Changed' badge indicator during the initial layout loading and form resets.
+
 ### 🏷️ v1.2.45 (2026-07-10) - Form Layout Grouping and Action Relocations
 - **Added / Enhanced:**
   - Renamed 'Action:' to 'Command:' in web form panel.

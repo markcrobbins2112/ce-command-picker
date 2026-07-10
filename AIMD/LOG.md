@@ -50,17 +50,11 @@ title: LOG
 ## 💾 Commit Message
 [[#^toc-commit|TOC]]
 ```text
-feat: reorganize form layout with compact chord inputs, relocated copy/reset controls, and When label
+fix: pass nativeKey on validation warning status and add timing-isolated state normalization to webview
 
-- Renamed 'Action:' to 'Command:' and added copy icon button for Command ID
-- Placed 'Copy Binding' helper next to Command heading and removed from bottom row
-- Placed 'Reset' helper next to Key shorthand field and removed from bottom row
-- Placed copy icon button before 'Key:' shorthand label
-- Grouped Base Key (width 4em) and Code (width 2em) controls in nested flex groups
-- Formatted Mods checkbox-group into tight, nowrap layout
-- Renamed Context Clause label to simple 'When'
-- Implemented state normalization in changed check to prevent badge display on load
-- Packaged extension bundle successfully as version 1.2.45
+- Fixed validation response to pass nativeKey during collisions/warnings so comparisons match properly
+- Added isInitialLoad state tracking in webview to cleanly suppress Changed indicator badge on initial load and form resets
+- Successfully built and packaged version 1.2.46
 ```
 
 ## 📝 Log Entries
@@ -72,6 +66,22 @@ feat: reorganize form layout with compact chord inputs, relocated copy/reset con
   Use the template structure below:
   ...
 -->
+
+### 📅 [2026-07-10T09:00:00Z]
+#### 🎯 Primary Goals & Requirements
+- Address bug where 'Changed' indicator/badge stays on during initial load.
+- Ensure 'Changed' indicator behaves correctly after form resets or initial state configurations.
+
+#### 🛠️ Completed Changes in this Session
+- **Status Validation Payload**: Modified form validation controller to pass `nativeKey` along during validation warning status dispatches, preventing visual state discrepancies during warnings.
+- **Timing-Isolated Normalization**: Integrated `isInitialLoad` tracking flag with 100ms microtask/asynchronous delay inside webview script to guarantee the Changed badge is suppressed during form setup and reset cycles.
+- **Packaging**: Incremented package manifest and compiled code bundle safely, releasing version 1.2.46.
+
+#### 🔸 Affected Files
+- `/src/extension-macros-form.js`
+- `/src/extension-macros-html.js`
+- `/AIMD/VERSIONS.md`
+- `/AIMD/LOG.md`
 
 ### 📅 [2026-07-10T08:42:00Z]
 #### 🎯 Primary Goals & Requirements

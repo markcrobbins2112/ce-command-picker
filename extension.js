@@ -1916,6 +1916,7 @@ var require_extension_macros_html = __commonJS({
 
     let lastValidatedNativeKey = '';
     let isSynchronizing = false;
+    let isInitialLoad = true;
 
     function cleanBaseKeyInput(val) {
         if (!val) return '';
@@ -2017,7 +2018,7 @@ var require_extension_macros_html = __commonJS({
         
         const changedIndicator = document.getElementById('changedIndicator');
         if (changedIndicator) {
-            changedIndicator.style.display = changed ? 'inline-block' : 'none';
+            changedIndicator.style.display = (changed && !isInitialLoad) ? 'inline-block' : 'none';
         }
 
         if (!isValid) {
@@ -2078,7 +2079,7 @@ var require_extension_macros_html = __commonJS({
         const changed = hasBindingChanged();
         const changedIndicator = document.getElementById('changedIndicator');
         if (changedIndicator) {
-            changedIndicator.style.display = changed ? 'inline-block' : 'none';
+            changedIndicator.style.display = (changed && !isInitialLoad) ? 'inline-block' : 'none';
         }
 
         if (!textValue) {
@@ -2617,6 +2618,7 @@ var require_extension_macros_html = __commonJS({
 
     function resetToInitial() {
         if (!window.CE_INITIAL_STATE) return;
+        isInitialLoad = true;
         isSynchronizing = true;
 
         let b1 = window.CE_INITIAL_STATE.chord1Base || '';
@@ -2646,6 +2648,10 @@ var require_extension_macros_html = __commonJS({
         whenInput.value = window.CE_INITIAL_STATE.whenClause !== undefined ? window.CE_INITIAL_STATE.whenClause : '';
         isSynchronizing = false;
         triggerValidation(true);
+
+        setTimeout(() => {
+            isInitialLoad = false;
+        }, 100);
     }
 
     if (btnReset) {
@@ -3127,7 +3133,7 @@ var require_extension_macros_form = __commonJS({
               } else {
                 const collisions = fullBindings.filter((b) => b.key.toLowerCase() === verification.nativeKey.toLowerCase() && b.command !== commandItem.commandId);
                 if (collisions.length > 0) {
-                  panel.webview.postMessage({ type: "status", status: "warning", text: `\u26A0\uFE0F Collision! Maps to: ${collisions.map((c) => c.command).join(", ")}` });
+                  panel.webview.postMessage({ type: "status", status: "warning", text: `\u26A0\uFE0F Collision! Maps to: ${collisions.map((c) => c.command).join(", ")}`, nativeKey: verification.nativeKey });
                 } else {
                   panel.webview.postMessage({ type: "status", status: "success", text: `\u2713 Translates to native: "${verification.nativeKey}"`, nativeKey: verification.nativeKey });
                 }
