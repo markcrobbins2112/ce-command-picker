@@ -42,23 +42,30 @@ title: ARCHIVE
 ## 🚪 Retired Features & Components
 [[#^toc-retired|TOC]]
 
-### ❌ {{Component Name / e.g., Legacy Tagging Logic}}
-- **Active Lifespan:** `{{v1.0.0}}` to `{{v1.1.0}}` (Retired on {{YYYY-MM-DD}})
-- **Reason for Retirement:** {{Describe why the component was retired, e.g., platform deprecations, performance trade-offs, or security policy changes.}}
-- **Superseded By:** {{Reference the updated configuration pattern, package, or architecture pattern replacing this system logic.}}
+### ❌ Trailing Detail Row Shortcuts
+- **Active Lifespan:** `v1.0.0` to `v1.1.0` (Retired on 2026-07-08)
+- **Reason for Retirement:** Earlier versions bound custom shortcode shortcuts to the bottom `detail` text field under each command item inside the Quick Pick list layout. This created dual-row list structures that bloated the visual interface and wasted viewport vertical space, impairing high-speed terminal-like keyboard interactions.
+- **Superseded By:** Moving shortcode representation directly to the front of the main `label` parameter using unified brackets (e.g. `[X.cas] Label`), while moving the raw technical command ID to the rightmost viewport grid slot (`description`).
 
 ---
 
 ## 💾 Legacy Code Snippets & Discarded Scripts
 [[#^toc-snippets|TOC]]
 
-### 📜 {{Legacy Structural Layout Target / e.g., Old Shell Extension Registry Pattern}}
-- **Context:** {{Describe what role this raw source code code served before replacement or deletion cycles.}}
-- **Why it was replaced:** {{State architectural constraints or syntax failures causing this pattern to break down in testing.}}
+### 📜 Obsolete Raw Detail Property Binding
+- **Context:** Decoupled quick pick visual renderer structure before the unified display bracket refactoring.
+- **Why it was replaced:** Storing separate details increased UI layout density, resulting in slow text scanning and layout fragmentation.
 - **Legacy Implementation:**
-  ```text
-  ; --- OBSOLETE DO NOT USE ---
-  {{Legacy code blocks or structural logic blocks here}}
+  ```javascript
+  // --- OBSOLETE DO NOT USE ---
+  targetCommandIds.forEach(cmdId => {
+      const shorthand = matches.map(m => core.formatToCustomShorthand(m.key)).join(', ');
+      pickerItems.push({
+          label: humanLabel,
+          detail: shorthand, // Obsolete detail row mapping that caused double line vertical bloating
+          commandId: cmdId
+      });
+  });
   ```
 
 ---
@@ -66,10 +73,10 @@ title: ARCHIVE
 ## 📑 Obsolete Specifications & Scrapped Ideas
 [[#^toc-scrapped|TOC]]
 
-### 💡 {{Scrapped Concept / e.g., Auto-Generating Symbolic Links Instead of Junctions}}
-- **Proposed on:** {{YYYY-MM-DD}}
-- **The Concept:** {{Briefly explain the structural layout concept or mechanism design under review.}}
-- **Why it failed/was dropped:** {{Explain the roadblock or edge case restrictions that made this proposal unfeasible for active deployment frameworks.}}
+### 💡 Inline Configuration Editing inside Quick Pick UI
+- **Proposed on:** 2026-07-05
+- **The Concept:** Allow users to directly type and modify custom shortcode strings inside the VS Code command search bar when entering edit mode, saving updates on press of the Enter key.
+- **Why it failed/was dropped:** The native VS Code Quick Pick API restricts input textbox override behaviors. The input bar acts strictly as a list item filter and cannot handle multi-field configurations (such as modifying BOTH key combos and context-specific "when" clauses simultaneously). This led to the architectural transition to side-by-side Webview panels.
 
 ---
 ## 🚀 Go to...

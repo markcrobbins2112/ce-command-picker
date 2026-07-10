@@ -41,30 +41,29 @@ title: VERSIONS
 ## 🚀 Stable Releases & Milestones
 [[#^toc-stable|TOC]]
 
-### 🏷️ v1.1.0 ({{YYYY-MM-DD}}) - {{Release Update Name}}
+### 🏷️ v1.1.0 (2026-07-09) - Webview Panel Optimization Update
 - **Added / Enhanced:**
-  - {{Specific Feature Description / e.g., Implemented native database compilation write loops}}
-  - {{Specific Feature Description / e.g., Integrated automatic runtime state change event signals}}
+  - Implemented dynamic viewType timestamp-rotation to cleanly bypass Chromium Webview cache persistence.
+  - Upgraded settings directory path resolvers to auto-detect Cursor host containers on macOS and Linux platforms.
 - **Fixed / Patched:**
-  - {{Issue Fix / e.g., Corrected an escape sequence failure inside configuration mapping array structures}}
-  - {{Issue Fix / e.g., Fixed a thread lock occurring when large environmental path matrices are evaluated}}
+  - Fixed a chord notation conversion failure occurring when Shift and Alt modifier combinations are bound.
+  - Corrected directory lock-ups when scanning corrupt configurations containing multiline non-conforming items.
 - **Breaking Changes & Remediations:**
-  - {{Describe any core structural dataset updates or directory footprint refactors introduced in this milestone.}}
-    - *Remediation:* {{Step-by-step notes explaining how the human operator updates running instances cleanly.}}
+  - No breaking changes are introduced. This is a backward-compatible visual layout optimization update.
 
-### 🏷️ v1.0.0 ({{YYYY-MM-DD}}) - {{Baseline Production Launch}}
-- **Summary:** {{Provide an abstract summary overview of the software product's baseline functional release milestone stability.}}
+### 🏷️ v1.0.0 (2026-06-23) - Baseline Production Launch
+- **Summary:** Baseline production-ready release of CE Command Picker, empowering engineers to run custom command selection lists side-by-side.
 - **Core Capabilities:**
-  - {{High-level structural integrity checking parameters}}
-  - {{Standard deployment and platform verification hooks configuration registry setup}}
+  - Isolated Command Picker command arguments translation.
+  - Clean AST-based parsing using the native `jsonc-parser`.
 
 ---
 
 ## 🏗️ Pre-Release Iterations (Alpha/Beta Sandbox)
 [[#^toc-prerelease|TOC]]
 
-### 🏷️ v0.1.0-beta ({{YYYY-MM-DD}})
-- **Milestone:** {{Initial developmental test build confirming environment communication matrix tracking frameworks are active.}}
+### 🏷️ v0.1.0-beta (2026-06-10)
+- **Milestone:** Initial alpha integration testing demonstrating standard workspace registry mappings.
 
 ---
 ## 🚀 Go to...

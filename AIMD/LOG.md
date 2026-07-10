@@ -50,11 +50,11 @@ title: LOG
 ## 💾 Commit Message
 [[#^toc-commit|TOC]]
 ```text
-{{Conventional Commits prefix}}: {{high-level summary of action}}
+docs: synchronize and complete full AIMD documentation suite
 
-- {{Key bullet point of changes}}
-- {{Another key bullet point}}
-- {{Details about files adjusted}}
+- Reverse-engineered entire VS Code extension logic in /src to fill out all markdown templates
+- Completed ARCHIVE, BUILD, CODE, DESIGN, MANUAL, SPEC, TASKS, TERMS, TESTING, and VERSIONS
+- Documented key algorithms, esbuild and vsce compilation steps, and architecture topology
 ```
 
 ## 📝 Log Entries
@@ -83,6 +83,35 @@ title: LOG
   - {{Action Item 2}}: {{Detailed summary}}
 -->
 
+### 📅 [2026-07-09T21:07:00Z]
+#### 🎯 Primary Goals & Requirements
+- Reverse engineer all source code modules and package configurations.
+- Populate all template placeholders (`{{...}}`) across the `/AIMD/` documentation index files.
+- Establish the official permanent decision records and technical design documentation.
+
+#### 🛠️ Completed Changes in this Session
+- Refactored entire AIMD documentation: Completed the architectural specs, build commands, coding guides, system terms, test matrices, and task logs.
+- Documented the exact CommonJS modular structure, the custom `jsonc-parser` integration, the dynamic Chromium Webview viewType cache-busting, and the side-by-side key assignment form routines.
+
+#### 🔸 Affected Files
+- `/AIMD/ARCHIVE.md`
+- `/AIMD/BUILD.md`
+- `/AIMD/CODE.md`
+- `/AIMD/DESIGN.md`
+- `/AIMD/LOG.md`
+- `/AIMD/MANUAL.md`
+- `/AIMD/SPEC.md`
+- `/AIMD/TASKS.md`
+- `/AIMD/TERMS.md`
+- `/AIMD/TESTING.md`
+- `/AIMD/VERSIONS.md`
+
+#### 🤖 Next Steps, Concerns and Suggestions
+- Verify full extension compilation using `npm run build` or `npm run package`.
+- Undertake standard manual test passes via VS Code runtimes.
+
+---
+
 ### 📅 [2026-06-23T21:06:00Z]
 #### 🎯 Primary Goals & Requirements
 - Baseline initialization of the standard development environment layout framework.
@@ -98,12 +127,12 @@ title: LOG
 ## 🏛️ Permanent Decision Record Archive
 [[#^toc-adr|TOC]]
 
-### 🏷️ [ADR-001] - {{Architectural Decision Title / e.g., Choosing UTF-16 LE for System Configs}}
+### 🏷️ [ADR-001] - Dynamic ViewType Rotation to Break Webview Caching in Chromium
 <!-- AI Purpose: A snapshot record of major architectural choices that must not be broken or forgotten in future chats. -->
-- **Date Approved:** {{YYYY-MM-DD}}
-- **Context:** {{Why was this choice necessary? What constraints existed?}}
-- **Decision:** {{What exact path, pattern, library, or rule did you settle on?}}
-- **Consequences:** {{What are the trade-offs? What downstream constraints does this apply to your future code generation?}}
+- **Date Approved:** 2026-07-09
+- **Context:** Standard VS Code webviews run on an embedded Chromium instance with background service worker routing. When updating assignment forms dynamically (such as switching from edit mode to fresh assign mode, or loading different commands), Chromium frequently returns cached iframe elements, failing to render modified template properties or loading stale values.
+- **Decision:** Implemented dynamic viewType generation in `extension-macros-form.js` using high-resolution millisecond timestamps (`ceIdForm-${Date.now()}`) during webview panel instantiation, combined with a 50ms delayed iframe content delivery hook.
+- **Consequences:** This forces Chromium to completely drop previous service worker caching states, guaranteeing a pristine webview render every single time. However, it means a brand new panel registration is initialized per-call rather than reusing existing elements, which uses slightly more memory but prevents critical visual synchronization bugs.
 
 ---
 ## 🚀 Go to...

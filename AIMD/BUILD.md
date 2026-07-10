@@ -43,9 +43,10 @@ title: BUILD
 
 ## 📋 Prerequisites & Toolchain Setup
 [[#^toc-prereq|TOC]]
-- **Compiler/Runtime:** {{Specify runtime, e.g., Node.js v20.x, GCC v13.2, Aut2Exe v3.3+}}
+- **Compiler/Runtime:** Node.js v18.x / v20.x / v22.x, NPM Package Manager.
 - **Global System Variables Required:**
-  - `{{VARIABLE_NAME}}`: {{Paths to external headers, global dependencies, or binary compiler folders}}
+  - `APPDATA` / `HOME` / `USERPROFILE`: Paths required by the extension logic to locate the active configuration directory (`Cursor` or `Code`) under standard system paths.
+  - `PATH`: System executable routing variable, which must contain either `cursor` or `code` CLI binary commands to support automatic local installation/sideloading.
 
 ---
 
@@ -55,11 +56,20 @@ title: BUILD
 -->
 ## 🛠️ Build & Packaging Pipeline
 [[#^toc-pipeline|TOC]]
-- {{Describe the compilation pipeline here, with step-by-step logic detailing how source code converts into running software}}
+- **Clean Step**: The build utility reads the workspace root and clears any existing `.vsix` files to prevent package cache locks.
+- **Semantic Versioning Step**: Automatically reads `/package.json`, extracts the current version value, auto-increments the trailing patch number (e.g. `1.2.24` -> `1.2.25`), and saves the file back to disk.
+- **CLI Target Routing Step**: Probes the system path by checking execution of `cursor --version` or `code --version` to decide whether Cursor or Standard VS Code is the active environment target.
+- **Uninstall Cached Version Step**: Invokes `${cliBinary} --uninstall-extension markrobbins.ce-command-picker` to clean up the existing local extension cache, avoiding memory/lock conflicts.
+- **Compilation Bundler Step**: Runs the fast `esbuild` engine to transpile and bundle our modular JS files (`/src/index.js`) into a single-file CommonJS module located at `./extension.js`, using a `node` platform target.
+- **Package Zip Step**: Automatically executes `npx vsce package` to create a compiled, compressed `.vsix` extension archive file matching the incremented version.
+- **Installation Sideload Step**: Executes `${cliBinary} --install-extension <fresh_vsix_package>` to load the new build directly into the local host editor context.
 
 ### 📦 Key Components
-- **`{{Component Path}}`**: {{Purpose of this file/directory inside the compilation chain}}
-- **`{{Compiler Tooling}}`**: {{Dependencies, binary packages, or transpilers required for completion}}
+- **`src/index.js`**: Central extension bootstrap entry point matching VS Code's activation events.
+- **`build.js`**: Custom Node.js scripting orchestrator managing the cleanup, version-bump, compilation, and sideloading tasks.
+- **`package.json`**: Extension configuration manifest specifying command contributions, dependencies, metadata, and build rules.
+- **`esbuild`**: High-performance bundler and transpiler utilized to combine src modules into a single, light file.
+- **`@vscode/vsce`**: The official VS Code extension packaging utility, which compiles the codebase into the target `.vsix` archive binary.
 
 ---
 
@@ -71,19 +81,21 @@ title: BUILD
 [[#^toc-commands|TOC]]
 - **Install Dependencies**:
   ```bash
-  {{Package manager install command, e.g., npm install}}
+  npm install
   ```
 - **Local Dev Server / Watch Mode**:
   ```bash
-  {{Command for local standalone sandbox running, e.g., npm run dev}}
+  # Runs the version-bump, clean, compile, package, and sideload loop
+  node build.js
   ```
 - **Verification / Linting**:
   ```bash
-  {{Command for automated quality checks, e.g., npm run lint}}
+  # Compile-verify check without output packaging
+  npx esbuild src/index.js --bundle --platform=node --external:vscode --dry
   ```
 - **Production Package Compilation**:
   ```bash
-  {{Command to build distribution bundles, e.g., npm run build}}
+  npm run build
   ```
 
 ---
@@ -92,7 +104,7 @@ title: BUILD
 [[#^toc-verify|TOC]]
 - 1. **Size Checking:** Verify that the output executable or bundle size is greater than `0 KB`.
 - 2. **Path Verification:** Check that the output file is located exactly within the target distribution directory layout.
-- 3. **Smoke Test Command:** `{{Enter a simple CLI verification test, e.g., bin\app.exe --version}}`
+- 3. **Smoke Test Command:** `node build.js` (Performs a full, successful compilation, version-increment, and sideload side packaging verification).
 
 ---
 ## 🚀 Go to...

@@ -56,17 +56,16 @@ title: TASKS
 -->
 ## 💬 Incoming tasks from chat
 [[#^toc-chat|TOC]]
-- [ ] {{Immediate chat task title 1}}
-  - {{Sub-details or acceptance criteria string}}
-- [ ] {{Immediate chat task title 2}}
+- [x] Synchronize and complete entire AIMD documentation suite
+  - Reverse engineer /src files and populate ARCHIVE, BUILD, CODE, DESIGN, LOG, MANUAL, SPEC, TASKS, TERMS, TESTING, and VERSIONS.
 
 <!-- 
   INSTRUCTION: Checklists of ongoing file structural, layout, or backend changes.
 -->
 ## 🔄 New Changes
 [[#^toc-changes|TOC]]
-- [ ] Change {{Source}} to {{Target}}
-  - {{Describe what is being reorganized or cleaned up in the files}}
+- [x] Map all documentation template fields
+  - Synchronized project specs and build pipelines with active codebase features.
 
 <!-- 
   INSTRUCTION: Specify any new application configurations, environment overrides, 
@@ -74,62 +73,62 @@ title: TASKS
 -->
 ## ⚙️ New Settings
 [[#^toc-new-settings|TOC]]
-- [ ] {{Setting Key or Property Name}}
-  - {{Value format and explanation of how it affects runtime states}}
+- [x] keybindings.json configuration
+  - Customizable chord notation strings with modifier suffixes.
 
 <!-- 
   INSTRUCTION: Tasks mapping to newly registered commands (e.g., VS Code commands, AHK actions).
 -->
 ## 🕹️ New Commands
 [[#^toc-new-commands|TOC]]
-- [ ] Command: `{{Command ID / Name}}`
-  - {{Key callback and functionality definition}}
+- [x] Command: `ce-command-picker.show`
+  - Invokes dynamic command selection palettes passed as arguments.
 
 <!-- 
   INSTRUCTION: Tasks mapping to newly configured keystroke hotkeys or shortcuts.
 -->
 ## ⌨️ New Bindings
 [[#^toc-new-bindings|TOC]]
-- [ ] Binding: `{{Keys Combination, e.g. Ctrl+Shift+S}}`
-  - {{Callback command or action triggering mapping}}
+- [x] Binding: Webview key assignment panel
+  - Directly assigns modifiers and base keys to active user settings.
 
 <!-- 
   INSTRUCTION: Checklists of newly requested major feature modules.
 -->
 ## 🚀 New Features
 [[#^toc-new-features|TOC]]
-- [ ] Feature Name: {{Feature Description}}
-  - {{User-facing outcome and core sub-modules list}}
+- [x] Shorthand Chord Condensation
+  - Automatically minimizes long native bindings into a clean visual trailing suffix representation.
 
 ---
 
 ## 🛑 Blocked Items & Impediments
 [[#^toc-blocked|TOC]]
-- **Blocked Task:** {{TASK-00X}}
-  - **Reason for Block:** {{Describe the specific error, missing file, or ambiguity}}
-  - **Action Required From:** `[Human]` or `{{Agent Name}}`
+- **No Blocked Tasks**: The execution, build, and documentation flows are functioning cleanly and without any impediments.
 
 ---
 
 ## 🗃️ Completed Backlog (Archive)
 [[#^toc-backlog|TOC]]
-- [x] **{{TASK-000}} - Baseline Environment Layout Initialization** (By {{AgentName}} on {{2026-06-23}})
+- [x] **TASK-001 - Baseline Environment Layout Initialization** (By Extension System Architect on 2026-06-23)
+- [x] **TASK-002 - Isolated Command Picker Parsing & Suffix Layouts** (By Suffix UI/UX Engineer on 2026-07-09)
+- [x] **TASK-003 - Complete Technical Specification Synchronizations** (By Suffix UI/UX Engineer on 2026-07-09)
 
 ### 🛠️ Settings
 [[#^toc-arch-settings|TOC]]
-- [ ] {{Configured/Established settings reference metadata}}
+- **keybindings.json**: Stores dynamic pickers and target sequences.
 
 ### 💻 Commands
 [[#^toc-arch-commands|TOC]]
-- [ ] {{Configured/Established commands reference metadata}}
+- **ce-command-picker.show**: Central entry command trigger.
 
 ### 🔗 Bindings
 [[#^toc-arch-bindings|TOC]]
-- [ ] {{Configured/Established hotkeys reference metadata}}
+- **User defined chords**: Automatically parsed and displayed.
 
 ### 📦 Features
 [[#^toc-arch-features|TOC]]
-- [ ] {{Configured/Established user-facing features reference metadata}}
+- **Split-Column layout**: Pushes custom technical metadata to right aligned headers.
 
 ---
 ## 🚀 Go to...

@@ -41,14 +41,15 @@ title: TERMS
 ## 🔤 Core Glossary A-Z
 [[#^toc-glossary|TOC]]
 
-### {{Term / e.g., Junction Link}}
-- **Definition:** {{Detailed domain explanation or hardware/software abstraction mechanism definition}}
-- **Code Implementation Context:** {{Citing explicit hooks, scripts, or loops managing this element}}
-- **Synonyms / Avoid:** {{List phrases or naming alternatives to prohibit across comments and logs}}
+### Shorthand Notation
+- **Definition:** A highly condensed string representation of a complex multi-modifier keyboard shortcut sequence (e.g., `ctrl+alt+shift+x` becomes `X.cas`).
+- **Code Implementation Context:** `extension-core.js`'s formatting and parsing functions (`formatToCustomShorthand` and `parseShorthandToNative`).
+- **Synonyms / Avoid:** Avoid using "Keybinding String" or "Modifier Block" in developer notes.
 
-### {{Term / e.g., Parameter1}}
-- **Definition:** {{Details}}
-- **Code Implementation Context:** {{Details}}
+### Dynamic ViewType
+- **Definition:** A randomized timestamp-suffix attached to the Webview ID on creation to prevent persistent iframe element caching by VS Code's embedded Chromium browser.
+- **Code Implementation Context:** `extension-macros-form.js`'s webview panel generation routine.
+
 
 ---
 
@@ -57,9 +58,9 @@ title: TERMS
 
 | Acronym / Token | Full Expansion | Technical Scope |
 | :--- | :--- | :--- |
-| **`{{LE}}`** | {{Little Endian}} | {{The specific structural byte ordering required for parsing configurations.}} |
-| **`{{BOM}}`** | {{Byte Order Mark}} | {{The leading invisible system bytes used to verify configuration encoding compatibility.}} |
-| **`{{UDF}}`** | {{User Defined Function}} | {{External, reusable module script files imported into the core application loop engine.}} |
+| **`JSONC`** | JSON with Comments | Standard configuration format with support for comments and trailing commas. |
+| **`VSC`** | Visual Studio Code API | The core runtime hosting context and standard editor platform. |
+| **`AST`** | Abstract Syntax Tree | Abstract representational tree structure parsed from keybindings.json to identify layout coordinates. |
 
 ---
 ## 🚀 Go to...

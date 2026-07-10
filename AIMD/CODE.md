@@ -53,16 +53,16 @@ title: CODE
 
 ## ✒️ Formatting & Syntax Style
 [[#^toc-syntax|TOC]]
-- **Indentation**: {{Specify spacing preference [e.g., "Use tabs for indentation" or "Use 2 spaces"]}}
-- **Braces and Blocks**: {{Specify structural block guidelines [e.g., "Always use braces for control expressions, never inline single-line statements without brackets"]}}
-- **Naming Conventions**: {{Specify casing for variables, functions, and files [e.g., camelCase, PascalCase, snake_case]}}
-- **Global Function Ordering**: {{Specify function ordering policies [e.g., "Order alphabetically" or "Listed immediately after dependencies"]}}
+- **Indentation**: Use 4 spaces for indentation of all JavaScript, HTML, and CSS source files.
+- **Braces and Blocks**: Always use standard curly braces on the same line for control structures and functions (e.g., `if (cond) { ... }`). Do not omit curly braces for single-line blocks.
+- **Naming Conventions**: Use camelCase for variables, objects, and function names (e.g. `editModeActive`, `formatToCustomShorthand`). Filenames use kebab-case (e.g. `extension-core.js`, `form-styles.css`).
+- **Global Function Ordering**: Organize functions by logical groupings. Dependencies are always loaded at the top, helper/worker functions follow, and the `module.exports` object is explicitly defined at the very bottom.
 
 ---
 
 ## 🛡️ Robustness & Error-Handling Frameworks
 [[#^toc-errors|TOC]]
-- **Primary Paradigm:** {{Specify failure capturing, e.g., Structured Try/Catch blocks, return tuples, or local error code checking values}}
+- **Primary Paradigm:** Defensive checking combined with structured try/catch blocks. Gracefully report operational errors to the end-user using the VS Code information or warning bubbles (e.g. `vscode.window.showErrorMessage`), avoiding extension crashes.
 - **Defensive Coding Checks:** Always validate that external dependencies, arguments, and file paths exist before performing destructive disk mutations.
 - **Logging Integration:** Failures must write details to stderr or an internal diagnostics log before terminating execution.
 - **Inline Comments:** Document the "Why" behind complex code logic or architectural workarounds. Do not explain obvious language features.

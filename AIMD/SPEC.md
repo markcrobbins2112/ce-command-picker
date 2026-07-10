@@ -49,14 +49,14 @@ This document compiles the user requirements and instructions from `AGENTS.md` a
 ## 🔗 External Application Protocols & URI Schemes
 [[#^toc-uri|TOC]]
 
-### {{Protocol/Application Name}} Link Contract
-- **Target Schema:** `{{schema://action}}`
+### VS Code/Cursor URI Link Contract
+- **Target Schema:** `cursor://file/{absoluteFilePath}` / `vscode://file/{absoluteFilePath}`
 - **Query String Map:**
 
   | Parameter | Type | Required | Description / Constraints |
   | :--- | :--- | :--- | :--- |
-  | `{{param1}}` | `{{String}}` | Yes | {{Absolute target path. Must be URL-encoded (UTF-8).}} |
-  | `{{param2}}` | `{{String}}` | No | {{Optional workspace name override fallback logic.}} |
+  | `file` | `String` | Yes | Absolute target path to open. Must be URL-encoded (UTF-8). |
+  | `line` | `Integer` | No | Optional line offset parameter to position cursor cursor. |
 
 ---
 
@@ -64,32 +64,32 @@ This document compiles the user requirements and instructions from `AGENTS.md` a
 [[#^toc-os|TOC]]
 
 ### Registry / Configuration Mappings
-- **System Hook Target:** `{{HKEY_CLASSES_ROOT\Directory\shell\YourAction}}`
+- **System Hook Target:** `%APPDATA%/Code/User/keybindings.json` (or `%APPDATA%/Cursor/User/keybindings.json` depending on active host ID)
 - **Properties Mapping:**
-  - `{{KeyName}}` (Default): `"{{Action Display Name}}"`
-  - `"{{Icon}}"`: `{{REG_SZ}}` absolute path to targeted graphic resource asset.
+  - `keybindings.json` (Default): Contains all local key assignments and command bindings
+  - `"icon"`: Custom package SVG or glyph displayed in the Extension Marketplace
 
 ### File & Folder Attribute Masks
-- **Configuration Context Target:** `{{filename.ext}}` (Must be set to `{{+H}}` Hidden and `{{+S}}` System).
-- **Directory Workspace Parent:** Must have the `{{+R}}` Read-Only flag set for host engine processing loop.
+- **Configuration Context Target:** `keybindings.json` (Standard user settings files loaded dynamically).
+- **Directory Workspace Parent:** Settings parent folders must have write permissions to support visual updates via the Webview panel.
 
 ---
 
 ## 📋 Originally Requested Specifications
 [[#^toc-requested|TOC]]
-- **{{Request Guideline Title}}**: {{Describe originally listed conditions, specifications, and layout bounds}}
-- **{{Request Guideline Title}}**: {{Describe originally listed conditions, specifications, and layout bounds}}
+- **Isolated Command Pickers**: Allow the creation of distinct, modular picker palettes defined via arguments arrays passed through customized keybindings.
+- **Deep In-Editor Key Assignments**: Enable users to edit, clear, copy, or browse the active settings files inside their host editor frame.
 
 ---
 
 ## 🎯 Implemented Technical Concerns & Optimization Features
 [[#^toc-optimization|TOC]]
-- **{{Optimization / Safety Feature Name}}**:
-  - **The Problem**: {{What technical pitfall, thread lock, crash threat, or memory leaks could occur}}
-  - **The Solution / Code Implementation**: {{How the code solves this elegantly, citing direct modules, APIs, or loop wrappers used}}
-- **{{Optimization / Safety Feature Name}}**:
-  - **The Problem**: {{Details}}
-  - **The Solution / Code Implementation**: {{Details}}
+- **Dynamic Webview ViewType Cache-Busting**:
+  - **The Problem**: Chromium's internal service worker caching mechanism in VS Code frequently caches active iframes, resulting in old assignment options or stale key mappings being loaded when switching between edit views.
+  - **The Solution / Code Implementation**: Implemented dynamic high-resolution millisecond timestamp rotation in `extension-macros-form.js` (`ceIdForm-${Date.now()}`) to bypass Chromium's cached layer completely and force clean iframe garbage collection.
+- **AST-Based JSONC Parser Navigation**:
+  - **The Problem**: Standard string regex lookup on `keybindings.json` can easily corrupt user comments or fail to accurately position the cursor due to multiline key definitions or leading spaces.
+  - **The Solution / Code Implementation**: Utilizes the robust AST-based `jsonc-parser` in `extension-navigation.js` to parse comment-supported files, extracting exact character offset coordinates to perform safe, non-destructive cursor movements.
 
 ---
 
@@ -101,17 +101,22 @@ This document compiles the user requirements and instructions from `AGENTS.md` a
 | Code (Integer) | Semantic Definition | Trigger Condition |
 | :--- | :--- | :--- |
 | `0` | `Success` | Complete flawless lifecycle termination. |
-| `1` | `{{ERR_MISSING_ARGS}}` | Script executed without critical incoming command-line arguments. |
-| `2` | `{{ERR_ENV_UNDEFINED}}` | Target environment variables were unreadable, corrupt, or blank. |
-| `3` | `{{ERR_PATH_NOT_FOUND}}` | Physical asset disk lookup evaluation loop failed. |
-| `4` | `{{ERR_LINK_COLLISION}}` | Colliding structural link or directory target already occupied. |
+| `1` | `ERR_MISSING_ARGS` | Extension invoked without passing valid target commands array. |
+| `2` | `ERR_INVALID_KEYBINDINGS_JSON` | User keybindings JSON configuration was unreadable or corrupt. |
+| `3` | `ERR_TARGET_NOT_FOUND` | AST lookups failed to locate the specified target command definition. |
 
 ### Data Models & State Layouts
-```ini
-; Expected raw configuration template dataset example
-[{{SectionHeader}}]
-{{KeyName}}={{C:\Path\To\Asset.ext}}
-{{IndexName}}={{0}}
+```json
+[
+    {
+        "key": "ctrl+alt+k w",
+        "command": "ce-command-picker.show",
+        "args": [
+            "workbench.action.terminal.toggleTerminal",
+            "workbench.action.files.save"
+        ]
+    }
+]
 ```
 
 ---
