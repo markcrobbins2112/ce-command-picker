@@ -1246,22 +1246,24 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         });
     }
 
-    // Row 1 (Current) Action Handlers
+    // Unified Action Handlers (dynamic based on activeCopyMode)
     btnEditJson.addEventListener('click', () => {
+        const isNew = activeCopyMode === 'new';
         vscode.postMessage({
             command: 'editJson',
             newInstance: false,
-            nativeKey: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.initialNativeKey : '',
-            when: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.whenClause : ''
+            nativeKey: isNew ? (lastValidatedNativeKey || '') : (window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.initialNativeKey : ''),
+            when: isNew ? (whenInput.value || '') : (window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.whenClause : '')
         });
     });
 
     btnEditJsonNewInst.addEventListener('click', () => {
+        const isNew = activeCopyMode === 'new';
         vscode.postMessage({
             command: 'editJson',
             newInstance: true,
-            nativeKey: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.initialNativeKey : '',
-            when: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.whenClause : ''
+            nativeKey: isNew ? (lastValidatedNativeKey || '') : (window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.initialNativeKey : ''),
+            when: isNew ? (whenInput.value || '') : (window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.whenClause : '')
         });
     });
 
@@ -1276,12 +1278,14 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     });
 
     btnKbUiKey.addEventListener('click', () => {
-        const key = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.initialNativeKey : '';
+        const isNew = activeCopyMode === 'new';
+        const key = isNew ? (lastValidatedNativeKey || '') : (window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.initialNativeKey : '');
         vscode.postMessage({ command: 'openKeybindings', newInstance: false, commandName: 'workbench.action.openGlobalKeybindings', args: ['"' + key + '"'] });
     });
 
     btnKbUiKeyNewInst.addEventListener('click', () => {
-        const key = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.initialNativeKey : '';
+        const isNew = activeCopyMode === 'new';
+        const key = isNew ? (lastValidatedNativeKey || '') : (window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.initialNativeKey : '');
         vscode.postMessage({ command: 'openKeybindings', newInstance: true, commandName: 'workbench.action.openGlobalKeybindings', args: ['"' + key + '"'] });
     });
 
@@ -1330,101 +1334,26 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     });
 
 
-    // Row 2 (New) Action Handlers
-    btnEditJsonNew.addEventListener('click', () => {
-        vscode.postMessage({
-            command: 'editJson',
-            newInstance: false,
-            nativeKey: lastValidatedNativeKey,
-            when: whenInput.value
-        });
-    });
-
-    btnEditJsonNewNewInst.addEventListener('click', () => {
-        vscode.postMessage({
-            command: 'editJson',
-            newInstance: true,
-            nativeKey: lastValidatedNativeKey,
-            when: whenInput.value
-        });
-    });
-
-    btnKbUiCmdNew.addEventListener('click', () => {
-        const cmd = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '';
-        vscode.postMessage({ command: 'openKeybindings', newInstance: false, commandName: 'workbench.action.openGlobalKeybindings', args: [cmd] });
-    });
-
-    btnKbUiCmdNewNewInst.addEventListener('click', () => {
-        const cmd = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '';
-        vscode.postMessage({ command: 'openKeybindings', newInstance: true, commandName: 'workbench.action.openGlobalKeybindings', args: [cmd] });
-    });
-
-    btnKbUiKeyNew.addEventListener('click', () => {
-        vscode.postMessage({ command: 'openKeybindings', newInstance: false, commandName: 'workbench.action.openGlobalKeybindings', args: ['"' + (lastValidatedNativeKey || '') + '"'] });
-    });
-
-    btnKbUiKeyNewNewInst.addEventListener('click', () => {
-        vscode.postMessage({ command: 'openKeybindings', newInstance: true, commandName: 'workbench.action.openGlobalKeybindings', args: ['"' + (lastValidatedNativeKey || '') + '"'] });
-    });
-
-    btnKbUiUserNew.addEventListener('click', () => {
-        vscode.postMessage({ command: 'openKeybindings', newInstance: false, commandName: 'workbench.action.openGlobalKeybindings', args: ['@source:user'] });
-    });
-
-    btnKbUiUserNewNewInst.addEventListener('click', () => {
-        vscode.postMessage({ command: 'openKeybindings', newInstance: true, commandName: 'workbench.action.openGlobalKeybindings', args: ['@source:user'] });
-    });
-
-    btnKbUiDefaultNew.addEventListener('click', () => {
-        vscode.postMessage({ command: 'openKeybindings', newInstance: false, commandName: 'workbench.action.openGlobalKeybindings', args: ['@source:default'] });
-    });
-
-    btnKbUiDefaultNewNewInst.addEventListener('click', () => {
-        vscode.postMessage({ command: 'openKeybindings', newInstance: true, commandName: 'workbench.action.openGlobalKeybindings', args: ['@source:default'] });
-    });
-
-    btnKbUiExtensionNew.addEventListener('click', () => {
-        vscode.postMessage({ command: 'openKeybindings', newInstance: false, commandName: 'workbench.action.openGlobalKeybindings', args: ['@source:extension'] });
-    });
-
-    btnKbUiExtensionNewNewInst.addEventListener('click', () => {
-        vscode.postMessage({ command: 'openKeybindings', newInstance: true, commandName: 'workbench.action.openGlobalKeybindings', args: ['@source:extension'] });
-    });
-
-    btnKbUiExtNew.addEventListener('click', () => {
-        const commandId = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '';
-        let targetExtensionId = '';
-        const dotIndex = commandId.indexOf('.');
-        if (dotIndex !== -1) {
-            targetExtensionId = commandId.substring(0, dotIndex);
-        }
-        vscode.postMessage({ command: 'openKeybindings', newInstance: false, commandName: 'workbench.action.openGlobalKeybindings', args: ['@ext:' + targetExtensionId] });
-    });
-
-    btnKbUiExtNewNewInst.addEventListener('click', () => {
-        const commandId = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '';
-        let targetExtensionId = '';
-        const dotIndex = commandId.indexOf('.');
-        if (dotIndex !== -1) {
-            targetExtensionId = commandId.substring(0, dotIndex);
-        }
-        vscode.postMessage({ command: 'openKeybindings', newInstance: true, commandName: 'workbench.action.openGlobalKeybindings', args: ['@ext:' + targetExtensionId] });
-    });
-
-
     let activeCopyMode = 'current'; // default to current
     if (btnToggleCurrentNew && btnCopyUnifiedBinding) {
         btnToggleCurrentNew.addEventListener('click', () => {
+            const helperRowLabel = document.getElementById('helperRowLabel');
             if (activeCopyMode === 'current') {
                 activeCopyMode = 'new';
-                btnToggleCurrentNew.textContent = 'Current:|New: New';
+                btnToggleCurrentNew.textContent = 'New:';
                 btnCopyUnifiedBinding.textContent = 'Copy New Binding';
                 btnCopyUnifiedBinding.className = 'custom-btn btn-blue small';
+                if (helperRowLabel) {
+                    helperRowLabel.textContent = 'New:';
+                }
             } else {
                 activeCopyMode = 'current';
-                btnToggleCurrentNew.textContent = 'Current:|New: Current';
+                btnToggleCurrentNew.textContent = 'Current:';
                 btnCopyUnifiedBinding.textContent = 'Copy Current Binding';
                 btnCopyUnifiedBinding.className = 'custom-btn btn-cyan small';
+                if (helperRowLabel) {
+                    helperRowLabel.textContent = 'Current:';
+                }
             }
         });
 
@@ -1474,6 +1403,73 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     btnPasteBinding.addEventListener('click', () => {
         vscode.postMessage({ command: 'pasteBinding' });
     });
+
+    const btnCopyWhen = document.getElementById('btnCopyWhen');
+    if (btnCopyWhen) {
+        btnCopyWhen.addEventListener('click', () => {
+            const whenVal = whenInput ? whenInput.value : '';
+            vscode.postMessage({
+                command: 'copyBinding',
+                value: whenVal
+            });
+        });
+    }
+
+    const btnCopyChord1 = document.getElementById('btnCopyChord1');
+    if (btnCopyChord1) {
+        btnCopyChord1.addEventListener('click', () => {
+            const radioNativeChecked = document.getElementById('radioNative') ? document.getElementById('radioNative').checked : false;
+            if (radioNativeChecked) {
+                const modifiers = [];
+                if (checkboxes1.w.checked) modifiers.push('win');
+                if (checkboxes1.c.checked) modifiers.push('ctrl');
+                if (checkboxes1.a.checked) modifiers.push('alt');
+                if (checkboxes1.s.checked) modifiers.push('shift');
+                const base = baseInput1.value.trim().toLowerCase();
+                if (base) modifiers.push(base);
+                vscode.postMessage({
+                    command: 'copyBinding',
+                    value: modifiers.join('+')
+                });
+            } else {
+                const base = baseInput1.value.trim();
+                const flags = shortcodeInput1.value.trim().toLowerCase();
+                const part = flags ? base + '.' + flags : base;
+                vscode.postMessage({
+                    command: 'copyBinding',
+                    value: part
+                });
+            }
+        });
+    }
+
+    const btnCopyChord2 = document.getElementById('btnCopyChord2');
+    if (btnCopyChord2) {
+        btnCopyChord2.addEventListener('click', () => {
+            const radioNativeChecked = document.getElementById('radioNative') ? document.getElementById('radioNative').checked : false;
+            if (radioNativeChecked) {
+                const modifiers = [];
+                if (checkboxes2.w.checked) modifiers.push('win');
+                if (checkboxes2.c.checked) modifiers.push('ctrl');
+                if (checkboxes2.a.checked) modifiers.push('alt');
+                if (checkboxes2.s.checked) modifiers.push('shift');
+                const base = baseInput2.value.trim().toLowerCase();
+                if (base) modifiers.push(base);
+                vscode.postMessage({
+                    command: 'copyBinding',
+                    value: modifiers.join('+')
+                });
+            } else {
+                const base = baseInput2.value.trim();
+                const flags = shortcodeInput2.value.trim().toLowerCase();
+                const part = flags ? base + '.' + flags : base;
+                vscode.postMessage({
+                    command: 'copyBinding',
+                    value: part
+                });
+            }
+        });
+    }
 
     function resetToInitial() {
         if (!window.CE_INITIAL_STATE) return;
@@ -2180,29 +2176,33 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         <!-- Copy Binding / Instigator Controls Row -->
         <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px; margin-bottom: 8px; flex-wrap: wrap;">
             <!-- Condensed Current/New Controls -->
-            <button type="button" class="custom-btn btn-blue small" id="btnToggleCurrentNew" title="Toggle copy target between Current and New Proposed keybindings." style="font-weight: bold; padding: 4px 8px;">Current:|New: Current</button>
+            <button type="button" class="custom-btn btn-blue small" id="btnToggleCurrentNew" title="Toggle copy target between Current and New Proposed keybindings." style="font-weight: bold; padding: 4px 8px;">Current:</button>
             <button type="button" class="custom-btn btn-cyan small" id="btnCopyUnifiedBinding" title="Copy the selected keybinding configuration to your clipboard." style="font-weight: bold; padding: 4px 12px; min-width: 150px; text-align: center;">Copy Current Binding</button>
             
             <!-- Other utility buttons -->
             <button type="button" class="custom-btn btn-purple small" id="btnEditInstigator" title="Edit the keybinding for ce-command-picker.show (the command that instigated the Menu)" style="font-weight: 500; padding: 4px 8px; text-align: center;">Edit Picker Key</button>
             <button type="button" class="custom-btn btn-cyan small" id="btnEditPickerJson" title="Find and edit the keybindings.json entry for ce-command-picker.show" style="font-weight: 500; padding: 4px 8px; text-align: center;">Edit Picker Json</button>
         </div>
-        <div id="currentKeysContainer">` + formatCurrentKeys(currentKeys) + `</div>
-        <div><span style="opacity: 0.7;">Current When:</span> <strong id="currentWhenClauseLabel">` + (currentWhen || 'No context') + `</strong></div>
         <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <span style="display: inline-flex; align-items: center; gap: 6px;">
                 <button type="button" class="secondary small" id="btnCopyKey" title="Copy Shorthand Key" style="padding: 2px 4px; font-size: 0.9em; display: inline-flex; align-items: center; justify-content: center;">📋</button>
                 <span style="opacity: 0.85; font-weight: bold;"><u style="text-decoration: underline;">K</u>ey:</span>
             </span>
             <input type="text" id="fullShorthandInput" placeholder="e.g., INS.a E" title="Editable full binding in cas shorthand format (e.g., INS.a E). Modifying this field instantly parses and populates the individual key controls below, and vice versa." style="width: 10em; box-sizing: border-box; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); padding: 4px 8px; border-radius: 4px; font-family: inherit;">
+            <span id="currentKeysContainer" style="display: inline-flex; align-items: center; gap: 8px;">` + formatCurrentKeys(currentKeys) + `</span>
             <div id="statusBox" style="display: none; margin: 0 4px; padding: 4px 8px; font-size: 0.85em; font-weight: 500; flex-grow: 1;"></div>
             <button type="button" class="custom-btn btn-blue small" id="btnResetHeader" title="Discard current unsaved changes and reset the entire form and validation state back to the original values." style="padding: 4px 8px; font-size: 0.85em; font-weight: 500; margin-left: auto;">Reset</button>
             <button type="button" class="custom-btn btn-red small" id="btnClear" title="Clear all input fields, checkboxes, modifier labels, and validation indicators to let you configure a clean, empty key combination." style="padding: 4px 8px; font-size: 0.85em; font-weight: 500; margin-left: 4px;">Clear</button>
         </div>
 
-        <div class="form-group" style="margin-top: 8px;">
-            <label for="whenClause" style="font-weight: 500;">When</label>
-            <input type="text" id="whenClause" placeholder="e.g., editorTextFocus" value="` + escapeJS(whenClause) + `" title="Specifies the context condition when the keybinding is active (e.g., editorTextFocus, terminalFocus).">
+        <div style="margin-top: 8px; display: flex; flex-direction: row; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="secondary small" id="btnCopyWhen" title="Copy When Clause" style="padding: 2px 4px; font-size: 0.9em; display: inline-flex; align-items: center; justify-content: center; height: 26px; box-sizing: border-box;">📋</button>
+            <label for="whenClause" style="font-weight: 500; margin-bottom: 0; white-space: nowrap;">When:</label>
+            <input type="text" id="whenClause" placeholder="e.g., editorTextFocus" value="` + escapeJS(whenClause) + `" title="Specifies the context condition when the keybinding is active (e.g., editorTextFocus, terminalFocus)." style="flex-grow: 1; min-width: 150px; margin: 0; box-sizing: border-box; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); padding: 4px 8px; border-radius: 4px; font-family: inherit; height: 26px;">
+            <div style="display: flex; align-items: center; gap: 4px; white-space: nowrap; margin-left: 8px;">
+                <span style="opacity: 0.7;">Current When:</span>
+                <strong id="currentWhenClauseLabel">` + (currentWhen || 'No context') + `</strong>
+            </div>
         </div>
     </div>
     
@@ -2216,16 +2216,17 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             <div class="chords-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                 <!-- Chord 1 Panel -->
                 <div class="chord-panel" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; background: rgba(0,0,0,0.05);">
-                    <div style="font-weight: bold; font-size: 0.95em; margin-bottom: 2px; color: var(--vscode-editor-foreground); opacity: 0.9;">Key 1 (Main Chord)</div>
                     <div style="display: flex; flex-direction: column; gap: 4px;">
                         <!-- Header Row -->
                         <div style="display: flex; gap: 8px; font-size: 0.85em; opacity: 0.75; font-weight: 500; margin-bottom: 2px;">
+                            <div style="width: 20px;"></div>
                             <div style="width: 5.5em; padding-left: 2px;">base key</div>
                             <div style="width: 3.5em; padding-left: 2px;">code</div>
                             <div></div>
                         </div>
                         <!-- Input Controls Row -->
                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <button type="button" class="secondary small" id="btnCopyChord1" title="Copy Key 1" style="padding: 2px 4px; font-size: 0.9em; display: inline-flex; align-items: center; justify-content: center; height: 26px; box-sizing: border-box;">📋</button>
                             <!-- [input] base key -->
                             <input type="text" id="baseKey" placeholder="e.g., K" title="Specify the primary key identifier." style="width: 5.5em; padding: 4px 6px; text-align: center; height: 26px; box-sizing: border-box; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); border-radius: 4px;">
                             
@@ -2240,27 +2241,28 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
                                 <label class="checkbox-item" title="Shift modifier key flag" style="font-size: 0.85em; gap: 2px; cursor: pointer; display: inline-flex; align-items: center;"><input type="checkbox" id="modS" value="s" style="margin: 0;">S</label>
                             </div>
                             
-                            <!-- [Reset] -->
-                            <button type="button" class="custom-btn btn-blue small" id="btnResetKey1" title="Reset this key combination to its original assigned value." style="padding: 2px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px; height: 26px; box-sizing: border-box;">Reset</button>
-                            
-                            <!-- [Clear] -->
-                            <button type="button" class="custom-btn btn-red small" id="btnClear1" title="Clear this primary chord." style="padding: 2px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px; height: 26px; box-sizing: border-box;">Clear</button>
+                            <!-- Grouped and Right Aligned Reset/Clear buttons -->
+                            <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
+                                <button type="button" class="custom-btn btn-blue small" id="btnResetKey1" title="Reset this key combination to its original assigned value." style="padding: 2px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px; height: 26px; box-sizing: border-box;">Reset</button>
+                                <button type="button" class="custom-btn btn-red small" id="btnClear1" title="Clear this primary chord." style="padding: 2px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px; height: 26px; box-sizing: border-box;">Clear</button>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Chord 2 Panel -->
                 <div class="chord-panel" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; background: rgba(0,0,0,0.05);">
-                    <div style="font-weight: bold; font-size: 0.95em; margin-bottom: 2px; color: var(--vscode-editor-foreground); opacity: 0.9;">Key 2 (Optional Second Chord)</div>
                     <div style="display: flex; flex-direction: column; gap: 4px;">
                         <!-- Header Row -->
                         <div style="display: flex; gap: 8px; font-size: 0.85em; opacity: 0.75; font-weight: 500; margin-bottom: 2px;">
+                            <div style="width: 20px;"></div>
                             <div style="width: 5.5em; padding-left: 2px;">base key</div>
                             <div style="width: 3.5em; padding-left: 2px;">code</div>
                             <div></div>
                         </div>
                         <!-- Input Controls Row -->
                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <button type="button" class="secondary small" id="btnCopyChord2" title="Copy Key 2" style="padding: 2px 4px; font-size: 0.9em; display: inline-flex; align-items: center; justify-content: center; height: 26px; box-sizing: border-box;">📋</button>
                             <!-- [input] base key -->
                             <input type="text" id="baseKey2" placeholder="e.g., K" title="Specify the secondary key identifier." style="width: 5.5em; padding: 4px 6px; text-align: center; height: 26px; box-sizing: border-box; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); border-radius: 4px;">
                             
@@ -2275,11 +2277,11 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
                                 <label class="checkbox-item" title="Shift modifier key flag" style="font-size: 0.85em; gap: 2px; cursor: pointer; display: inline-flex; align-items: center;"><input type="checkbox" id="modS2" value="s" style="margin: 0;">S</label>
                             </div>
                             
-                            <!-- [Reset] -->
-                            <button type="button" class="custom-btn btn-blue small" id="btnResetKey2" title="Reset this key combination to its original assigned value." style="padding: 2px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px; height: 26px; box-sizing: border-box;">Reset</button>
-                            
-                            <!-- [Clear] -->
-                            <button type="button" class="custom-btn btn-red small" id="btnClear2" title="Clear this secondary chord." style="padding: 2px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px; height: 26px; box-sizing: border-box;">Clear</button>
+                            <!-- Grouped and Right Aligned Reset/Clear buttons -->
+                            <div style="margin-left: auto; display: flex; gap: 8px; align-items: center;">
+                                <button type="button" class="custom-btn btn-blue small" id="btnResetKey2" title="Reset this key combination to its original assigned value." style="padding: 2px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px; height: 26px; box-sizing: border-box;">Reset</button>
+                                <button type="button" class="custom-btn btn-red small" id="btnClear2" title="Clear this secondary chord." style="padding: 2px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px; height: 26px; box-sizing: border-box;">Clear</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2307,9 +2309,9 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             </div>
         </div>
 
-        <!-- Row 1: Current Helpers (Reordered & Color-coded) -->
+        <!-- Row 1: Unified Helpers (Color-coded) -->
         <div class="helper-row" style="margin-bottom: 8px;">
-            <span class="helper-row-label">Current:</span>
+            <span class="helper-row-label" id="helperRowLabel">Current:</span>
             <div class="helper-buttons" style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
                 <!-- Edit Json (cyan) -->
                 <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
@@ -2349,53 +2351,10 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             </div>
         </div>
 
-        <!-- Row 2: New Helpers (Reordered & Color-coded) -->
-        <div class="helper-row" style="margin-bottom: 8px;">
-            <span class="helper-row-label">New:</span>
-            <div class="helper-buttons" style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
-                <!-- Edit Json (cyan) -->
-                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="custom-btn btn-cyan small" id="btnEditJsonNewNewInst" title="Open Edit Json as a new instance in a new group" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">➕</button>
-                    <button type="button" class="custom-btn btn-cyan small" id="btnEditJsonNew" title="Open keybindings.json file and look up or highlight entries matching the newly configured key combination and context in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">Edit Json</button>
-                </span>
-                <!-- KB UI Cmd (red) -->
-                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="custom-btn btn-red small" id="btnKbUiCmdNewNewInst" title="Open Keyboard Shortcuts for command as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">➕</button>
-                    <button type="button" class="custom-btn btn-red small" id="btnKbUiCmdNew" title="Open the native VS Code Keyboard Shortcuts panel filtering specifically for this action's command in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Cmd</button>
-                </span>
-                <!-- KB UI User (purple) -->
-                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="custom-btn btn-purple small" id="btnKbUiUserNewNewInst" title="Open custom User keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">➕</button>
-                    <button type="button" class="custom-btn btn-purple small" id="btnKbUiUserNew" title="Open the native VS Code Keyboard Shortcuts panel displaying custom user keybinding modifications in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI User</button>
-                </span>
-                <!-- KB UI Key (blue) -->
-                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="custom-btn btn-blue small" id="btnKbUiKeyNewNewInst" title="Open Keyboard Shortcuts for new key as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">➕</button>
-                    <button type="button" class="custom-btn btn-blue small" id="btnKbUiKeyNew" title="Open the native VS Code Keyboard Shortcuts panel with search pre-filled for the new key combination typed in the form in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Key</button>
-                </span>
-                <!-- KB UI Ext (green) -->
-                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="custom-btn btn-green small" id="btnKbUiExtNewNewInst" title="Open extension-specific keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">➕</button>
-                    <button type="button" class="custom-btn btn-green small" id="btnKbUiExtNew" title="Open the native VS Code Keyboard Shortcuts panel filtered specifically to the extension package that contributes this command in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Ext</button>
-                </span>
-                <!-- KB UI Default (yellow) -->
-                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="custom-btn btn-yellow small" id="btnKbUiDefaultNewNewInst" title="Open default built-in keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">➕</button>
-                    <button type="button" class="custom-btn btn-yellow small" id="btnKbUiDefaultNew" title="Open the native VS Code Keyboard Shortcuts panel to view default VS Code keyboard mappings in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Default</button>
-                </span>
-                <!-- KB UI Extension (orange) -->
-                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="custom-btn btn-orange small" id="btnKbUiExtensionNewNewInst" title="Open extension keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">➕</button>
-                    <button type="button" class="custom-btn btn-orange small" id="btnKbUiExtensionNew" title="Open the native VS Code Keyboard Shortcuts panel showing extension-supplied default bindings in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Extension</button>
-                </span>
-            </div>
-        </div>
-
-        <!-- Row 3: Standard Actions -->
+        <!-- Row 2: Standard Actions -->
         <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 12px; flex-wrap: wrap; gap: 12px;">
             <!-- Align Left -->
             <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                <button type="button" class="custom-btn btn-red" id="btnClear" title="Clear all input fields, checkboxes, modifier labels, and validation indicators to let you configure a clean, empty key combination.">Clear</button>
                 <button type="button" class="custom-btn btn-cyan" id="btnCloseAllKbJson" title="Close all open keybindings.json file tabs in VS Code.">Close All KB Json</button>
                 <button type="button" class="custom-btn btn-purple" id="btnCloseAllKbUi" title="Close all open native Keyboard Shortcuts editor tabs in VS Code.">Close All KB UI</button>
                 <button type="button" class="custom-btn btn-yellow" id="btnPasteBinding" title="Read a keybinding JSON object from your system clipboard and instantly parse its properties to populate this form.">Paste Binding</button>
