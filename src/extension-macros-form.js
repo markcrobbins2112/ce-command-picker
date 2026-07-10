@@ -3,6 +3,10 @@
 const vscode = require('vscode');
 const htmlTemplate = require('./extension-macros-html');
 
+/**
+ * Presents a side-by-side adaptive form layout panel.
+ * Extracts configuration segments synchronously to bypass webview message-passing locks.
+ */
 async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
     const core = require('./extension-core');
     const ui = require('./extension-ui');
@@ -37,6 +41,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         initialShorthand = core.formatToCustomShorthand(targetToEdit.key);
         initialWhen = targetToEdit.when || 'editorTextFocus';
         
+        // Greedy lookbehind matching pattern protects base keys containing literal periods (e.g. "..c")
         const match = initialShorthand.match(/(.*)\.([wcas]*)$/);
         if (match && match[1] !== undefined && match[2] !== undefined) {
             initialBaseKey = match[1];
@@ -58,22 +63,16 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         }
     );
 
-    // Mount structural DOM contents
-    panel.webview.html = htmlTemplate.getWebviewContent(commandItem.commandId || derivedTitle);
+    // Pass data synchronously as direct string interpolation arguments
+    panel.webview.html = htmlTemplate.getWebviewContent(
+        commandItem.commandId || derivedTitle,
+        initialBaseKey,
+        initialShorthand,
+        initialFlags,
+        initialWhen
+    );
 
-    // ✅ FIXED: Extends synchronization execution time delay to 250ms to ensure client DOM loop mounts securely
-    setTimeout(() => {
-        if (panel && panel.webview) {
-            panel.webview.postMessage({
-                type: 'init',
-                baseKey: initialBaseKey,
-                shorthand: initialShorthand,
-                flags: initialFlags,
-                whenClause: initialWhen
-            });
-        }
-    }, 250);
-
+    // Listen for runtime feedback events sent up by the Webview container form controls
     panel.webview.onDidReceiveMessage(
         async (message) => {
             switch (message.command) {
