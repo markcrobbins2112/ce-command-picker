@@ -4,7 +4,7 @@
  * Returns lightweight HTML DOM structures using embedded script logic variables.
  * Automatically mirrors the theme's colors natively using CSS Workbench properties.
  */
-function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Flags, whenClause, currentKeys, currentWhen) {
+function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base, chord2Flags, whenClause, currentKeys, currentWhen) {
     // Isolated client browser synchronization controller logic string block
     const webviewJS = `
     const vscode = acquireVsCodeApi();
@@ -12,6 +12,7 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
     const baseInput1 = document.getElementById('baseKey1');
     const shortcodeInput1 = document.getElementById('shortcode1');
     const checkboxes1 = {
+        w: document.getElementById('modW1'),
         c: document.getElementById('modC1'),
         a: document.getElementById('modA1'),
         s: document.getElementById('modS1')
@@ -20,6 +21,7 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
     const baseInput2 = document.getElementById('baseKey2');
     const shortcodeInput2 = document.getElementById('shortcode2');
     const checkboxes2 = {
+        w: document.getElementById('modW2'),
         c: document.getElementById('modC2'),
         a: document.getElementById('modA2'),
         s: document.getElementById('modS2')
@@ -32,7 +34,13 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
     const btnClone = document.getElementById('btnClone');
     const btnSaveClone = document.getElementById('btnSaveClone');
     const btnSubmit = document.getElementById('btnSubmit');
-    const btnCloneKey1 = document.getElementById('btnCloneKey1');
+
+    const btnClear1 = document.getElementById('btnClear1');
+    const btnClear2 = document.getElementById('btnClear2');
+    const btnEditJson = document.getElementById('btnEditJson');
+    const btnUnbind = document.getElementById('btnUnbind');
+    const btnCopyBinding = document.getElementById('btnCopyBinding');
+    const btnPasteBinding = document.getElementById('btnPasteBinding');
 
     const currentKeysLabel = document.getElementById('currentKeysLabel');
     const currentWhenClauseLabel = document.getElementById('currentWhenClauseLabel');
@@ -52,8 +60,9 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
 
     function cleanShortcodeInput(val) {
         if (!val) return '';
-        let cleaned = val.toLowerCase().replace(/[^cas]/g, '');
+        let cleaned = val.toLowerCase().replace(/[^wcas]/g, '');
         let res = '';
+        if (cleaned.includes('w')) res += 'w';
         if (cleaned.includes('c')) res += 'c';
         if (cleaned.includes('a')) res += 'a';
         if (cleaned.includes('s')) res += 's';
@@ -91,6 +100,7 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
 
         baseInput1.value = cleanBaseKeyInput(baseInput1.value);
         let f = '';
+        if (checkboxes1.w.checked) f += 'w';
         if (checkboxes1.c.checked) f += 'c';
         if (checkboxes1.a.checked) f += 'a';
         if (checkboxes1.s.checked) f += 's';
@@ -105,6 +115,7 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
         isSynchronizing = true;
 
         shortcodeInput1.value = cleanShortcodeInput(shortcodeInput1.value);
+        checkboxes1.w.checked = shortcodeInput1.value.includes('w');
         checkboxes1.c.checked = shortcodeInput1.value.includes('c');
         checkboxes1.a.checked = shortcodeInput1.value.includes('a');
         checkboxes1.s.checked = shortcodeInput1.value.includes('s');
@@ -119,6 +130,7 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
 
         baseInput2.value = cleanBaseKeyInput(baseInput2.value);
         let f = '';
+        if (checkboxes2.w.checked) f += 'w';
         if (checkboxes2.c.checked) f += 'c';
         if (checkboxes2.a.checked) f += 'a';
         if (checkboxes2.s.checked) f += 's';
@@ -133,6 +145,7 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
         isSynchronizing = true;
 
         shortcodeInput2.value = cleanShortcodeInput(shortcodeInput2.value);
+        checkboxes2.w.checked = shortcodeInput2.value.includes('w');
         checkboxes2.c.checked = shortcodeInput2.value.includes('c');
         checkboxes2.a.checked = shortcodeInput2.value.includes('a');
         checkboxes2.s.checked = shortcodeInput2.value.includes('s');
@@ -149,13 +162,26 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
     Object.values(checkboxes2).forEach(cb => cb.addEventListener('change', syncFromUIForm2));
     shortcodeInput2.addEventListener('input', syncFromShortcode2);
 
-    btnCloneKey1.addEventListener('click', () => {
+    btnClear1.addEventListener('click', () => {
         isSynchronizing = true;
-        baseInput2.value = baseInput1.value;
-        checkboxes2.c.checked = checkboxes1.c.checked;
-        checkboxes2.a.checked = checkboxes1.a.checked;
-        checkboxes2.s.checked = checkboxes1.s.checked;
-        shortcodeInput2.value = shortcodeInput1.value;
+        baseInput1.value = '';
+        checkboxes1.w.checked = false;
+        checkboxes1.c.checked = false;
+        checkboxes1.a.checked = false;
+        checkboxes1.s.checked = false;
+        shortcodeInput1.value = '';
+        isSynchronizing = false;
+        triggerValidation();
+    });
+
+    btnClear2.addEventListener('click', () => {
+        isSynchronizing = true;
+        baseInput2.value = '';
+        checkboxes2.w.checked = false;
+        checkboxes2.c.checked = false;
+        checkboxes2.a.checked = false;
+        checkboxes2.s.checked = false;
+        shortcodeInput2.value = '';
         isSynchronizing = false;
         triggerValidation();
     });
@@ -186,6 +212,25 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
         } else if (message.type === 'updateLabels') {
             if (currentKeysLabel) currentKeysLabel.textContent = message.currentKeys;
             if (currentWhenClauseLabel) currentWhenClauseLabel.textContent = message.currentWhen;
+        } else if (message.type === 'pasteBindingData') {
+            isSynchronizing = true;
+            baseInput1.value = message.chord1Base || '';
+            shortcodeInput1.value = message.chord1Flags || '';
+            checkboxes1.w.checked = shortcodeInput1.value.includes('w');
+            checkboxes1.c.checked = shortcodeInput1.value.includes('c');
+            checkboxes1.a.checked = shortcodeInput1.value.includes('a');
+            checkboxes1.s.checked = shortcodeInput1.value.includes('s');
+
+            baseInput2.value = message.chord2Base || '';
+            shortcodeInput2.value = message.chord2Flags || '';
+            checkboxes2.w.checked = shortcodeInput2.value.includes('w');
+            checkboxes2.c.checked = shortcodeInput2.value.includes('c');
+            checkboxes2.a.checked = shortcodeInput2.value.includes('a');
+            checkboxes2.s.checked = shortcodeInput2.value.includes('s');
+
+            whenInput.value = message.when || 'editorTextFocus';
+            isSynchronizing = false;
+            triggerValidation();
         }
     });
 
@@ -223,16 +268,43 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
         vscode.postMessage({ command: 'cancel' });
     });
 
+    btnEditJson.addEventListener('click', () => {
+        vscode.postMessage({ command: 'editJson' });
+    });
+
+    btnUnbind.addEventListener('click', () => {
+        vscode.postMessage({ command: 'unbind' });
+    });
+
+    btnCopyBinding.addEventListener('click', () => {
+        const textValue = getFullShorthand();
+        if (!textValue) return;
+        vscode.postMessage({
+            command: 'copyBinding',
+            value: JSON.stringify({
+                key: lastValidatedNativeKey || '',
+                command: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '',
+                when: whenInput.value
+            }, null, 4)
+        });
+    });
+
+    btnPasteBinding.addEventListener('click', () => {
+        vscode.postMessage({ command: 'pasteBinding' });
+    });
+
     if (window.CE_INITIAL_STATE) {
         isSynchronizing = true;
         baseInput1.value = window.CE_INITIAL_STATE.chord1Base || '';
         shortcodeInput1.value = window.CE_INITIAL_STATE.chord1Flags || '';
+        checkboxes1.w.checked = shortcodeInput1.value.includes('w');
         checkboxes1.c.checked = shortcodeInput1.value.includes('c');
         checkboxes1.a.checked = shortcodeInput1.value.includes('a');
         checkboxes1.s.checked = shortcodeInput1.value.includes('s');
 
         baseInput2.value = window.CE_INITIAL_STATE.chord2Base || '';
         shortcodeInput2.value = window.CE_INITIAL_STATE.chord2Flags || '';
+        checkboxes2.w.checked = shortcodeInput2.value.includes('w');
         checkboxes2.c.checked = shortcodeInput2.value.includes('c');
         checkboxes2.a.checked = shortcodeInput2.value.includes('a');
         checkboxes2.s.checked = shortcodeInput2.value.includes('s');
@@ -300,7 +372,7 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
         .checkbox-group { display: flex; gap: 12px; padding: 4px 0; flex-wrap: wrap; }
         .checkbox-item { display: flex; align-items: center; gap: 6px; cursor: pointer; }
         .checkbox-item input { cursor: pointer; }
-        .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 16px; }
+        .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 16px; flex-wrap: wrap; }
         button { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 500; font-family: inherit; }
         button:hover { background: var(--vscode-button-hoverBackground); }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -328,6 +400,7 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
         <div class="chord-panel">
             <div class="chord-header">
                 <span>Key 1 (Main Chord)</span>
+                <button type="button" class="secondary small" id="btnClear1">Clear</button>
             </div>
             
             <div class="form-group">
@@ -338,6 +411,7 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
             <div class="form-group">
                 <label style="font-weight: 500;">Modifiers</label>
                 <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="checkbox" id="modW1" value="w"> Windows</label>
                     <label class="checkbox-item"><input type="checkbox" id="modC1" value="c"> Control</label>
                     <label class="checkbox-item"><input type="checkbox" id="modA1" value="a"> Alt</label>
                     <label class="checkbox-item"><input type="checkbox" id="modS1" value="s"> Shift</label>
@@ -345,8 +419,8 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
             </div>
 
             <div class="form-group">
-                <label for="shortcode1" style="font-weight: 500;">Modifier Shortcode Box (cas)</label>
-                <input type="text" id="shortcode1" placeholder="e.g., ca, s, cas">
+                <label for="shortcode1" style="font-weight: 500;">Modifier Shortcode Box (wcas)</label>
+                <input type="text" id="shortcode1" placeholder="e.g., ca, s, wcas">
             </div>
         </div>
 
@@ -354,7 +428,7 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
         <div class="chord-panel">
             <div class="chord-header">
                 <span>Key 2 (Optional Second Chord)</span>
-                <button type="button" class="secondary small" id="btnCloneKey1">Clone Key 1</button>
+                <button type="button" class="secondary small" id="btnClear2">Clear</button>
             </div>
             
             <div class="form-group">
@@ -365,6 +439,7 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
             <div class="form-group">
                 <label style="font-weight: 500;">Modifiers</label>
                 <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="checkbox" id="modW2" value="w"> Windows</label>
                     <label class="checkbox-item"><input type="checkbox" id="modC2" value="c"> Control</label>
                     <label class="checkbox-item"><input type="checkbox" id="modA2" value="a"> Alt</label>
                     <label class="checkbox-item"><input type="checkbox" id="modS2" value="s"> Shift</label>
@@ -372,8 +447,8 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
             </div>
 
             <div class="form-group">
-                <label for="shortcode2" style="font-weight: 500;">Modifier Shortcode Box (cas)</label>
-                <input type="text" id="shortcode2" placeholder="e.g., ca, s, cas">
+                <label for="shortcode2" style="font-weight: 500;">Modifier Shortcode Box (wcas)</label>
+                <input type="text" id="shortcode2" placeholder="e.g., ca, s, wcas">
             </div>
         </div>
     </div>
@@ -386,6 +461,11 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
     <div id="statusBox" style="display: none;"></div>
 
     <div class="actions">
+        <button class="secondary" id="btnEditJson">Edit Json</button>
+        <button class="secondary" id="btnUnbind">Unbind</button>
+        <button class="secondary" id="btnCopyBinding">Copy Binding</button>
+        <button class="secondary" id="btnPasteBinding">Paste Binding</button>
+        <div style="flex-grow: 1;"></div>
         <button class="secondary" id="btnCancel">Cancel</button>
         <button class="secondary" id="btnClone" disabled>Clone</button>
         <button class="secondary" id="btnSaveClone" disabled>Save and Clone</button>
@@ -394,6 +474,7 @@ function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Fla
 
     <script>
         window.CE_INITIAL_STATE = {
+            commandId: "` + (commandId || '') + `",
             chord1Base: "` + (chord1Base || '') + `",
             chord1Flags: "` + (chord1Flags || '') + `",
             chord2Base: "` + (chord2Base || '') + `",

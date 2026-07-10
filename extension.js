@@ -1829,13 +1829,14 @@ var require_extension_core = __commonJS({
 // src/extension-macros-html.js
 var require_extension_macros_html = __commonJS({
   "src/extension-macros-html.js"(exports2, module2) {
-    function getWebviewContent(title, chord1Base, chord1Flags, chord2Base, chord2Flags, whenClause, currentKeys, currentWhen) {
+    function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base, chord2Flags, whenClause, currentKeys, currentWhen) {
       const webviewJS = `
     const vscode = acquireVsCodeApi();
 
     const baseInput1 = document.getElementById('baseKey1');
     const shortcodeInput1 = document.getElementById('shortcode1');
     const checkboxes1 = {
+        w: document.getElementById('modW1'),
         c: document.getElementById('modC1'),
         a: document.getElementById('modA1'),
         s: document.getElementById('modS1')
@@ -1844,6 +1845,7 @@ var require_extension_macros_html = __commonJS({
     const baseInput2 = document.getElementById('baseKey2');
     const shortcodeInput2 = document.getElementById('shortcode2');
     const checkboxes2 = {
+        w: document.getElementById('modW2'),
         c: document.getElementById('modC2'),
         a: document.getElementById('modA2'),
         s: document.getElementById('modS2')
@@ -1856,7 +1858,13 @@ var require_extension_macros_html = __commonJS({
     const btnClone = document.getElementById('btnClone');
     const btnSaveClone = document.getElementById('btnSaveClone');
     const btnSubmit = document.getElementById('btnSubmit');
-    const btnCloneKey1 = document.getElementById('btnCloneKey1');
+
+    const btnClear1 = document.getElementById('btnClear1');
+    const btnClear2 = document.getElementById('btnClear2');
+    const btnEditJson = document.getElementById('btnEditJson');
+    const btnUnbind = document.getElementById('btnUnbind');
+    const btnCopyBinding = document.getElementById('btnCopyBinding');
+    const btnPasteBinding = document.getElementById('btnPasteBinding');
 
     const currentKeysLabel = document.getElementById('currentKeysLabel');
     const currentWhenClauseLabel = document.getElementById('currentWhenClauseLabel');
@@ -1876,8 +1884,9 @@ var require_extension_macros_html = __commonJS({
 
     function cleanShortcodeInput(val) {
         if (!val) return '';
-        let cleaned = val.toLowerCase().replace(/[^cas]/g, '');
+        let cleaned = val.toLowerCase().replace(/[^wcas]/g, '');
         let res = '';
+        if (cleaned.includes('w')) res += 'w';
         if (cleaned.includes('c')) res += 'c';
         if (cleaned.includes('a')) res += 'a';
         if (cleaned.includes('s')) res += 's';
@@ -1915,6 +1924,7 @@ var require_extension_macros_html = __commonJS({
 
         baseInput1.value = cleanBaseKeyInput(baseInput1.value);
         let f = '';
+        if (checkboxes1.w.checked) f += 'w';
         if (checkboxes1.c.checked) f += 'c';
         if (checkboxes1.a.checked) f += 'a';
         if (checkboxes1.s.checked) f += 's';
@@ -1929,6 +1939,7 @@ var require_extension_macros_html = __commonJS({
         isSynchronizing = true;
 
         shortcodeInput1.value = cleanShortcodeInput(shortcodeInput1.value);
+        checkboxes1.w.checked = shortcodeInput1.value.includes('w');
         checkboxes1.c.checked = shortcodeInput1.value.includes('c');
         checkboxes1.a.checked = shortcodeInput1.value.includes('a');
         checkboxes1.s.checked = shortcodeInput1.value.includes('s');
@@ -1943,6 +1954,7 @@ var require_extension_macros_html = __commonJS({
 
         baseInput2.value = cleanBaseKeyInput(baseInput2.value);
         let f = '';
+        if (checkboxes2.w.checked) f += 'w';
         if (checkboxes2.c.checked) f += 'c';
         if (checkboxes2.a.checked) f += 'a';
         if (checkboxes2.s.checked) f += 's';
@@ -1957,6 +1969,7 @@ var require_extension_macros_html = __commonJS({
         isSynchronizing = true;
 
         shortcodeInput2.value = cleanShortcodeInput(shortcodeInput2.value);
+        checkboxes2.w.checked = shortcodeInput2.value.includes('w');
         checkboxes2.c.checked = shortcodeInput2.value.includes('c');
         checkboxes2.a.checked = shortcodeInput2.value.includes('a');
         checkboxes2.s.checked = shortcodeInput2.value.includes('s');
@@ -1973,13 +1986,26 @@ var require_extension_macros_html = __commonJS({
     Object.values(checkboxes2).forEach(cb => cb.addEventListener('change', syncFromUIForm2));
     shortcodeInput2.addEventListener('input', syncFromShortcode2);
 
-    btnCloneKey1.addEventListener('click', () => {
+    btnClear1.addEventListener('click', () => {
         isSynchronizing = true;
-        baseInput2.value = baseInput1.value;
-        checkboxes2.c.checked = checkboxes1.c.checked;
-        checkboxes2.a.checked = checkboxes1.a.checked;
-        checkboxes2.s.checked = checkboxes1.s.checked;
-        shortcodeInput2.value = shortcodeInput1.value;
+        baseInput1.value = '';
+        checkboxes1.w.checked = false;
+        checkboxes1.c.checked = false;
+        checkboxes1.a.checked = false;
+        checkboxes1.s.checked = false;
+        shortcodeInput1.value = '';
+        isSynchronizing = false;
+        triggerValidation();
+    });
+
+    btnClear2.addEventListener('click', () => {
+        isSynchronizing = true;
+        baseInput2.value = '';
+        checkboxes2.w.checked = false;
+        checkboxes2.c.checked = false;
+        checkboxes2.a.checked = false;
+        checkboxes2.s.checked = false;
+        shortcodeInput2.value = '';
         isSynchronizing = false;
         triggerValidation();
     });
@@ -2010,6 +2036,25 @@ var require_extension_macros_html = __commonJS({
         } else if (message.type === 'updateLabels') {
             if (currentKeysLabel) currentKeysLabel.textContent = message.currentKeys;
             if (currentWhenClauseLabel) currentWhenClauseLabel.textContent = message.currentWhen;
+        } else if (message.type === 'pasteBindingData') {
+            isSynchronizing = true;
+            baseInput1.value = message.chord1Base || '';
+            shortcodeInput1.value = message.chord1Flags || '';
+            checkboxes1.w.checked = shortcodeInput1.value.includes('w');
+            checkboxes1.c.checked = shortcodeInput1.value.includes('c');
+            checkboxes1.a.checked = shortcodeInput1.value.includes('a');
+            checkboxes1.s.checked = shortcodeInput1.value.includes('s');
+
+            baseInput2.value = message.chord2Base || '';
+            shortcodeInput2.value = message.chord2Flags || '';
+            checkboxes2.w.checked = shortcodeInput2.value.includes('w');
+            checkboxes2.c.checked = shortcodeInput2.value.includes('c');
+            checkboxes2.a.checked = shortcodeInput2.value.includes('a');
+            checkboxes2.s.checked = shortcodeInput2.value.includes('s');
+
+            whenInput.value = message.when || 'editorTextFocus';
+            isSynchronizing = false;
+            triggerValidation();
         }
     });
 
@@ -2047,16 +2092,43 @@ var require_extension_macros_html = __commonJS({
         vscode.postMessage({ command: 'cancel' });
     });
 
+    btnEditJson.addEventListener('click', () => {
+        vscode.postMessage({ command: 'editJson' });
+    });
+
+    btnUnbind.addEventListener('click', () => {
+        vscode.postMessage({ command: 'unbind' });
+    });
+
+    btnCopyBinding.addEventListener('click', () => {
+        const textValue = getFullShorthand();
+        if (!textValue) return;
+        vscode.postMessage({
+            command: 'copyBinding',
+            value: JSON.stringify({
+                key: lastValidatedNativeKey || '',
+                command: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '',
+                when: whenInput.value
+            }, null, 4)
+        });
+    });
+
+    btnPasteBinding.addEventListener('click', () => {
+        vscode.postMessage({ command: 'pasteBinding' });
+    });
+
     if (window.CE_INITIAL_STATE) {
         isSynchronizing = true;
         baseInput1.value = window.CE_INITIAL_STATE.chord1Base || '';
         shortcodeInput1.value = window.CE_INITIAL_STATE.chord1Flags || '';
+        checkboxes1.w.checked = shortcodeInput1.value.includes('w');
         checkboxes1.c.checked = shortcodeInput1.value.includes('c');
         checkboxes1.a.checked = shortcodeInput1.value.includes('a');
         checkboxes1.s.checked = shortcodeInput1.value.includes('s');
 
         baseInput2.value = window.CE_INITIAL_STATE.chord2Base || '';
         shortcodeInput2.value = window.CE_INITIAL_STATE.chord2Flags || '';
+        checkboxes2.w.checked = shortcodeInput2.value.includes('w');
         checkboxes2.c.checked = shortcodeInput2.value.includes('c');
         checkboxes2.a.checked = shortcodeInput2.value.includes('a');
         checkboxes2.s.checked = shortcodeInput2.value.includes('s');
@@ -2123,7 +2195,7 @@ var require_extension_macros_html = __commonJS({
         .checkbox-group { display: flex; gap: 12px; padding: 4px 0; flex-wrap: wrap; }
         .checkbox-item { display: flex; align-items: center; gap: 6px; cursor: pointer; }
         .checkbox-item input { cursor: pointer; }
-        .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 16px; }
+        .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 16px; flex-wrap: wrap; }
         button { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 500; font-family: inherit; }
         button:hover { background: var(--vscode-button-hoverBackground); }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -2151,6 +2223,7 @@ var require_extension_macros_html = __commonJS({
         <div class="chord-panel">
             <div class="chord-header">
                 <span>Key 1 (Main Chord)</span>
+                <button type="button" class="secondary small" id="btnClear1">Clear</button>
             </div>
             
             <div class="form-group">
@@ -2161,6 +2234,7 @@ var require_extension_macros_html = __commonJS({
             <div class="form-group">
                 <label style="font-weight: 500;">Modifiers</label>
                 <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="checkbox" id="modW1" value="w"> Windows</label>
                     <label class="checkbox-item"><input type="checkbox" id="modC1" value="c"> Control</label>
                     <label class="checkbox-item"><input type="checkbox" id="modA1" value="a"> Alt</label>
                     <label class="checkbox-item"><input type="checkbox" id="modS1" value="s"> Shift</label>
@@ -2168,8 +2242,8 @@ var require_extension_macros_html = __commonJS({
             </div>
 
             <div class="form-group">
-                <label for="shortcode1" style="font-weight: 500;">Modifier Shortcode Box (cas)</label>
-                <input type="text" id="shortcode1" placeholder="e.g., ca, s, cas">
+                <label for="shortcode1" style="font-weight: 500;">Modifier Shortcode Box (wcas)</label>
+                <input type="text" id="shortcode1" placeholder="e.g., ca, s, wcas">
             </div>
         </div>
 
@@ -2177,7 +2251,7 @@ var require_extension_macros_html = __commonJS({
         <div class="chord-panel">
             <div class="chord-header">
                 <span>Key 2 (Optional Second Chord)</span>
-                <button type="button" class="secondary small" id="btnCloneKey1">Clone Key 1</button>
+                <button type="button" class="secondary small" id="btnClear2">Clear</button>
             </div>
             
             <div class="form-group">
@@ -2188,6 +2262,7 @@ var require_extension_macros_html = __commonJS({
             <div class="form-group">
                 <label style="font-weight: 500;">Modifiers</label>
                 <div class="checkbox-group">
+                    <label class="checkbox-item"><input type="checkbox" id="modW2" value="w"> Windows</label>
                     <label class="checkbox-item"><input type="checkbox" id="modC2" value="c"> Control</label>
                     <label class="checkbox-item"><input type="checkbox" id="modA2" value="a"> Alt</label>
                     <label class="checkbox-item"><input type="checkbox" id="modS2" value="s"> Shift</label>
@@ -2195,8 +2270,8 @@ var require_extension_macros_html = __commonJS({
             </div>
 
             <div class="form-group">
-                <label for="shortcode2" style="font-weight: 500;">Modifier Shortcode Box (cas)</label>
-                <input type="text" id="shortcode2" placeholder="e.g., ca, s, cas">
+                <label for="shortcode2" style="font-weight: 500;">Modifier Shortcode Box (wcas)</label>
+                <input type="text" id="shortcode2" placeholder="e.g., ca, s, wcas">
             </div>
         </div>
     </div>
@@ -2209,6 +2284,11 @@ var require_extension_macros_html = __commonJS({
     <div id="statusBox" style="display: none;"></div>
 
     <div class="actions">
+        <button class="secondary" id="btnEditJson">Edit Json</button>
+        <button class="secondary" id="btnUnbind">Unbind</button>
+        <button class="secondary" id="btnCopyBinding">Copy Binding</button>
+        <button class="secondary" id="btnPasteBinding">Paste Binding</button>
+        <div style="flex-grow: 1;"></div>
         <button class="secondary" id="btnCancel">Cancel</button>
         <button class="secondary" id="btnClone" disabled>Clone</button>
         <button class="secondary" id="btnSaveClone" disabled>Save and Clone</button>
@@ -2217,6 +2297,7 @@ var require_extension_macros_html = __commonJS({
 
     <script>
         window.CE_INITIAL_STATE = {
+            commandId: "` + (commandId || "") + `",
             chord1Base: "` + (chord1Base || "") + `",
             chord1Flags: "` + (chord1Flags || "") + `",
             chord2Base: "` + (chord2Base || "") + `",
@@ -2353,15 +2434,16 @@ var require_extension_macros_form = __commonJS({
       let chord2Base = "";
       let chord2Flags = "";
       let initialWhen = "editorTextFocus";
-      if (targetToEdit) {
-        const fullShorthand = core.formatToCustomShorthand(targetToEdit.key);
-        initialWhen = targetToEdit.when || "editorTextFocus";
+      const sourceToFill = targetToEdit || existingTargets[0];
+      if (sourceToFill) {
+        const fullShorthand = core.formatToCustomShorthand(sourceToFill.key);
+        initialWhen = sourceToFill.when || "editorTextFocus";
         const chords = fullShorthand.trim().split(/\s+/);
         if (chords.length >= 1 && chords[0]) {
           const match = chords[0].match(/(.*)\.([wcas]*)$/);
           if (match) {
             chord1Base = match[1];
-            chord1Flags = match[2].replace(/[^cas]/g, "");
+            chord1Flags = match[2].replace(/[^wcas]/g, "");
           } else {
             chord1Base = chords[0];
           }
@@ -2370,13 +2452,13 @@ var require_extension_macros_form = __commonJS({
           const match = chords[1].match(/(.*)\.([wcas]*)$/);
           if (match) {
             chord2Base = match[1];
-            chord2Flags = match[2].replace(/[^cas]/g, "");
+            chord2Flags = match[2].replace(/[^wcas]/g, "");
           } else {
             chord2Base = chords[1];
           }
         }
       }
-      const currentKeysLabel = existingTargets.map((t) => core.formatToCustomShorthand(t.key)).join(" ") || "None";
+      const currentKeysLabel = existingTargets.map((t) => `${core.formatToCustomShorthand(t.key)} (${t.key})`).join("  |  ") || "None";
       const currentWhenLabel = (targetToEdit ? targetToEdit.when : existingTargets[0] ? existingTargets[0].when : "editorTextFocus") || "editorTextFocus";
       const panelTitle = isEditMode ? `Edit Binding: ${derivedTitle}` : `Assign Key: ${derivedTitle}`;
       const viewType = "ceCommandPickerForm";
@@ -2390,6 +2472,7 @@ var require_extension_macros_form = __commonJS({
         }
       );
       panel.webview.html = htmlTemplate.getWebviewContent(
+        commandItem.commandId,
         commandItem.commandId || derivedTitle,
         chord1Base,
         chord1Flags,
@@ -2446,7 +2529,7 @@ var require_extension_macros_form = __commonJS({
               if (actionType === "saveAndClone") {
                 fullBindings = core.loadFullKeybindingsArray();
                 const updatedExistingTargets = fullBindings.filter((b) => b.command === commandItem.commandId);
-                const updatedKeysLabel = updatedExistingTargets.map((t) => core.formatToCustomShorthand(t.key)).join(" ") || "None";
+                const updatedKeysLabel = updatedExistingTargets.map((t) => `${core.formatToCustomShorthand(t.key)} (${t.key})`).join("  |  ") || "None";
                 const updatedWhenLabel = (targetToEdit ? targetToEdit.when : updatedExistingTargets[0] ? updatedExistingTargets[0].when : "editorTextFocus") || "editorTextFocus";
                 panel.webview.postMessage({
                   type: "updateLabels",
@@ -2461,6 +2544,85 @@ var require_extension_macros_form = __commonJS({
             case "cancel":
               panel.dispose();
               ui2.renderPrimaryMenu(context, originalArgs);
+              break;
+            case "editJson":
+              const configPath = core.getKeybindingsFilePath();
+              try {
+                const doc = await vscode.workspace.openTextDocument(configPath);
+                await vscode.window.showTextDocument(doc);
+                vscode.window.showInformationMessage("Opened keybindings.json file.");
+              } catch (e) {
+                vscode.window.showErrorMessage(`Failed to open keybindings file: ${e.message}`);
+              }
+              break;
+            case "unbind":
+              const targetToRemove = targetToEdit || (existingTargets.length > 0 ? existingTargets[0] : null);
+              if (targetToRemove) {
+                let bindingsList = core.loadFullKeybindingsArray();
+                bindingsList = bindingsList.filter((b) => !(b.key === targetToRemove.key && b.command === targetToRemove.command && b.when === targetToRemove.when));
+                if (core.saveKeybindingsArray(bindingsList)) {
+                  vscode.window.showInformationMessage(`Successfully removed keybinding mapping for: ${commandItem.commandId}`);
+                }
+              } else {
+                vscode.window.showWarningMessage("No existing keybinding found to unbind.");
+              }
+              panel.dispose();
+              ui2.renderPrimaryMenu(context, originalArgs);
+              break;
+            case "copyBinding":
+              if (message.value) {
+                await vscode.env.clipboard.writeText(message.value);
+                vscode.window.showInformationMessage("Copied keybinding JSON block to clipboard.");
+              }
+              break;
+            case "pasteBinding":
+              try {
+                const text = await vscode.env.clipboard.readText();
+                const parsed = JSON.parse(text.trim());
+                if (parsed && typeof parsed === "object") {
+                  if (parsed.key) {
+                    const fullShorthand = core.formatToCustomShorthand(parsed.key);
+                    const chords = fullShorthand.trim().split(/\s+/);
+                    let c1Base = "";
+                    let c1Flags = "";
+                    let c2Base = "";
+                    let c2Flags = "";
+                    if (chords.length >= 1 && chords[0]) {
+                      const match = chords[0].match(/(.*)\.([wcas]*)$/);
+                      if (match) {
+                        c1Base = match[1];
+                        c1Flags = match[2];
+                      } else {
+                        c1Base = chords[0];
+                      }
+                    }
+                    if (chords.length >= 2 && chords[1]) {
+                      const match = chords[1].match(/(.*)\.([wcas]*)$/);
+                      if (match) {
+                        c2Base = match[1];
+                        c2Flags = match[2];
+                      } else {
+                        c2Base = chords[1];
+                      }
+                    }
+                    panel.webview.postMessage({
+                      type: "pasteBindingData",
+                      chord1Base: c1Base,
+                      chord1Flags: c1Flags,
+                      chord2Base: c2Base,
+                      chord2Flags: c2Flags,
+                      when: parsed.when || "editorTextFocus"
+                    });
+                    vscode.window.showInformationMessage("Successfully pasted keybinding JSON from clipboard.");
+                  } else {
+                    vscode.window.showErrorMessage('Invalid keybinding JSON: missing "key" property.');
+                  }
+                } else {
+                  vscode.window.showErrorMessage("Clipboard content is not a valid JSON object.");
+                }
+              } catch (e) {
+                vscode.window.showErrorMessage("Failed to parse clipboard text as JSON.");
+              }
               break;
           }
         },

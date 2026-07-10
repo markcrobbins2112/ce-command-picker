@@ -38,16 +38,18 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
     let chord2Flags = '';
     let initialWhen = 'editorTextFocus';
 
-    if (targetToEdit) {
-        const fullShorthand = core.formatToCustomShorthand(targetToEdit.key);
-        initialWhen = targetToEdit.when || 'editorTextFocus';
+    const sourceToFill = targetToEdit || existingTargets[0];
+
+    if (sourceToFill) {
+        const fullShorthand = core.formatToCustomShorthand(sourceToFill.key);
+        initialWhen = sourceToFill.when || 'editorTextFocus';
         
         const chords = fullShorthand.trim().split(/\s+/);
         if (chords.length >= 1 && chords[0]) {
             const match = chords[0].match(/(.*)\.([wcas]*)$/);
             if (match) {
                 chord1Base = match[1];
-                chord1Flags = match[2].replace(/[^cas]/g, '');
+                chord1Flags = match[2].replace(/[^wcas]/g, '');
             } else {
                 chord1Base = chords[0];
             }
@@ -56,14 +58,14 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
             const match = chords[1].match(/(.*)\.([wcas]*)$/);
             if (match) {
                 chord2Base = match[1];
-                chord2Flags = match[2].replace(/[^cas]/g, '');
+                chord2Flags = match[2].replace(/[^wcas]/g, '');
             } else {
                 chord2Base = chords[1];
             }
         }
     }
 
-    const currentKeysLabel = existingTargets.map(t => core.formatToCustomShorthand(t.key)).join(' ') || 'None';
+    const currentKeysLabel = existingTargets.map(t => `${core.formatToCustomShorthand(t.key)} (${t.key})`).join('  |  ') || 'None';
     const currentWhenLabel = (targetToEdit ? targetToEdit.when : (existingTargets[0] ? existingTargets[0].when : 'editorTextFocus')) || 'editorTextFocus';
 
     const panelTitle = isEditMode ? `Edit Binding: ${derivedTitle}` : `Assign Key: ${derivedTitle}`;
@@ -83,6 +85,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
 
     // Initialize HTML synchronously to establish the service worker scope cleanly in a single tick.
     panel.webview.html = htmlTemplate.getWebviewContent(
+        commandItem.commandId,
         commandItem.commandId || derivedTitle,
         chord1Base,
         chord1Flags,
@@ -147,7 +150,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                         // Update fullBindings variable so that subsequent validations reflect the newly added bindings
                         fullBindings = core.loadFullKeybindingsArray();
                         const updatedExistingTargets = fullBindings.filter(b => b.command === commandItem.commandId);
-                        const updatedKeysLabel = updatedExistingTargets.map(t => core.formatToCustomShorthand(t.key)).join(' ') || 'None';
+                        const updatedKeysLabel = updatedExistingTargets.map(t => `${core.formatToCustomShorthand(t.key)} (${t.key})`).join('  |  ') || 'None';
                         const updatedWhenLabel = (targetToEdit ? targetToEdit.when : (updatedExistingTargets[0] ? updatedExistingTargets[0].when : 'editorTextFocus')) || 'editorTextFocus';
                         panel.webview.postMessage({
                             type: 'updateLabels',
@@ -163,6 +166,89 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                 case 'cancel':
                     panel.dispose();
                     ui.renderPrimaryMenu(context, originalArgs);
+                    break;
+
+                case 'editJson':
+                    const configPath = core.getKeybindingsFilePath();
+                    try {
+                        const doc = await vscode.workspace.openTextDocument(configPath);
+                        await vscode.window.showTextDocument(doc);
+                        vscode.window.showInformationMessage('Opened keybindings.json file.');
+                    } catch (e) {
+                        vscode.window.showErrorMessage(`Failed to open keybindings file: ${e.message}`);
+                    }
+                    break;
+
+                case 'unbind':
+                    const targetToRemove = targetToEdit || (existingTargets.length > 0 ? existingTargets[0] : null);
+                    if (targetToRemove) {
+                        let bindingsList = core.loadFullKeybindingsArray();
+                        bindingsList = bindingsList.filter(b => !(b.key === targetToRemove.key && b.command === targetToRemove.command && b.when === targetToRemove.when));
+                        if (core.saveKeybindingsArray(bindingsList)) {
+                            vscode.window.showInformationMessage(`Successfully removed keybinding mapping for: ${commandItem.commandId}`);
+                        }
+                    } else {
+                        vscode.window.showWarningMessage('No existing keybinding found to unbind.');
+                    }
+                    panel.dispose();
+                    ui.renderPrimaryMenu(context, originalArgs);
+                    break;
+
+                case 'copyBinding':
+                    if (message.value) {
+                        await vscode.env.clipboard.writeText(message.value);
+                        vscode.window.showInformationMessage('Copied keybinding JSON block to clipboard.');
+                    }
+                    break;
+
+                case 'pasteBinding':
+                    try {
+                        const text = await vscode.env.clipboard.readText();
+                        const parsed = JSON.parse(text.trim());
+                        if (parsed && typeof parsed === 'object') {
+                            if (parsed.key) {
+                                const fullShorthand = core.formatToCustomShorthand(parsed.key);
+                                const chords = fullShorthand.trim().split(/\s+/);
+                                let c1Base = '';
+                                let c1Flags = '';
+                                let c2Base = '';
+                                let c2Flags = '';
+                                if (chords.length >= 1 && chords[0]) {
+                                    const match = chords[0].match(/(.*)\.([wcas]*)$/);
+                                    if (match) {
+                                        c1Base = match[1];
+                                        c1Flags = match[2];
+                                    } else {
+                                        c1Base = chords[0];
+                                    }
+                                }
+                                if (chords.length >= 2 && chords[1]) {
+                                    const match = chords[1].match(/(.*)\.([wcas]*)$/);
+                                    if (match) {
+                                        c2Base = match[1];
+                                        c2Flags = match[2];
+                                    } else {
+                                        c2Base = chords[1];
+                                    }
+                                }
+                                panel.webview.postMessage({
+                                    type: 'pasteBindingData',
+                                    chord1Base: c1Base,
+                                    chord1Flags: c1Flags,
+                                    chord2Base: c2Base,
+                                    chord2Flags: c2Flags,
+                                    when: parsed.when || 'editorTextFocus'
+                                });
+                                vscode.window.showInformationMessage('Successfully pasted keybinding JSON from clipboard.');
+                            } else {
+                                vscode.window.showErrorMessage('Invalid keybinding JSON: missing "key" property.');
+                            }
+                        } else {
+                            vscode.window.showErrorMessage('Clipboard content is not a valid JSON object.');
+                        }
+                    } catch (e) {
+                        vscode.window.showErrorMessage('Failed to parse clipboard text as JSON.');
+                    }
                     break;
             }
         },
