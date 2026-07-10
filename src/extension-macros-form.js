@@ -195,6 +195,13 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                     }
                     break;
 
+                case 'launchCollisionUI': {
+                    const targetCmdId = message.commandId;
+                    const cmdItem = { label: targetCmdId, commandId: targetCmdId };
+                    promptAssignKey(context, cmdItem, [targetCmdId], true);
+                    break;
+                }
+
                 case 'validate':
                     const checkText = message.value.trim();
                     const validator = require('./extension-macros-validator');
@@ -213,7 +220,15 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
 
                         const collisions = fullBindings.filter(b => b.key.toLowerCase() === natKey.toLowerCase() && b.command !== commandItem.commandId);
                         if (collisions.length > 0) {
-                            panel.webview.postMessage({ type: 'status', status: 'warning', text: `⚠️ Collision! Maps to: ${collisions.map(c => c.command).join(', ')}`, nativeKey: natKey, shortCode: shCode });
+                            const collisionCommands = [...new Set(collisions.map(c => c.command))];
+                            panel.webview.postMessage({
+                                type: 'status',
+                                status: 'warning',
+                                text: `⚠️ Collision! Maps to: ${collisionCommands.join(', ')}`,
+                                nativeKey: natKey,
+                                shortCode: shCode,
+                                collisionCommands: collisionCommands
+                            });
                         } else {
                             panel.webview.postMessage({ type: 'status', status: 'success', text: `✓ ${natKey}`, nativeKey: natKey, shortCode: shCode });
                         }

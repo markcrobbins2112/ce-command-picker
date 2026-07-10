@@ -41,6 +41,16 @@ title: VERSIONS
 ## 🚀 Stable Releases & Milestones
 [[#^toc-stable|TOC]]
 
+### 🏷️ v1.2.53 (2026-07-10) - Custom Modifier Styling, Secondary Menu Reordering, and Collision Solver UI
+- **Added / Enhanced:**
+  - Integrated customizable dynamic modifier label styling: modC is red, modA is the blue alt-color (#2f2bfb), and if both Ctrl and Alt are checked, they both turn purple.
+  - Implemented an elegant Windows key flag listener: when checked, all other modifier key labels dynamically shift to lighter color variations.
+  - Reordered secondary menu options with specific hierarchy rules and completely removed the old "Assign Key" action.
+  - Implemented automatic, dynamic launch-to-edit action buttons in webview validation status dialogues for each colliding command ID, enabling direct traversal into that action's editor UI.
+  - Combined the Copy Binding button, instigator edit button (`ce-command-picker.show`), and the paging buttons on a single unified, responsive row.
+- **Fixed / Patched:**
+  - Resolved nested script syntax errors inside html template files by avoiding unescaped backtick characters.
+
 ### 🏷️ v1.2.46 (2026-07-10) - Changed Indicator State Normalization Fix
 - **Fixed / Patched:**
   - Patched validation status dispatch in the extension-macros-form controller to pass the validated `nativeKey` along during keybinding collisions/warnings.

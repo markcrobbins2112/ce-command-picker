@@ -56,6 +56,15 @@ title: TASKS
 -->
 ## 💬 Incoming tasks from chat
 [[#^toc-chat|TOC]]
+- [x] Remove Assign Key from secondary menu
+- [x] Reorder secondary menu options
+- [x] Set Alt color to #2f2bfb
+- [x] Color modC label red and modA label blue
+- [x] Color modC + modA labels purple when both are checked
+- [x] Lighten other modifier label colors when Win key is checked
+- [x] Offer a button to launch target editor UI when validation collision occurs
+- [x] Layout Copy Binding button and Paging buttons on the same row
+- [x] Add an Edit Picker Key button for `ce-command-picker.show` (instigator) on the Copy Binding/Paging row
 - [x] Rename 'Action:' to 'Command:' in form panel
 - [x] Add inline copy icon button before 'Command:' to copy command ID
 - [x] Put 'Copy Binding' helper button next to 'Command:' header and remove from bottom row

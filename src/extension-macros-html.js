@@ -103,6 +103,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     const btnReset = document.getElementById('btnResetHeader');
     const btnClear = document.getElementById('btnClear');
     const btnCopyBinding = document.getElementById('btnCopyBindingHeader');
+    const btnEditInstigator = document.getElementById('btnEditInstigator');
     const btnPasteBinding = document.getElementById('btnPasteBinding');
     const btnCopyCommand = document.getElementById('btnCopyCommand');
     const btnCopyKey = document.getElementById('btnCopyKey');
@@ -561,45 +562,88 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
 
     fullShorthandInput.addEventListener('input', syncFromFullShorthand);
 
-    function getModifierColor(c, a, s) {
-        if (c && a && s) return '#56b6c2';
-        if (c && s) return '#d19a66';
-        if (a && s) return '#98c379';
-        if (c && a) return '#c678dd';
-        if (c) return '#e06c75';
-        if (a) return '#61afef';
-        if (s) return '#e5c07b';
-        return '#abb2bf';
+    function getModifierColor(c, a, s, w = false) {
+        let color = '#abb2bf';
+        if (c && a && s) color = '#56b6c2';
+        else if (c && s) color = '#d19a66';
+        else if (a && s) color = '#98c379';
+        else if (c && a) color = '#c678dd';
+        else if (c) color = '#f14c4c';
+        else if (a) color = '#2f2bfb';
+        else if (s) color = '#e5c07b';
+        else if (w) color = '#ffffff';
+
+        if (w && (c || a || s)) {
+            if (c && a) color = '#e1b3f7';
+            else if (c) color = '#ffa1a1';
+            else if (a) color = '#8a88ff';
+            else if (s) color = '#fff4a3';
+        }
+        return color;
     }
 
     function updateModifierColors() {
+        const w1 = checkboxes1.w.checked;
         const c1 = checkboxes1.c.checked;
         const a1 = checkboxes1.a.checked;
         const s1 = checkboxes1.s.checked;
-        const color1 = getModifierColor(c1, a1, s1);
 
-        shortcodeInput1.style.color = color1;
-        shortcodeInput1.style.borderColor = color1;
-        ['modW', 'modC', 'modA', 'modS'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el && el.parentNode) {
-                el.parentNode.style.color = color1;
-            }
-        });
+        let colorW1 = '#abb2bf';
+        let colorC1 = '#f14c4c';
+        let colorA1 = '#2f2bfb';
+        let colorS1 = '#e5c07b';
 
+        if (c1 && a1) {
+            colorC1 = '#c678dd';
+            colorA1 = '#c678dd';
+        }
+
+        if (w1) {
+            colorW1 = '#ffffff';
+            colorC1 = (c1 && a1) ? '#e1b3f7' : '#ffa1a1';
+            colorA1 = (c1 && a1) ? '#e1b3f7' : '#8a88ff';
+            colorS1 = '#fff4a3';
+        }
+
+        if (checkboxes1.w.parentNode) checkboxes1.w.parentNode.style.color = colorW1;
+        if (checkboxes1.c.parentNode) checkboxes1.c.parentNode.style.color = colorC1;
+        if (checkboxes1.a.parentNode) checkboxes1.a.parentNode.style.color = colorA1;
+        if (checkboxes1.s.parentNode) checkboxes1.s.parentNode.style.color = colorS1;
+
+        const dominantColor1 = getModifierColor(c1, a1, s1, w1);
+        shortcodeInput1.style.color = dominantColor1;
+        shortcodeInput1.style.borderColor = dominantColor1;
+
+        const w2 = checkboxes2.w.checked;
         const c2 = checkboxes2.c.checked;
         const a2 = checkboxes2.a.checked;
         const s2 = checkboxes2.s.checked;
-        const color2 = getModifierColor(c2, a2, s2);
 
-        shortcodeInput2.style.color = color2;
-        shortcodeInput2.style.borderColor = color2;
-        ['modW2', 'modC2', 'modA2', 'modS2'].forEach(id => {
-            const el = document.getElementById(id);
-            if (el && el.parentNode) {
-                el.parentNode.style.color = color2;
-            }
-        });
+        let colorW2 = '#abb2bf';
+        let colorC2 = '#f14c4c';
+        let colorA2 = '#2f2bfb';
+        let colorS2 = '#e5c07b';
+
+        if (c2 && a2) {
+            colorC2 = '#c678dd';
+            colorA2 = '#c678dd';
+        }
+
+        if (w2) {
+            colorW2 = '#ffffff';
+            colorC2 = (c2 && a2) ? '#e1b3f7' : '#ffa1a1';
+            colorA2 = (c2 && a2) ? '#e1b3f7' : '#8a88ff';
+            colorS2 = '#fff4a3';
+        }
+
+        if (checkboxes2.w.parentNode) checkboxes2.w.parentNode.style.color = colorW2;
+        if (checkboxes2.c.parentNode) checkboxes2.c.parentNode.style.color = colorC2;
+        if (checkboxes2.a.parentNode) checkboxes2.a.parentNode.style.color = colorA2;
+        if (checkboxes2.s.parentNode) checkboxes2.s.parentNode.style.color = colorS2;
+
+        const dominantColor2 = getModifierColor(c2, a2, s2, w2);
+        shortcodeInput2.style.color = dominantColor2;
+        shortcodeInput2.style.borderColor = dominantColor2;
     }
 
     // Hook modifier colors update to triggerValidation so it runs on every form change
@@ -878,10 +922,15 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             isSynchronizing = false;
             triggerValidation(true);
         } else if (message.type === 'status') {
-            statusBox.textContent = message.text;
             statusBox.style.display = 'block';
             statusBox.style.padding = '8px 12px';
             statusBox.style.borderRadius = '4px';
+            
+            statusBox.innerHTML = '';
+            
+            const textSpan = document.createElement('span');
+            textSpan.textContent = message.text;
+            statusBox.appendChild(textSpan);
             
             if (message.status === 'error') {
                 statusBox.style.background = 'rgba(241, 76, 76, 0.15)';
@@ -890,8 +939,34 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
                 lastValidatedShortCode = '';
                 updateButtonStates(false);
             } else {
-                statusBox.style.background = 'rgba(137, 209, 137, 0.15)';
-                statusBox.style.color = '#88d188';
+                if (message.status === 'warning') {
+                    statusBox.style.background = 'rgba(229, 192, 123, 0.15)';
+                    statusBox.style.color = '#e5c07b';
+                    
+                    if (message.collisionCommands && message.collisionCommands.length > 0) {
+                        message.collisionCommands.forEach(cmdId => {
+                            const btn = document.createElement('button');
+                            btn.type = 'button';
+                            btn.className = 'secondary small';
+                            btn.style.marginLeft = '10px';
+                            btn.style.padding = '2px 6px';
+                            btn.style.fontSize = '0.85em';
+                            btn.title = 'Launch editor UI for ' + cmdId;
+                            btn.textContent = 'Edit ' + cmdId;
+                            btn.addEventListener('click', () => {
+                                vscode.postMessage({
+                                    command: 'launchCollisionUI',
+                                    commandId: cmdId
+                                });
+                            });
+                            statusBox.appendChild(btn);
+                        });
+                    }
+                } else {
+                    statusBox.style.background = 'rgba(137, 209, 137, 0.15)';
+                    statusBox.style.color = '#88d188';
+                }
+                
                 lastValidatedNativeKey = message.nativeKey || '';
                 lastValidatedShortCode = message.shortCode || '';
                 
@@ -1158,6 +1233,15 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             }, null, 4)
         });
     });
+
+    if (btnEditInstigator) {
+        btnEditInstigator.addEventListener('click', () => {
+            vscode.postMessage({
+                command: 'launchCollisionUI',
+                commandId: 'ce-command-picker.show'
+            });
+        });
+    }
 
     btnPasteBinding.addEventListener('click', () => {
         vscode.postMessage({ command: 'pasteBinding' });
@@ -1426,20 +1510,22 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             <span id="lblCheckoffCount" style="opacity: 0.85; font-size: 0.9em; font-weight: 500; margin-left: 4px;">0 of 0</span>
         </div>
 
-        <!-- Copy Binding Row (on its own line!) -->
-        <div style="margin-top: 8px; margin-bottom: 8px;">
-            <button type="button" class="secondary small" id="btnCopyBindingHeader" title="Copy Binding JSON" style="font-weight: 500; padding: 4px 8px; width: 100%; text-align: center;">Copy Binding</button>
-        </div>
-
-        <!-- Paging Row (right-aligned!) -->
-        <div style="display: flex; justify-content: flex-end; align-items: center; gap: 4px; margin-top: 4px; margin-bottom: 8px;">
-            <button type="button" class="secondary small" id="btnPageFirst" title="First item">&lt;&lt;&lt;</button>
-            <button type="button" class="secondary small" id="btnPagePrev5" title="Previous item">&lt;&lt;</button>
-            <button type="button" class="secondary small" id="btnPagePrev" title="Previous item">&lt;</button>
-            <span id="lblPageNum" style="font-size: 0.9em; font-weight: bold; margin: 0 4px; opacity: 0.85; min-width: 3.5em; text-align: center;">1 of 1</span>
-            <button type="button" class="secondary small" id="btnPageNext" title="Next item">&gt;</button>
-            <button type="button" class="secondary small" id="btnPageNext5" title="Next item">&gt;&gt;</button>
-            <button type="button" class="secondary small" id="btnPageLast" title="Last item">&gt;&gt;&gt;</button>
+        <!-- Copy Binding, Edit Instigator & Paging Row -->
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; margin-bottom: 8px; flex-wrap: wrap;">
+            <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1; min-width: 180px;">
+                <button type="button" class="secondary small" id="btnCopyBindingHeader" title="Copy Binding JSON" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Copy Binding</button>
+                <button type="button" class="secondary small" id="btnEditInstigator" title="Edit the keybinding for ce-command-picker.show (the command that instigated the Menu)" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Edit Picker Key</button>
+            </div>
+            <!-- Paging Row (right-aligned!) -->
+            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 4px;">
+                <button type="button" class="secondary small" id="btnPageFirst" title="First item">&lt;&lt;&lt;</button>
+                <button type="button" class="secondary small" id="btnPagePrev5" title="Previous item">&lt;&lt;</button>
+                <button type="button" class="secondary small" id="btnPagePrev" title="Previous item">&lt;</button>
+                <span id="lblPageNum" style="font-size: 0.9em; font-weight: bold; margin: 0 4px; opacity: 0.85; min-width: 3.5em; text-align: center;">1 of 1</span>
+                <button type="button" class="secondary small" id="btnPageNext" title="Next item">&gt;</button>
+                <button type="button" class="secondary small" id="btnPageNext5" title="Next item">&gt;&gt;</button>
+                <button type="button" class="secondary small" id="btnPageLast" title="Last item">&gt;&gt;&gt;</button>
+            </div>
         </div>
         <div id="currentKeysContainer">` + formatCurrentKeys(currentKeys) + `</div>
         <div><span style="opacity: 0.7;">Current When:</span> <strong id="currentWhenClauseLabel">` + (currentWhen || 'No context') + `</strong></div>

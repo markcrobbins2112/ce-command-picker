@@ -89,13 +89,12 @@ function showSecondaryActionMenu(context, commandItem, originalArgs) {
     secondaryQuickPick.items = [
         { label: '$(arrow-left) Back', detail: 'Exit edit profile and return to main picker list', actionKey: 'BACK' },
         { label: 'Execute',            detail: `Run command: ${commandItem.commandId}`, actionKey: 'EXECUTE' },
-        { label: 'Copy Command',       detail: 'Copy raw command ID string layout', actionKey: 'COPY_CMD' },
-        { label: 'Copy Bindings',      detail: 'Copy full system JSON config structures', actionKey: 'COPY_BIND' },
-        { label: 'Assign Key',         detail: 'Write a newly structured key map parameter', actionKey: 'ASSIGN_KEY' },
         { label: 'Edit Binding',       detail: 'Modify existing parameters matching this action ID', actionKey: 'EDIT_BINDING' },
+        { label: 'Remove Bindings',    detail: 'Selectively purge structural mappings', actionKey: 'REMOVE_KEY' },
+        { label: 'Goto Binding Json',  detail: 'Locate structural code array within standard settings files', actionKey: 'GOTO_JSON' },
         { label: 'Goto Binding UI',    detail: 'Open native Keyboard Shortcuts editor at this command', actionKey: 'GOTO_BINDING_UI' },
-        { label: 'Remove Key',         detail: 'Selectively purge structural mappings', actionKey: 'REMOVE_KEY' },
-        { label: 'Goto Binding JSON',  detail: 'Locate structural code array within standard settings files', actionKey: 'GOTO_JSON' }
+        { label: 'Copy Bindings',      detail: 'Copy full system JSON config structures', actionKey: 'COPY_BIND' },
+        { label: 'Copy Command',       detail: 'Copy raw command ID string layout', actionKey: 'COPY_CMD' }
     ];
     
     secondaryQuickPick.title = `Action Plan: ${commandItem.label}`;
