@@ -4,7 +4,7 @@
  * Returns lightweight HTML DOM structures using embedded script logic variables.
  * Automatically mirrors the theme's colors natively using CSS Workbench properties.
  */
-function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base, chord2Flags, whenClause, currentKeys, currentWhen, initialNativeKey, originalArgs = [], checkedOff = []) {
+function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base, chord2Flags, whenClause, currentKeys, currentWhen, initialNativeKey, originalArgs = [], checkedOff = [], commandBindings = {}) {
     const escapeJS = (str) => {
         if (str === null || str === undefined) return '';
         return String(str)
@@ -1119,6 +1119,9 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             }
             if (currentWhenClauseLabel) currentWhenClauseLabel.textContent = message.currentWhen;
         } else if (message.type === 'saveSuccess') {
+            if (message.commandBindings) {
+                window.CE_COMMAND_BINDINGS = message.commandBindings;
+            }
             if (window.CE_INITIAL_STATE) {
                 window.CE_INITIAL_STATE.chord1Base = baseInput1.value;
                 window.CE_INITIAL_STATE.chord1Flags = shortcodeInput1.value;
@@ -1152,6 +1155,9 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             isSynchronizing = false;
             triggerValidation(true);
         } else if (message.type === 'updateItem') {
+            if (message.commandBindings) {
+                window.CE_COMMAND_BINDINGS = message.commandBindings;
+            }
             window.CE_INITIAL_STATE = {
                 commandId: message.commandId,
                 chord1Base: message.chord1Base,
@@ -1978,6 +1984,69 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         button.secondary { background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); }
         button.secondary:hover { background-color: var(--vscode-button-secondaryHoverBackground); }
         button.small { padding: 4px 8px; font-size: 0.85em; }
+
+        /* Transition for very dark orange background on changed state */
+        body {
+            transition: background-color 0.4s ease-in-out;
+        }
+
+        /* Colored Buttons with Borders and Black Background */
+        .custom-btn {
+            background-color: #000000 !important;
+            border-style: solid !important;
+            border-width: 1.5px !important;
+            font-weight: bold !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease-in-out !important;
+            opacity: 0.75 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 4px !important;
+        }
+        .custom-btn:hover:not(:disabled) {
+            opacity: 1.0 !important;
+            box-shadow: 0 0 10px currentColor !important;
+            filter: brightness(1.2) !important;
+        }
+        .custom-btn:active:not(:disabled) {
+            transform: scale(0.95) !important;
+            box-shadow: 0 0 16px currentColor !important;
+            filter: brightness(1.4) !important;
+        }
+        .custom-btn:disabled {
+            opacity: 0.3 !important;
+            cursor: not-allowed !important;
+        }
+        
+        .btn-red {
+            border-color: #ff4a4a !important;
+            color: #ff4a4a !important;
+        }
+        .btn-blue {
+            border-color: #3b82f6 !important;
+            color: #3b82f6 !important;
+        }
+        .btn-green {
+            border-color: #10b981 !important;
+            color: #10b981 !important;
+        }
+        .btn-yellow {
+            border-color: #eab308 !important;
+            color: #eab308 !important;
+        }
+        .btn-orange {
+            border-color: #f97316 !important;
+            color: #f97316 !important;
+        }
+        .btn-cyan {
+            border-color: #06b6d4 !important;
+            color: #06b6d4 !important;
+        }
+        .btn-purple {
+            border-color: #a855f7 !important;
+            color: #a855f7 !important;
+        }
         
         #statusBox {
             padding: 10px 14px;
@@ -2252,6 +2321,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         };
         window.CE_ORIGINAL_ARGS = ` + JSON.stringify(originalArgs) + `;
         window.CE_CHECKED_OFF_COMMANDS = ` + JSON.stringify(checkedOff) + `;
+        window.CE_COMMAND_BINDINGS = ` + JSON.stringify(commandBindings) + `;
         ` + webviewJS + `
     </script>
 </body>

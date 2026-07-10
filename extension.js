@@ -1856,7 +1856,7 @@ var require_extension_core = __commonJS({
 // src/extension-macros-html.js
 var require_extension_macros_html = __commonJS({
   "src/extension-macros-html.js"(exports2, module2) {
-    function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base, chord2Flags, whenClause, currentKeys, currentWhen, initialNativeKey, originalArgs = [], checkedOff = []) {
+    function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base, chord2Flags, whenClause, currentKeys, currentWhen, initialNativeKey, originalArgs = [], checkedOff = [], commandBindings = {}) {
       const escapeJS = (str) => {
         if (str === null || str === void 0) return "";
         return String(str).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\r/g, "\\r").replace(/\n/g, "\\n");
@@ -2964,6 +2964,9 @@ var require_extension_macros_html = __commonJS({
             }
             if (currentWhenClauseLabel) currentWhenClauseLabel.textContent = message.currentWhen;
         } else if (message.type === 'saveSuccess') {
+            if (message.commandBindings) {
+                window.CE_COMMAND_BINDINGS = message.commandBindings;
+            }
             if (window.CE_INITIAL_STATE) {
                 window.CE_INITIAL_STATE.chord1Base = baseInput1.value;
                 window.CE_INITIAL_STATE.chord1Flags = shortcodeInput1.value;
@@ -2997,6 +3000,9 @@ var require_extension_macros_html = __commonJS({
             isSynchronizing = false;
             triggerValidation(true);
         } else if (message.type === 'updateItem') {
+            if (message.commandBindings) {
+                window.CE_COMMAND_BINDINGS = message.commandBindings;
+            }
             window.CE_INITIAL_STATE = {
                 commandId: message.commandId,
                 chord1Base: message.chord1Base,
@@ -3822,6 +3828,69 @@ var require_extension_macros_html = __commonJS({
         button.secondary { background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); }
         button.secondary:hover { background-color: var(--vscode-button-secondaryHoverBackground); }
         button.small { padding: 4px 8px; font-size: 0.85em; }
+
+        /* Transition for very dark orange background on changed state */
+        body {
+            transition: background-color 0.4s ease-in-out;
+        }
+
+        /* Colored Buttons with Borders and Black Background */
+        .custom-btn {
+            background-color: #000000 !important;
+            border-style: solid !important;
+            border-width: 1.5px !important;
+            font-weight: bold !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease-in-out !important;
+            opacity: 0.75 !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 4px !important;
+        }
+        .custom-btn:hover:not(:disabled) {
+            opacity: 1.0 !important;
+            box-shadow: 0 0 10px currentColor !important;
+            filter: brightness(1.2) !important;
+        }
+        .custom-btn:active:not(:disabled) {
+            transform: scale(0.95) !important;
+            box-shadow: 0 0 16px currentColor !important;
+            filter: brightness(1.4) !important;
+        }
+        .custom-btn:disabled {
+            opacity: 0.3 !important;
+            cursor: not-allowed !important;
+        }
+        
+        .btn-red {
+            border-color: #ff4a4a !important;
+            color: #ff4a4a !important;
+        }
+        .btn-blue {
+            border-color: #3b82f6 !important;
+            color: #3b82f6 !important;
+        }
+        .btn-green {
+            border-color: #10b981 !important;
+            color: #10b981 !important;
+        }
+        .btn-yellow {
+            border-color: #eab308 !important;
+            color: #eab308 !important;
+        }
+        .btn-orange {
+            border-color: #f97316 !important;
+            color: #f97316 !important;
+        }
+        .btn-cyan {
+            border-color: #06b6d4 !important;
+            color: #06b6d4 !important;
+        }
+        .btn-purple {
+            border-color: #a855f7 !important;
+            color: #a855f7 !important;
+        }
         
         #statusBox {
             padding: 10px 14px;
@@ -4096,6 +4165,7 @@ var require_extension_macros_html = __commonJS({
         };
         window.CE_ORIGINAL_ARGS = ` + JSON.stringify(originalArgs) + `;
         window.CE_CHECKED_OFF_COMMANDS = ` + JSON.stringify(checkedOff) + `;
+        window.CE_COMMAND_BINDINGS = ` + JSON.stringify(commandBindings) + `;
         ` + webviewJS + `
     </script>
 </body>
@@ -4232,48 +4302,36 @@ var require_extension_macros_form = __commonJS({
       }
     }
     async function handleOpenHelper(targetType, configPath, panelViewCol, newInstance, preferredDirection, openAction) {
-      const allGroups = vscode.window.tabGroups && vscode.window.tabGroups.all || [];
-      let newGroupCommand = "workbench.action.newGroupRight";
-      if (preferredDirection === "up") newGroupCommand = "workbench.action.newGroupAbove";
-      else if (preferredDirection === "down") newGroupCommand = "workbench.action.newGroupBelow";
-      else if (preferredDirection === "left") newGroupCommand = "workbench.action.newGroupLeft";
+      await focusViewColumn(panelViewCol);
+      let focusCmd = "workbench.action.focusRightGroup";
+      let splitCmd = "workbench.action.newGroupRight";
+      if (preferredDirection === "up") {
+        focusCmd = "workbench.action.focusAboveGroup";
+        splitCmd = "workbench.action.newGroupAbove";
+      } else if (preferredDirection === "down") {
+        focusCmd = "workbench.action.focusBelowGroup";
+        splitCmd = "workbench.action.newGroupBelow";
+      } else if (preferredDirection === "left") {
+        focusCmd = "workbench.action.focusLeftGroup";
+        splitCmd = "workbench.action.newGroupLeft";
+      }
       if (newInstance) {
-        await vscode.commands.executeCommand(newGroupCommand);
+        await vscode.commands.executeCommand(splitCmd);
         await new Promise((resolve) => setTimeout(resolve, 100));
         await openAction(vscode.ViewColumn.Active);
       } else {
-        let foundGroupCol = null;
-        for (const group of allGroups) {
-          if (group.viewColumn === panelViewCol) continue;
-          for (const tab of group.tabs) {
-            if (targetType === "json") {
-              if (tab.input && tab.input.uri && tab.input.uri.fsPath === configPath) {
-                foundGroupCol = group.viewColumn;
-                break;
-              }
-            } else {
-              if (tab.label === "Keyboard Shortcuts" || tab.label === "keybindings" || tab.input && tab.input.viewType === "keybindings") {
-                foundGroupCol = group.viewColumn;
-                break;
-              }
-            }
-          }
-          if (foundGroupCol !== null) break;
+        await vscode.commands.executeCommand(focusCmd);
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        let activeGroup = vscode.window.tabGroups.activeTabGroup;
+        let targetCol = activeGroup.viewColumn;
+        if (targetCol === panelViewCol) {
+          await vscode.commands.executeCommand(splitCmd);
+          await new Promise((resolve) => setTimeout(resolve, 100));
+          activeGroup = vscode.window.tabGroups.activeTabGroup;
+          targetCol = activeGroup.viewColumn;
         }
-        if (foundGroupCol !== null) {
-          await focusViewColumn(foundGroupCol);
-          await openAction(foundGroupCol);
-        } else {
-          const otherGroup = allGroups.find((g) => g.viewColumn !== panelViewCol);
-          if (!otherGroup) {
-            await vscode.commands.executeCommand(newGroupCommand);
-            await new Promise((resolve) => setTimeout(resolve, 100));
-            await openAction(vscode.ViewColumn.Active);
-          } else {
-            await focusViewColumn(otherGroup.viewColumn);
-            await openAction(otherGroup.viewColumn);
-          }
-        }
+        await focusViewColumn(targetCol);
+        await openAction(targetCol);
       }
     }
     async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
@@ -4335,6 +4393,15 @@ var require_extension_macros_form = __commonJS({
       }
       const currentKeysLabel = existingTargets.map((t) => `${core.formatToCustomShorthand(t.key)} (${t.key})`).join("  |  ") || "None";
       const currentWhenLabel = (targetToEdit ? targetToEdit.when : existingTargets[0] ? existingTargets[0].when : "editorTextFocus") || "editorTextFocus";
+      const commandBindingsMap = {};
+      for (const cmdId of originalArgs) {
+        const matched = fullBindings.filter((b) => b.command === cmdId);
+        if (matched.length > 0) {
+          commandBindingsMap[cmdId] = matched.map((t) => core.formatToCustomShorthand(t.key)).join(", ");
+        } else {
+          commandBindingsMap[cmdId] = "";
+        }
+      }
       const panelTitle = isEditMode ? `Edit Binding: ${derivedTitle}` : `Assign Key: ${derivedTitle}`;
       const viewType = "ceCommandPickerForm";
       const panel = vscode.window.createWebviewPanel(
@@ -4358,7 +4425,8 @@ var require_extension_macros_form = __commonJS({
         currentWhenLabel,
         sourceToFill ? sourceToFill.key : "",
         originalArgs,
-        checkedOff
+        checkedOff,
+        commandBindingsMap
       );
       panel.onDidChangeViewState((e) => {
         if (panel.active) {
@@ -4493,10 +4561,20 @@ var require_extension_macros_form = __commonJS({
               }
               const updatedKeysLabel = updatedExistingTargets.map((t) => `${core.formatToCustomShorthand(t.key)} (${t.key})`).join("  |  ") || "None";
               const updatedWhenLabel = (targetToEdit ? targetToEdit.when : updatedExistingTargets[0] ? updatedExistingTargets[0].when : "editorTextFocus") || "editorTextFocus";
+              const updatedCommandBindingsMap = {};
+              for (const cmdId of originalArgs) {
+                const matched = fullBindings.filter((b) => b.command === cmdId);
+                if (matched.length > 0) {
+                  updatedCommandBindingsMap[cmdId] = matched.map((t) => core.formatToCustomShorthand(t.key)).join(", ");
+                } else {
+                  updatedCommandBindingsMap[cmdId] = "";
+                }
+              }
               panel.webview.postMessage({
                 type: "saveSuccess",
                 currentKeys: updatedKeysLabel,
-                currentWhen: updatedWhenLabel
+                currentWhen: updatedWhenLabel,
+                commandBindings: updatedCommandBindingsMap
               });
               break;
             }
@@ -4787,6 +4865,15 @@ var require_extension_macros_form = __commonJS({
                 if (!Array.isArray(updatedCheckedOff)) {
                   updatedCheckedOff = [];
                 }
+                const targetCommandBindingsMap = {};
+                for (const cmdId of originalArgs) {
+                  const matched = fullBindings.filter((b) => b.command === cmdId);
+                  if (matched.length > 0) {
+                    targetCommandBindingsMap[cmdId] = matched.map((t) => core.formatToCustomShorthand(t.key)).join(", ");
+                  } else {
+                    targetCommandBindingsMap[cmdId] = "";
+                  }
+                }
                 panel.webview.postMessage({
                   type: "updateItem",
                   commandId: targetCmdId,
@@ -4799,7 +4886,8 @@ var require_extension_macros_form = __commonJS({
                   currentKeys: targetKeysLabel,
                   currentWhen: targetWhenLabel,
                   initialNativeKey: sourceToFill2 ? sourceToFill2.key : "",
-                  checkedOffCommands: updatedCheckedOff
+                  checkedOffCommands: updatedCheckedOff,
+                  commandBindings: targetCommandBindingsMap
                 });
               } catch (e) {
                 vscode.window.showErrorMessage(`Failed to page to command: ${e.message}`);

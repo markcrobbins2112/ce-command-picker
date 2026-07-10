@@ -22,51 +22,48 @@ async function focusViewColumn(column) {
 }
 
 async function handleOpenHelper(targetType, configPath, panelViewCol, newInstance, preferredDirection, openAction) {
-    const allGroups = (vscode.window.tabGroups && vscode.window.tabGroups.all) || [];
+    // 1. Focus the webview's group first so any relative action starts from here
+    await focusViewColumn(panelViewCol);
 
-    let newGroupCommand = 'workbench.action.newGroupRight';
-    if (preferredDirection === 'up') newGroupCommand = 'workbench.action.newGroupAbove';
-    else if (preferredDirection === 'down') newGroupCommand = 'workbench.action.newGroupBelow';
-    else if (preferredDirection === 'left') newGroupCommand = 'workbench.action.newGroupLeft';
+    // Determine focus and split commands
+    let focusCmd = 'workbench.action.focusRightGroup';
+    let splitCmd = 'workbench.action.newGroupRight';
+    if (preferredDirection === 'up') {
+        focusCmd = 'workbench.action.focusAboveGroup';
+        splitCmd = 'workbench.action.newGroupAbove';
+    } else if (preferredDirection === 'down') {
+        focusCmd = 'workbench.action.focusBelowGroup';
+        splitCmd = 'workbench.action.newGroupBelow';
+    } else if (preferredDirection === 'left') {
+        focusCmd = 'workbench.action.focusLeftGroup';
+        splitCmd = 'workbench.action.newGroupLeft';
+    }
 
     if (newInstance) {
-        await vscode.commands.executeCommand(newGroupCommand);
+        // Create a new split in the preferred direction
+        await vscode.commands.executeCommand(splitCmd);
         await new Promise(resolve => setTimeout(resolve, 100));
         await openAction(vscode.ViewColumn.Active);
     } else {
-        let foundGroupCol = null;
-        for (const group of allGroups) {
-            if (group.viewColumn === panelViewCol) continue;
-            for (const tab of group.tabs) {
-                if (targetType === 'json') {
-                    if (tab.input && tab.input.uri && tab.input.uri.fsPath === configPath) {
-                        foundGroupCol = group.viewColumn;
-                        break;
-                    }
-                } else {
-                    if (tab.label === 'Keyboard Shortcuts' || tab.label === 'keybindings' || (tab.input && tab.input.viewType === 'keybindings')) {
-                        foundGroupCol = group.viewColumn;
-                        break;
-                    }
-                }
-            }
-            if (foundGroupCol !== null) break;
+        // Let's try to focus the existing group in that direction
+        await vscode.commands.executeCommand(focusCmd);
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        let activeGroup = vscode.window.tabGroups.activeTabGroup;
+        let targetCol = activeGroup.viewColumn;
+
+        if (targetCol === panelViewCol) {
+            // We didn't change group (there's no group in that direction)
+            // Let's create a new group in that direction!
+            await vscode.commands.executeCommand(splitCmd);
+            await new Promise(resolve => setTimeout(resolve, 100));
+            activeGroup = vscode.window.tabGroups.activeTabGroup;
+            targetCol = activeGroup.viewColumn;
         }
 
-        if (foundGroupCol !== null) {
-            await focusViewColumn(foundGroupCol);
-            await openAction(foundGroupCol);
-        } else {
-            const otherGroup = allGroups.find(g => g.viewColumn !== panelViewCol);
-            if (!otherGroup) {
-                await vscode.commands.executeCommand(newGroupCommand);
-                await new Promise(resolve => setTimeout(resolve, 100));
-                await openAction(vscode.ViewColumn.Active);
-            } else {
-                await focusViewColumn(otherGroup.viewColumn);
-                await openAction(otherGroup.viewColumn);
-            }
-        }
+        // Now open the file in targetCol
+        await focusViewColumn(targetCol);
+        await openAction(targetCol);
     }
 }
 
@@ -140,6 +137,16 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
     const currentKeysLabel = existingTargets.map(t => `${core.formatToCustomShorthand(t.key)} (${t.key})`).join('  |  ') || 'None';
     const currentWhenLabel = (targetToEdit ? targetToEdit.when : (existingTargets[0] ? existingTargets[0].when : 'editorTextFocus')) || 'editorTextFocus';
 
+    const commandBindingsMap = {};
+    for (const cmdId of originalArgs) {
+        const matched = fullBindings.filter(b => b.command === cmdId);
+        if (matched.length > 0) {
+            commandBindingsMap[cmdId] = matched.map(t => core.formatToCustomShorthand(t.key)).join(', ');
+        } else {
+            commandBindingsMap[cmdId] = '';
+        }
+    }
+
     const panelTitle = isEditMode ? `Edit Binding: ${derivedTitle}` : `Assign Key: ${derivedTitle}`;
 
     // Use a stable, static viewType string to avoid polluting service workers and causing controller-change mismatch errors.
@@ -168,7 +175,8 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         currentWhenLabel,
         sourceToFill ? sourceToFill.key : '',
         originalArgs,
-        checkedOff
+        checkedOff,
+        commandBindingsMap
     );
 
     panel.onDidChangeViewState(e => {
@@ -307,10 +315,21 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                     const updatedKeysLabel = updatedExistingTargets.map(t => `${core.formatToCustomShorthand(t.key)} (${t.key})`).join('  |  ') || 'None';
                     const updatedWhenLabel = (targetToEdit ? targetToEdit.when : (updatedExistingTargets[0] ? updatedExistingTargets[0].when : 'editorTextFocus')) || 'editorTextFocus';
 
+                    const updatedCommandBindingsMap = {};
+                    for (const cmdId of originalArgs) {
+                        const matched = fullBindings.filter(b => b.command === cmdId);
+                        if (matched.length > 0) {
+                            updatedCommandBindingsMap[cmdId] = matched.map(t => core.formatToCustomShorthand(t.key)).join(', ');
+                        } else {
+                            updatedCommandBindingsMap[cmdId] = '';
+                        }
+                    }
+
                     panel.webview.postMessage({
                         type: 'saveSuccess',
                         currentKeys: updatedKeysLabel,
-                        currentWhen: updatedWhenLabel
+                        currentWhen: updatedWhenLabel,
+                        commandBindings: updatedCommandBindingsMap
                     });
                     break;
                 }
@@ -636,6 +655,16 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                             updatedCheckedOff = [];
                         }
 
+                        const targetCommandBindingsMap = {};
+                        for (const cmdId of originalArgs) {
+                            const matched = fullBindings.filter(b => b.command === cmdId);
+                            if (matched.length > 0) {
+                                targetCommandBindingsMap[cmdId] = matched.map(t => core.formatToCustomShorthand(t.key)).join(', ');
+                            } else {
+                                targetCommandBindingsMap[cmdId] = '';
+                            }
+                        }
+
                         panel.webview.postMessage({
                             type: 'updateItem',
                             commandId: targetCmdId,
@@ -648,7 +677,8 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                             currentKeys: targetKeysLabel,
                             currentWhen: targetWhenLabel,
                             initialNativeKey: sourceToFill ? sourceToFill.key : '',
-                            checkedOffCommands: updatedCheckedOff
+                            checkedOffCommands: updatedCheckedOff,
+                            commandBindings: targetCommandBindingsMap
                         });
                     } catch (e) {
                         vscode.window.showErrorMessage(`Failed to page to command: ${e.message}`);
