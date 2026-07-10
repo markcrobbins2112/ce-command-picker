@@ -5,7 +5,7 @@ const htmlTemplate = require('./extension-macros-html');
 
 /**
  * Presents a side-by-side adaptive form layout panel.
- * Extracts string segments from existing keyboard shortcuts to populate input fields.
+ * Extracts string segments safely using regular expressions to support literal period keys.
  */
 async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
     const core = require('./extension-core');
@@ -38,9 +38,10 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         initialShorthand = core.formatToCustomShorthand(targetToEdit.key);
         initialWhen = targetToEdit.when || '';
         
-        if (initialShorthand.includes('.')) {
-            const parts = initialShorthand.split('.');
-            initialBaseKey = parts[0]; // ✅ FIXED: Explicitly extract index 0 string token
+        // ✅ FIXED: Use a greedy lookbehind regex instead of .split('.') to safeguard literal period base keys
+        const match = initialShorthand.match(/(.*)\.([wcas]*)$/);
+        if (match) {
+            initialBaseKey = match[1];
         } else {
             initialBaseKey = initialShorthand;
         }
