@@ -5,7 +5,7 @@ const htmlTemplate = require('./extension-macros-html');
 
 /**
  * Presents a side-by-side adaptive form layout panel.
- * Extracts string segments safely using regular expressions to support literal period keys.
+ * Includes explicit string fallback guards to guarantee fields never render as undefined.
  */
 async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
     const core = require('./extension-core');
@@ -30,14 +30,26 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         }
     }
 
+    // ✅ FIXED: Robust fallback computation to derive title if commandItem.label is empty/missing
+    let derivedTitle = commandItem.label;
+    if (!derivedTitle && commandItem.commandId) {
+        derivedTitle = commandItem.commandId
+            .replace(/^[\w-]+\./, '')
+            .replace(/([A-Z])/g, ' $1')
+            .replace(/[_-]/g, ' ');
+        derivedTitle = derivedTitle.charAt(0).toUpperCase() + derivedTitle.slice(1);
+    }
+    if (!derivedTitle) {
+        derivedTitle = 'Unknown Command';
+    }
+
     let initialBaseKey = '';
     let initialShorthand = '';
     let initialWhen = 'editorTextFocus';
 
-    // ✅ FIXED: Safely resolve current values from the active object references
     if (targetToEdit) {
         initialShorthand = core.formatToCustomShorthand(targetToEdit.key);
-        initialWhen = targetToEdit.when || '';
+        initialWhen = targetToEdit.when || 'editorTextFocus';
         
         const match = initialShorthand.match(/(.*)\.([wcas]*)$/);
         if (match) {
@@ -47,11 +59,11 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         }
     }
 
-    const panelTitle = isEditMode ? `Edit Binding: ${commandItem.label}` : `Assign Key: ${commandItem.label}`;
+    const panelTitle = isEditMode ? `Edit Binding: ${derivedTitle}` : `Assign Key: ${derivedTitle}`;
 
     const panel = vscode.window.createWebviewPanel(
         'ceCommandPickerForm',
-        panelTitle, // ✅ FIXED: Passed clean evaluation string token straight into webview creation
+        panelTitle,
         vscode.ViewColumn.Beside,
         {
             enableScripts: true,
@@ -59,7 +71,8 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         }
     );
 
-    panel.webview.html = htmlTemplate.getWebviewContent(commandItem.label, initialBaseKey, initialShorthand, initialWhen);
+    // ✅ FIXED: Pass the verified derivedTitle variable into the HTML builder template parameters
+    panel.webview.html = htmlTemplate.getWebviewContent(derivedTitle, initialBaseKey, initialShorthand, initialWhen);
 
     panel.webview.onDidReceiveMessage(
         async (message) => {

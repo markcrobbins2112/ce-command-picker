@@ -25,7 +25,7 @@ function getWebviewContent(title, baseKey, shorthand, whenClause) {
         clientScriptContent = `console.error("Critical: Form client controller missing", e);`;
     }
 
-    // ✅ FIXED: Stripped all backslashes from the variable interpolation tags
+    // ✅ FIXED: Enforced empty string text blocks on template bindings to avoid literal 'undefined' rendering
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -124,11 +124,11 @@ function getWebviewContent(title, baseKey, shorthand, whenClause) {
     </style>
 </head>
 <body>
-    <h2>Action Target: ${title}</h2>
+    <h2>Action Target: ${title || ''}</h2>
     
     <div class="form-group">
         <label for="baseKey">1. Character Base Key</label>
-        <input type="text" id="baseKey" value="${baseKey}" placeholder="e.g., X, F11, DOWN, ENTER">
+        <input type="text" id="baseKey" value="${baseKey || ''}" placeholder="e.g., X, F11, DOWN, ENTER">
     </div>
 
     <div class="form-group">
@@ -143,12 +143,12 @@ function getWebviewContent(title, baseKey, shorthand, whenClause) {
 
     <div class="form-group">
         <label for="shortcode">3. Synchronized Shortcode Box</label>
-        <input type="text" id="shortcode" value="${shorthand}" placeholder="Watching form matrices...">
+        <input type="text" id="shortcode" value="${shorthand || ''}" placeholder="Watching form matrices...">
     </div>
 
     <div class="form-group">
         <label for="whenClause">4. Context Clause Constraint (When)</label>
-        <input type="text" id="whenClause" value="${whenClause}" placeholder="e.g., editorTextFocus">
+        <input type="text" id="whenClause" value="${whenClause || ''}" placeholder="e.g., editorTextFocus">
     </div>
 
     <div id="statusBox" class="status-box"></div>
