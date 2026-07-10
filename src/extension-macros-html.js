@@ -1139,6 +1139,52 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             whenInput.value = message.when || '';
             isSynchronizing = false;
             triggerValidation(true);
+        } else if (message.type === 'updateItem') {
+            window.CE_INITIAL_STATE = {
+                commandId: message.commandId,
+                chord1Base: message.chord1Base,
+                chord1Flags: message.chord1Flags,
+                chord2Base: message.chord2Base,
+                chord2Flags: message.chord2Flags,
+                whenClause: message.whenClause,
+                currentKeys: message.currentKeys,
+                currentWhen: message.currentWhen,
+                initialNativeKey: message.initialNativeKey
+            };
+            if (message.checkedOffCommands) {
+                window.CE_CHECKED_OFF_COMMANDS = message.checkedOffCommands;
+            }
+
+            const cmdTitleLabel = document.getElementById('cmdTitleLabel');
+            if (cmdTitleLabel) {
+                cmdTitleLabel.textContent = "Command: " + message.title;
+            }
+
+            resetToInitial();
+
+            const lblPageNum = document.getElementById('lblPageNum');
+            if (lblPageNum && window.CE_ORIGINAL_ARGS) {
+                const total = window.CE_ORIGINAL_ARGS.length;
+                const currentIdx = window.CE_ORIGINAL_ARGS.indexOf(message.commandId);
+                lblPageNum.textContent = (currentIdx + 1) + ' of ' + total;
+            }
+
+            updateCheckoffUI();
+
+            const container = document.getElementById('currentKeysContainer');
+            if (container) {
+                container.innerHTML = formatCurrentKeysJS(message.currentKeys || 'None');
+            }
+            if (currentWhenClauseLabel) {
+                currentWhenClauseLabel.textContent = message.currentWhen || 'No context';
+            }
+
+            if (statusBox) {
+                statusBox.style.display = 'none';
+                statusBox.innerHTML = '';
+            }
+
+            setTimeout(focusShorthandIfNoActiveFocus, 50);
         } else if (message.type === 'viewstateChanged') {
             if (message.active) {
                 focusShorthandIfNoActiveFocus();
@@ -1688,7 +1734,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         <div style="font-weight: bold; font-size: 1.1em; margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
             <span style="display: flex; align-items: center; gap: 8px;">
                 <button type="button" class="secondary small" id="btnCopyCommand" title="Copy Command ID" style="padding: 2px 4px; font-size: 0.9em; display: inline-flex; align-items: center; justify-content: center;">📋</button>
-                <span>Command: ` + (title || '') + `</span>
+                <span id="cmdTitleLabel">Command: ` + (title || '') + `</span>
             </span>
             <span id="changedIndicator" style="display: none; background: #e5c07b; color: #1e1e1e; padding: 2px 6px; border-radius: 3px; font-size: 0.8em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Changed</span>
         </div>

@@ -57,6 +57,7 @@ title: TASKS
 ## 💬 Incoming tasks from chat
 [[#^toc-chat|TOC]]
 - [x] Auto-focus fullShorthandInput when tab/webview is focused or first drawn (respecting last-focused element)
+- [x] Eliminate massive redraw when changing webview items by updating state and DOM in-place
 - [x] Support Edit Picker Key for ce-command-picker.show via args matching in keybindings.json
 - [x] Prevent Save button from closing the webview (remains open for editing)
 - [x] Disable < previous item button when at first item

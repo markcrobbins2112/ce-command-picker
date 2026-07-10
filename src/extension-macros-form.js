@@ -100,7 +100,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
     }
 
     let fullBindings = core.loadFullKeybindingsArray();
-    const existingTargets = fullBindings.filter(b => b.command === commandItem.commandId);
+    let existingTargets = fullBindings.filter(b => b.command === commandItem.commandId);
 
     let targetToEdit = null;
     if (isEditMode) {
@@ -575,14 +575,86 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
 
                 case 'pageToCommand':
                     try {
-                        panel.dispose();
                         const targetCmdId = message.commandId;
                         const targetItem = {
                             commandId: targetCmdId,
                             label: targetCmdId.replace(/^[\w-]+\./, '').replace(/([A-Z])/g, ' $1').replace(/[_-]/g, ' '),
                         };
                         targetItem.label = targetItem.label.charAt(0).toUpperCase() + targetItem.label.slice(1);
-                        promptAssignKey(context, targetItem, originalArgs, isEditMode);
+
+                        // Reload and update closure variables in-place
+                        fullBindings = core.loadFullKeybindingsArray();
+                        existingTargets = fullBindings.filter(b => b.command === targetCmdId);
+                        commandItem = targetItem;
+
+                        targetToEdit = null;
+                        if (isEditMode) {
+                            if (existingTargets.length === 1) {
+                                targetToEdit = existingTargets[0];
+                            } else if (existingTargets.length > 1) {
+                                targetToEdit = existingTargets[0];
+                            }
+                        }
+
+                        const derivedTitle = targetItem.label || targetItem.commandId || 'Unknown Command';
+                        const panelTitle = isEditMode ? `Edit Binding: ${derivedTitle}` : `Assign Key: ${derivedTitle}`;
+                        panel.title = panelTitle;
+
+                        let targetChord1Base = '';
+                        let targetChord1Flags = '';
+                        let targetChord2Base = '';
+                        let targetChord2Flags = '';
+                        let targetInitialWhen = 'editorTextFocus';
+
+                        const sourceToFill = targetToEdit || existingTargets[0];
+
+                        if (sourceToFill) {
+                            const fullShorthand = core.formatToCustomShorthand(sourceToFill.key);
+                            targetInitialWhen = sourceToFill.when !== undefined ? sourceToFill.when : '';
+                            
+                            const chords = fullShorthand.trim().split(/\s+/);
+                            if (chords.length >= 1 && chords[0]) {
+                                const match = chords[0].match(/(.*)\.([wcas]*)$/);
+                                if (match) {
+                                    targetChord1Base = match[1];
+                                    targetChord1Flags = match[2].replace(/[^wcas]/g, '');
+                                } else {
+                                    targetChord1Base = chords[0];
+                                }
+                            }
+                            if (chords.length >= 2 && chords[1]) {
+                                const match = chords[1].match(/(.*)\.([wcas]*)$/);
+                                if (match) {
+                                    targetChord2Base = match[1];
+                                    targetChord2Flags = match[2].replace(/[^wcas]/g, '');
+                                } else {
+                                    targetChord2Base = chords[1];
+                                }
+                            }
+                        }
+
+                        const targetKeysLabel = existingTargets.map(t => `${core.formatToCustomShorthand(t.key)} (${t.key})`).join('  |  ') || 'None';
+                        const targetWhenLabel = (targetToEdit ? targetToEdit.when : (existingTargets[0] ? existingTargets[0].when : 'editorTextFocus')) || 'editorTextFocus';
+
+                        let updatedCheckedOff = context.globalState.get('ce-command-picker.checkedOffCommands', []);
+                        if (!Array.isArray(updatedCheckedOff)) {
+                            updatedCheckedOff = [];
+                        }
+
+                        panel.webview.postMessage({
+                            type: 'updateItem',
+                            commandId: targetCmdId,
+                            title: targetItem.label || targetCmdId,
+                            chord1Base: targetChord1Base,
+                            chord1Flags: targetChord1Flags,
+                            chord2Base: targetChord2Base,
+                            chord2Flags: targetChord2Flags,
+                            whenClause: targetInitialWhen,
+                            currentKeys: targetKeysLabel,
+                            currentWhen: targetWhenLabel,
+                            initialNativeKey: sourceToFill ? sourceToFill.key : '',
+                            checkedOffCommands: updatedCheckedOff
+                        });
                     } catch (e) {
                         vscode.window.showErrorMessage(`Failed to page to command: ${e.message}`);
                     }

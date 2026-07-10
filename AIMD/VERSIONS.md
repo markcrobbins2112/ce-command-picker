@@ -41,6 +41,12 @@ title: VERSIONS
 ## 🚀 Stable Releases & Milestones
 [[#^toc-stable|TOC]]
 
+### 🏷️ v1.2.57 (2026-07-10) - In-Place Webview Paging and DOM Update Optimization
+- **Added / Enhanced:**
+  - Implemented real-time in-place webview update message handler (`updateItem`) to eliminate the heavy dispose/re-create webview cycles during pagination.
+  - Refined the backend message routing in `promptAssignKey` to update captured closure state variables on-the-fly and keep save/unbind handlers synchronized with the current active item.
+  - Provided direct client-side updates to title labels, checked-off indicators, validation baselines, and dynamic page counters with zero iframe flickering.
+
 ### 🏷️ v1.2.56 (2026-07-10) - Tab Group Isolation, Stateful Focus Restoration, Boundary Paging, and Dirty Checking Done Handler
 - **Added / Enhanced:**
   - Implemented stateful input focus restoration using active document tracking so that focusing back to the webview retains whichever input was previously focused.

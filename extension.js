@@ -2984,6 +2984,52 @@ var require_extension_macros_html = __commonJS({
             whenInput.value = message.when || '';
             isSynchronizing = false;
             triggerValidation(true);
+        } else if (message.type === 'updateItem') {
+            window.CE_INITIAL_STATE = {
+                commandId: message.commandId,
+                chord1Base: message.chord1Base,
+                chord1Flags: message.chord1Flags,
+                chord2Base: message.chord2Base,
+                chord2Flags: message.chord2Flags,
+                whenClause: message.whenClause,
+                currentKeys: message.currentKeys,
+                currentWhen: message.currentWhen,
+                initialNativeKey: message.initialNativeKey
+            };
+            if (message.checkedOffCommands) {
+                window.CE_CHECKED_OFF_COMMANDS = message.checkedOffCommands;
+            }
+
+            const cmdTitleLabel = document.getElementById('cmdTitleLabel');
+            if (cmdTitleLabel) {
+                cmdTitleLabel.textContent = "Command: " + message.title;
+            }
+
+            resetToInitial();
+
+            const lblPageNum = document.getElementById('lblPageNum');
+            if (lblPageNum && window.CE_ORIGINAL_ARGS) {
+                const total = window.CE_ORIGINAL_ARGS.length;
+                const currentIdx = window.CE_ORIGINAL_ARGS.indexOf(message.commandId);
+                lblPageNum.textContent = (currentIdx + 1) + ' of ' + total;
+            }
+
+            updateCheckoffUI();
+
+            const container = document.getElementById('currentKeysContainer');
+            if (container) {
+                container.innerHTML = formatCurrentKeysJS(message.currentKeys || 'None');
+            }
+            if (currentWhenClauseLabel) {
+                currentWhenClauseLabel.textContent = message.currentWhen || 'No context';
+            }
+
+            if (statusBox) {
+                statusBox.style.display = 'none';
+                statusBox.innerHTML = '';
+            }
+
+            setTimeout(focusShorthandIfNoActiveFocus, 50);
         } else if (message.type === 'viewstateChanged') {
             if (message.active) {
                 focusShorthandIfNoActiveFocus();
@@ -3532,7 +3578,7 @@ var require_extension_macros_html = __commonJS({
         <div style="font-weight: bold; font-size: 1.1em; margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
             <span style="display: flex; align-items: center; gap: 8px;">
                 <button type="button" class="secondary small" id="btnCopyCommand" title="Copy Command ID" style="padding: 2px 4px; font-size: 0.9em; display: inline-flex; align-items: center; justify-content: center;">\u{1F4CB}</button>
-                <span>Command: ` + (title || "") + `</span>
+                <span id="cmdTitleLabel">Command: ` + (title || "") + `</span>
             </span>
             <span id="changedIndicator" style="display: none; background: #e5c07b; color: #1e1e1e; padding: 2px 6px; border-radius: 3px; font-size: 0.8em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Changed</span>
         </div>
@@ -3958,7 +4004,7 @@ var require_extension_macros_form = __commonJS({
         checkedOff = [];
       }
       let fullBindings = core.loadFullKeybindingsArray();
-      const existingTargets = fullBindings.filter((b) => b.command === commandItem.commandId);
+      let existingTargets = fullBindings.filter((b) => b.command === commandItem.commandId);
       let targetToEdit = null;
       if (isEditMode) {
         if (existingTargets.length === 0) {
@@ -4381,14 +4427,75 @@ var require_extension_macros_form = __commonJS({
               break;
             case "pageToCommand":
               try {
-                panel.dispose();
                 const targetCmdId = message.commandId;
                 const targetItem = {
                   commandId: targetCmdId,
                   label: targetCmdId.replace(/^[\w-]+\./, "").replace(/([A-Z])/g, " $1").replace(/[_-]/g, " ")
                 };
                 targetItem.label = targetItem.label.charAt(0).toUpperCase() + targetItem.label.slice(1);
-                promptAssignKey(context, targetItem, originalArgs, isEditMode);
+                fullBindings = core.loadFullKeybindingsArray();
+                existingTargets = fullBindings.filter((b) => b.command === targetCmdId);
+                commandItem = targetItem;
+                targetToEdit = null;
+                if (isEditMode) {
+                  if (existingTargets.length === 1) {
+                    targetToEdit = existingTargets[0];
+                  } else if (existingTargets.length > 1) {
+                    targetToEdit = existingTargets[0];
+                  }
+                }
+                const derivedTitle2 = targetItem.label || targetItem.commandId || "Unknown Command";
+                const panelTitle2 = isEditMode ? `Edit Binding: ${derivedTitle2}` : `Assign Key: ${derivedTitle2}`;
+                panel.title = panelTitle2;
+                let targetChord1Base = "";
+                let targetChord1Flags = "";
+                let targetChord2Base = "";
+                let targetChord2Flags = "";
+                let targetInitialWhen = "editorTextFocus";
+                const sourceToFill2 = targetToEdit || existingTargets[0];
+                if (sourceToFill2) {
+                  const fullShorthand = core.formatToCustomShorthand(sourceToFill2.key);
+                  targetInitialWhen = sourceToFill2.when !== void 0 ? sourceToFill2.when : "";
+                  const chords = fullShorthand.trim().split(/\s+/);
+                  if (chords.length >= 1 && chords[0]) {
+                    const match = chords[0].match(/(.*)\.([wcas]*)$/);
+                    if (match) {
+                      targetChord1Base = match[1];
+                      targetChord1Flags = match[2].replace(/[^wcas]/g, "");
+                    } else {
+                      targetChord1Base = chords[0];
+                    }
+                  }
+                  if (chords.length >= 2 && chords[1]) {
+                    const match = chords[1].match(/(.*)\.([wcas]*)$/);
+                    if (match) {
+                      targetChord2Base = match[1];
+                      targetChord2Flags = match[2].replace(/[^wcas]/g, "");
+                    } else {
+                      targetChord2Base = chords[1];
+                    }
+                  }
+                }
+                const targetKeysLabel = existingTargets.map((t) => `${core.formatToCustomShorthand(t.key)} (${t.key})`).join("  |  ") || "None";
+                const targetWhenLabel = (targetToEdit ? targetToEdit.when : existingTargets[0] ? existingTargets[0].when : "editorTextFocus") || "editorTextFocus";
+                let updatedCheckedOff = context.globalState.get("ce-command-picker.checkedOffCommands", []);
+                if (!Array.isArray(updatedCheckedOff)) {
+                  updatedCheckedOff = [];
+                }
+                panel.webview.postMessage({
+                  type: "updateItem",
+                  commandId: targetCmdId,
+                  title: targetItem.label || targetCmdId,
+                  chord1Base: targetChord1Base,
+                  chord1Flags: targetChord1Flags,
+                  chord2Base: targetChord2Base,
+                  chord2Flags: targetChord2Flags,
+                  whenClause: targetInitialWhen,
+                  currentKeys: targetKeysLabel,
+                  currentWhen: targetWhenLabel,
+                  initialNativeKey: sourceToFill2 ? sourceToFill2.key : "",
+                  checkedOffCommands: updatedCheckedOff
+                });
               } catch (e) {
                 vscode.window.showErrorMessage(`Failed to page to command: ${e.message}`);
               }

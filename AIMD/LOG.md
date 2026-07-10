@@ -50,13 +50,12 @@ title: LOG
 ## 💾 Commit Message
 [[#^toc-commit|TOC]]
 ```text
-build: v1.2.56 - Tab Group Isolation, Stateful Focus Restoration, Boundary Paging, and Dirty Checking Done Handler
+perf: v1.2.57 - In-Place Webview Paging and DOM Update Optimization
 
-- Implemented stateful input focus restoration using active document tracking.
-- Prevented paging wrapping by disabling previous/next buttons at boundaries.
-- Isolated editor tab spawning inside opposite columns using the window tabGroups API.
-- Replaced panel closure on Save with saveSuccess status updates.
-- Added Done button next to Save with dirty-checking warning.
+- Restructured the backend message router to intercept item-switching pagination requests.
+- Replaced panel destruction and recreation with direct event-driven DOM transitions.
+- Synchronized initial state benchmarks and metadata on-the-fly inside the active panel.
+- Eliminated full webview reloading, iframe flicker, and visual redraw cycles.
 ```
 
 ## 📝 Log Entries
@@ -68,6 +67,22 @@ build: v1.2.56 - Tab Group Isolation, Stateful Focus Restoration, Boundary Pagin
   Use the template structure below:
   ...
 -->
+
+### 📅 [2026-07-10T13:10:00Z]
+#### 🎯 Primary Goals & Requirements
+- Eliminate the massive visual redraw and iframe reload when navigating between items in the webview.
+
+#### 🛠️ Completed Changes in this Session
+- **In-Place Webview Updates**: Rewrote the `pageToCommand` handler in the backend to reload and assign closure variables in-place without disposing the panel, and dispatched an `updateItem` message back to the active webview.
+- **Dynamic DOM Refresher**: Implemented an `updateItem` event listener inside the webview that refreshes `window.CE_INITIAL_STATE` variables, resets control validation baselines, updates dynamic page counters, updates checked-off indicator counts, and modifies element labels instantly.
+- **Redraw Elimination**: Mitigated full iframe document refreshes, reducing flickering to zero and ensuring transition latency is completely imperceptible.
+
+#### 🔸 Affected Files
+- `src/extension-macros-form.js`
+- `src/extension-macros-html.js`
+- `AIMD/TASKS.md`
+- `AIMD/LOG.md`
+- `AIMD/VERSIONS.md`
 
 ### 📅 [2026-07-10T13:00:00Z]
 #### 🎯 Primary Goals & Requirements
