@@ -57,6 +57,7 @@ title: TASKS
 ## 💬 Incoming tasks from chat
 [[#^toc-chat|TOC]]
 - [x] Synchronize and complete entire AIMD documentation suite
+- [x] Escape regular expression patterns within Webview template literal (e.g. converting `\+` to `\\+` and `\s` to `\\s` and `\.` to `\\.`) to prevent syntax compilation errors
 - [x] Resolve outstanding binding form bugs:
   - [x] Fix keys filling from source by passing initial native key and escaping window.CE_INITIAL_STATE injection to prevent syntax errors
   - [x] Fix When Clause filling from source

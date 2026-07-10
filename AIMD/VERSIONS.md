@@ -41,6 +41,15 @@ title: VERSIONS
 ## 🚀 Stable Releases & Milestones
 [[#^toc-stable|TOC]]
 
+### 🏷️ v1.2.34 (2026-07-10) - Form & Webview Logic Integration Patch
+- **Added / Enhanced:**
+  - Double-escaped regular expression structures (`\\+`, `\\.`, `\\s`) inside the template-enclosed webview JavaScript to guarantee safe client-side execution without parsing syntax errors.
+  - Implemented exact multi-chord `baseKey` / `baseKey2` extraction with lowercase `'insert'` preservation to prevent unexpected automated test failures.
+  - Full-sync checkboxes and shortcode boxes via multi-event listener handlers (`input`, `change`, `keyup`, `click`).
+- **Fixed / Patched:**
+  - Resolved `Uncaught SyntaxError: Invalid regular expression: /+/g: Nothing to repeat` error within webview sandboxes.
+  - Fixed when-clause population and target assignment mapping.
+
 ### 🏷️ v1.1.0 (2026-07-09) - Webview Panel Optimization Update
 - **Added / Enhanced:**
   - Implemented dynamic viewType timestamp-rotation to cleanly bypass Chromium Webview cache persistence.

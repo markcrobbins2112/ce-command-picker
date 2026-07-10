@@ -1880,9 +1880,9 @@ var require_extension_macros_html = __commonJS({
     function cleanBaseKeyInput(val) {
         if (!val) return '';
         let cleaned = val.toLowerCase()
-            .replace(/(ctrl|alt|shift|win|cmd|meta)+/g, '')
-            .replace(/.[casw]+/g, '')
-            .replace(/+/g, '')
+            .replace(/(ctrl|alt|shift|win|cmd|meta)\\+/g, '')
+            .replace(/\\.[casw]+/g, '')
+            .replace(/\\+/g, '')
             .trim();
         if (cleaned === 'insert' || cleaned === 'ins') {
             return 'insert';
@@ -2147,9 +2147,9 @@ var require_extension_macros_html = __commonJS({
             const flags2Str = message.flags2 || '';
 
             if (shorthandStr) {
-                const chords = shorthandStr.trim().split(/s+/);
+                const chords = shorthandStr.trim().split(/\\s+/);
                 if (chords.length >= 1 && chords[0]) {
-                    const match = chords[0].match(/(.*).([wcas]*)$/);
+                    const match = chords[0].match(/(.*)\\.([wcas]*)$/);
                     if (match) {
                         b1 = match[1];
                         f1 = match[2];
@@ -2159,7 +2159,7 @@ var require_extension_macros_html = __commonJS({
                     }
                 }
                 if (chords.length >= 2 && chords[1]) {
-                    const match = chords[1].match(/(.*).([wcas]*)$/);
+                    const match = chords[1].match(/(.*)\\.([wcas]*)$/);
                     if (match) {
                         b2 = match[1];
                         f2 = match[2];
