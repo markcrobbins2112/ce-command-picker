@@ -4,7 +4,15 @@
  * Returns lightweight HTML DOM structures using embedded script logic variables.
  * Automatically mirrors the theme's colors natively using CSS Workbench properties.
  */
-function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base, chord2Flags, whenClause, currentKeys, currentWhen) {
+function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base, chord2Flags, whenClause, currentKeys, currentWhen, initialNativeKey) {
+    const escapeJS = (str) => {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/\\/g, '\\\\')
+            .replace(/"/g, '\\"')
+            .replace(/\r/g, '\\r')
+            .replace(/\n/g, '\\n');
+    };
     // Isolated client browser synchronization controller logic string block
     const webviewJS = `
     const vscode = acquireVsCodeApi();
@@ -230,12 +238,22 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     }
 
     baseInput1.addEventListener('input', syncFromUIForm1);
-    Object.values(checkboxes1).forEach(cb => cb.addEventListener('change', syncFromUIForm1));
+    Object.values(checkboxes1).forEach(cb => {
+        cb.addEventListener('change', syncFromUIForm1);
+        cb.addEventListener('click', syncFromUIForm1);
+    });
     shortcodeInput1.addEventListener('input', syncFromShortcode1);
+    shortcodeInput1.addEventListener('change', syncFromShortcode1);
+    shortcodeInput1.addEventListener('keyup', syncFromShortcode1);
 
     baseInput2.addEventListener('input', syncFromUIForm2);
-    Object.values(checkboxes2).forEach(cb => cb.addEventListener('change', syncFromUIForm2));
+    Object.values(checkboxes2).forEach(cb => {
+        cb.addEventListener('change', syncFromUIForm2);
+        cb.addEventListener('click', syncFromUIForm2);
+    });
     shortcodeInput2.addEventListener('input', syncFromShortcode2);
+    shortcodeInput2.addEventListener('change', syncFromShortcode2);
+    shortcodeInput2.addEventListener('keyup', syncFromShortcode2);
 
     btnClear1.addEventListener('click', () => {
         isSynchronizing = true;
@@ -370,11 +388,19 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     });
 
     btnEditJson.addEventListener('click', () => {
-        vscode.postMessage({ command: 'editJson' });
+        vscode.postMessage({
+            command: 'editJson',
+            nativeKey: lastValidatedNativeKey,
+            when: whenInput.value
+        });
     });
 
     btnUnbind.addEventListener('click', () => {
-        vscode.postMessage({ command: 'unbind' });
+        vscode.postMessage({
+            command: 'unbind',
+            nativeKey: lastValidatedNativeKey,
+            when: whenInput.value
+        });
     });
 
     btnCopyBinding.addEventListener('click', () => {
@@ -415,6 +441,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         if (currentKeysLabel) currentKeysLabel.textContent = window.CE_INITIAL_STATE.currentKeys || 'None';
         if (currentWhenClauseLabel) currentWhenClauseLabel.textContent = window.CE_INITIAL_STATE.currentWhen || 'No context';
         
+        lastValidatedNativeKey = window.CE_INITIAL_STATE.initialNativeKey || '';
         isSynchronizing = false;
         triggerValidation();
     }
@@ -576,14 +603,15 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
 
     <script>
         window.CE_INITIAL_STATE = {
-            commandId: "` + (commandId || '') + `",
-            chord1Base: "` + (chord1Base || '') + `",
-            chord1Flags: "` + (chord1Flags || '') + `",
-            chord2Base: "` + (chord2Base || '') + `",
-            chord2Flags: "` + (chord2Flags || '') + `",
-            whenClause: "` + (whenClause !== undefined ? whenClause : '') + `",
-            currentKeys: "` + (currentKeys || '') + `",
-            currentWhen: "` + (currentWhen || '') + `"
+            commandId: "` + escapeJS(commandId) + `",
+            chord1Base: "` + escapeJS(chord1Base) + `",
+            chord1Flags: "` + escapeJS(chord1Flags) + `",
+            chord2Base: "` + escapeJS(chord2Base) + `",
+            chord2Flags: "` + escapeJS(chord2Flags) + `",
+            whenClause: "` + escapeJS(whenClause) + `",
+            currentKeys: "` + escapeJS(currentKeys) + `",
+            currentWhen: "` + escapeJS(currentWhen) + `",
+            initialNativeKey: "` + escapeJS(initialNativeKey) + `"
         };
         ` + webviewJS + `
     </script>

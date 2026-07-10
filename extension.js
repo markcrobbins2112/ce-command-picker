@@ -1829,7 +1829,11 @@ var require_extension_core = __commonJS({
 // src/extension-macros-html.js
 var require_extension_macros_html = __commonJS({
   "src/extension-macros-html.js"(exports2, module2) {
-    function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base, chord2Flags, whenClause, currentKeys, currentWhen) {
+    function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base, chord2Flags, whenClause, currentKeys, currentWhen, initialNativeKey) {
+      const escapeJS = (str) => {
+        if (str === null || str === void 0) return "";
+        return String(str).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\r/g, "\\r").replace(/\n/g, "\\n");
+      };
       const webviewJS = `
     const vscode = acquireVsCodeApi();
 
@@ -2054,12 +2058,22 @@ var require_extension_macros_html = __commonJS({
     }
 
     baseInput1.addEventListener('input', syncFromUIForm1);
-    Object.values(checkboxes1).forEach(cb => cb.addEventListener('change', syncFromUIForm1));
+    Object.values(checkboxes1).forEach(cb => {
+        cb.addEventListener('change', syncFromUIForm1);
+        cb.addEventListener('click', syncFromUIForm1);
+    });
     shortcodeInput1.addEventListener('input', syncFromShortcode1);
+    shortcodeInput1.addEventListener('change', syncFromShortcode1);
+    shortcodeInput1.addEventListener('keyup', syncFromShortcode1);
 
     baseInput2.addEventListener('input', syncFromUIForm2);
-    Object.values(checkboxes2).forEach(cb => cb.addEventListener('change', syncFromUIForm2));
+    Object.values(checkboxes2).forEach(cb => {
+        cb.addEventListener('change', syncFromUIForm2);
+        cb.addEventListener('click', syncFromUIForm2);
+    });
     shortcodeInput2.addEventListener('input', syncFromShortcode2);
+    shortcodeInput2.addEventListener('change', syncFromShortcode2);
+    shortcodeInput2.addEventListener('keyup', syncFromShortcode2);
 
     btnClear1.addEventListener('click', () => {
         isSynchronizing = true;
@@ -2194,11 +2208,19 @@ var require_extension_macros_html = __commonJS({
     });
 
     btnEditJson.addEventListener('click', () => {
-        vscode.postMessage({ command: 'editJson' });
+        vscode.postMessage({
+            command: 'editJson',
+            nativeKey: lastValidatedNativeKey,
+            when: whenInput.value
+        });
     });
 
     btnUnbind.addEventListener('click', () => {
-        vscode.postMessage({ command: 'unbind' });
+        vscode.postMessage({
+            command: 'unbind',
+            nativeKey: lastValidatedNativeKey,
+            when: whenInput.value
+        });
     });
 
     btnCopyBinding.addEventListener('click', () => {
@@ -2239,6 +2261,7 @@ var require_extension_macros_html = __commonJS({
         if (currentKeysLabel) currentKeysLabel.textContent = window.CE_INITIAL_STATE.currentKeys || 'None';
         if (currentWhenClauseLabel) currentWhenClauseLabel.textContent = window.CE_INITIAL_STATE.currentWhen || 'No context';
         
+        lastValidatedNativeKey = window.CE_INITIAL_STATE.initialNativeKey || '';
         isSynchronizing = false;
         triggerValidation();
     }
@@ -2399,14 +2422,15 @@ var require_extension_macros_html = __commonJS({
 
     <script>
         window.CE_INITIAL_STATE = {
-            commandId: "` + (commandId || "") + `",
-            chord1Base: "` + (chord1Base || "") + `",
-            chord1Flags: "` + (chord1Flags || "") + `",
-            chord2Base: "` + (chord2Base || "") + `",
-            chord2Flags: "` + (chord2Flags || "") + `",
-            whenClause: "` + (whenClause !== void 0 ? whenClause : "") + `",
-            currentKeys: "` + (currentKeys || "") + `",
-            currentWhen: "` + (currentWhen || "") + `"
+            commandId: "` + escapeJS(commandId) + `",
+            chord1Base: "` + escapeJS(chord1Base) + `",
+            chord1Flags: "` + escapeJS(chord1Flags) + `",
+            chord2Base: "` + escapeJS(chord2Base) + `",
+            chord2Flags: "` + escapeJS(chord2Flags) + `",
+            whenClause: "` + escapeJS(whenClause) + `",
+            currentKeys: "` + escapeJS(currentKeys) + `",
+            currentWhen: "` + escapeJS(currentWhen) + `",
+            initialNativeKey: "` + escapeJS(initialNativeKey) + `"
         };
         ` + webviewJS + `
     </script>
@@ -2584,7 +2608,8 @@ var require_extension_macros_form = __commonJS({
         chord2Flags,
         initialWhen,
         currentKeysLabel,
-        currentWhenLabel
+        currentWhenLabel,
+        sourceToFill ? sourceToFill.key : ""
       );
       panel.webview.onDidReceiveMessage(
         async (message) => {
@@ -2652,6 +2677,8 @@ var require_extension_macros_form = __commonJS({
             case "editJson":
               try {
                 const currentTarget = targetToEdit || (existingTargets.length > 0 ? existingTargets[0] : null);
+                const checkKey = message.nativeKey || (currentTarget ? currentTarget.key : "");
+                const checkWhen = message.when !== void 0 ? message.when.trim() : currentTarget ? currentTarget.when || "" : "";
                 const configPath = core.getKeybindingsFilePath();
                 if (!fs.existsSync(configPath)) {
                   vscode.window.showWarningMessage("keybindings.json file does not exist.");
@@ -2660,7 +2687,7 @@ var require_extension_macros_form = __commonJS({
                 const fileContent = fs.readFileSync(configPath, "utf8");
                 const rootNode = jsonc.parseTree(fileContent);
                 let bestMatchNode = null;
-                if (currentTarget && rootNode && rootNode.children) {
+                if (rootNode && rootNode.children) {
                   rootNode.children.forEach((itemNode) => {
                     if (itemNode.type === "object" && itemNode.children) {
                       let currentCmd = "";
@@ -2681,19 +2708,40 @@ var require_extension_macros_form = __commonJS({
                           }
                         }
                       });
-                      if (currentCmd === currentTarget.command) {
+                      if (currentCmd === commandItem.commandId) {
                         const normCheck = currentKey.replace(/\s+/g, "").toLowerCase();
-                        const normTarget = currentTarget.key.replace(/\s+/g, "").toLowerCase();
+                        const normTarget = checkKey.replace(/\s+/g, "").toLowerCase();
                         if (normCheck === normTarget) {
-                          const targetWhen = currentTarget.when || "";
-                          const checkWhen = currentWhen || "";
-                          if (targetWhen === checkWhen) {
+                          const targetWhen = checkWhen;
+                          const actualWhen = (currentWhen || "").trim();
+                          if (targetWhen === actualWhen) {
                             bestMatchNode = commandNode || itemNode;
                           }
                         }
                       }
                     }
                   });
+                  if (!bestMatchNode) {
+                    rootNode.children.forEach((itemNode) => {
+                      if (itemNode.type === "object" && itemNode.children) {
+                        let currentCmd = "";
+                        let commandNode = null;
+                        itemNode.children.forEach((propertyNode) => {
+                          if (propertyNode.type === "property" && propertyNode.children && propertyNode.children.length === 2) {
+                            const keyName = propertyNode.children[0].value;
+                            const valueNode = propertyNode.children[1];
+                            if (keyName === "command") {
+                              currentCmd = valueNode.value;
+                              commandNode = valueNode;
+                            }
+                          }
+                        });
+                        if (currentCmd === commandItem.commandId) {
+                          bestMatchNode = commandNode || itemNode;
+                        }
+                      }
+                    });
+                  }
                 }
                 const doc = await vscode.workspace.openTextDocument(configPath);
                 const editor = await vscode.window.showTextDocument(doc);
@@ -2711,19 +2759,26 @@ var require_extension_macros_form = __commonJS({
               }
               break;
             case "unbind":
-              const targetToRemove = targetToEdit || (existingTargets.length > 0 ? existingTargets[0] : null);
-              if (targetToRemove) {
+              const currentTargetUnbind = targetToEdit || (existingTargets.length > 0 ? existingTargets[0] : null);
+              const unbindKey = message.nativeKey || (currentTargetUnbind ? currentTargetUnbind.key : "");
+              const unbindWhen = message.when !== void 0 ? message.when.trim() : currentTargetUnbind ? currentTargetUnbind.when || "" : "";
+              if (unbindKey) {
                 let bindingsList = core.loadFullKeybindingsArray();
+                const initialLength = bindingsList.length;
                 bindingsList = bindingsList.filter((b) => {
                   const normB = b.key.replace(/\s+/g, "").toLowerCase();
-                  const normTarget = targetToRemove.key.replace(/\s+/g, "").toLowerCase();
+                  const normTarget = unbindKey.replace(/\s+/g, "").toLowerCase();
                   const matchesKey = normB === normTarget;
-                  const matchesCmd = b.command === targetToRemove.command;
-                  const matchesWhen = (b.when || "") === (targetToRemove.when || "");
+                  const matchesCmd = b.command === commandItem.commandId;
+                  const matchesWhen = (b.when || "") === (unbindWhen || "");
                   return !(matchesKey && matchesCmd && matchesWhen);
                 });
-                if (core.saveKeybindingsArray(bindingsList)) {
-                  vscode.window.showInformationMessage(`Successfully removed keybinding mapping for: ${commandItem.commandId}`);
+                if (bindingsList.length < initialLength) {
+                  if (core.saveKeybindingsArray(bindingsList)) {
+                    vscode.window.showInformationMessage(`Successfully removed keybinding mapping for: ${commandItem.commandId}`);
+                  }
+                } else {
+                  vscode.window.showWarningMessage("No matching keybinding found to unbind.");
                 }
               } else {
                 vscode.window.showWarningMessage("No existing keybinding found to unbind.");
@@ -3014,7 +3069,7 @@ var require_extension_ui = __commonJS({
         { label: "Copy Bindings", detail: "Copy full system JSON config structures", actionKey: "COPY_BIND" },
         { label: "Assign Key", detail: "Write a newly structured key map parameter", actionKey: "ASSIGN_KEY" },
         { label: "Edit Binding", detail: "Modify existing parameters matching this action ID", actionKey: "EDIT_BINDING" },
-        { label: "Goto Binding UI", detail: "Configure keybindings using the visual webview form", actionKey: "GOTO_BINDING_UI" },
+        { label: "Goto Binding UI", detail: "Open native Keyboard Shortcuts editor at this command", actionKey: "GOTO_BINDING_UI" },
         { label: "Remove Key", detail: "Selectively purge structural mappings", actionKey: "REMOVE_KEY" },
         { label: "Goto Binding JSON", detail: "Locate structural code array within standard settings files", actionKey: "GOTO_JSON" }
       ];
@@ -3051,8 +3106,7 @@ var require_extension_ui = __commonJS({
             formMacro.promptAssignKey(context, commandItem, originalArgs, true);
             break;
           case "GOTO_BINDING_UI": {
-            const hasExisting = core.loadFullKeybindingsArray().some((b) => b.command === commandItem.commandId);
-            formMacro.promptAssignKey(context, commandItem, originalArgs, hasExisting);
+            await vscode.commands.executeCommand("workbench.action.openGlobalKeybindings", commandItem.commandId);
             break;
           }
           case "REMOVE_KEY":

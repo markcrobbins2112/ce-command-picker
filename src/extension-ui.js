@@ -93,7 +93,7 @@ function showSecondaryActionMenu(context, commandItem, originalArgs) {
         { label: 'Copy Bindings',      detail: 'Copy full system JSON config structures', actionKey: 'COPY_BIND' },
         { label: 'Assign Key',         detail: 'Write a newly structured key map parameter', actionKey: 'ASSIGN_KEY' },
         { label: 'Edit Binding',       detail: 'Modify existing parameters matching this action ID', actionKey: 'EDIT_BINDING' },
-        { label: 'Goto Binding UI',    detail: 'Configure keybindings using the visual webview form', actionKey: 'GOTO_BINDING_UI' },
+        { label: 'Goto Binding UI',    detail: 'Open native Keyboard Shortcuts editor at this command', actionKey: 'GOTO_BINDING_UI' },
         { label: 'Remove Key',         detail: 'Selectively purge structural mappings', actionKey: 'REMOVE_KEY' },
         { label: 'Goto Binding JSON',  detail: 'Locate structural code array within standard settings files', actionKey: 'GOTO_JSON' }
     ];
@@ -134,8 +134,7 @@ function showSecondaryActionMenu(context, commandItem, originalArgs) {
                 formMacro.promptAssignKey(context, commandItem, originalArgs, true);
                 break;
             case 'GOTO_BINDING_UI': {
-                const hasExisting = core.loadFullKeybindingsArray().some(b => b.command === commandItem.commandId);
-                formMacro.promptAssignKey(context, commandItem, originalArgs, hasExisting);
+                await vscode.commands.executeCommand('workbench.action.openGlobalKeybindings', commandItem.commandId);
                 break;
             }
             case 'REMOVE_KEY':

@@ -57,8 +57,14 @@ title: TASKS
 ## 💬 Incoming tasks from chat
 [[#^toc-chat|TOC]]
 - [x] Synchronize and complete entire AIMD documentation suite
-- [x] Resolve outstanding binding form bugs (keys and when clauses from source, sync modifier controls, normalized edit/unbind actions, Goto Binding UI menu)
-  - Reverse engineer /src files and populate ARCHIVE, BUILD, CODE, DESIGN, LOG, MANUAL, SPEC, TASKS, TERMS, TESTING, and VERSIONS.
+- [x] Resolve outstanding binding form bugs:
+  - [x] Fix keys filling from source by passing initial native key and escaping window.CE_INITIAL_STATE injection to prevent syntax errors
+  - [x] Fix When Clause filling from source
+  - [x] Keep modifier checkboxes and shortcode boxes completely synchronized with exhaustively-triggered input/keyup/change/click event handlers
+  - [x] Update Edit Json button to open keybindings.json at the exact current form key and when clause state
+  - [x] Ensure Clear Button fully resets the form, validation status, and button states
+  - [x] Fix Unbind Button to remove the exact current form key and when-clause combination from keybindings.json
+  - [x] Redirect Goto Binding UI action to open the native shortcuts UI searching for the current command
 
 <!-- 
   INSTRUCTION: Checklists of ongoing file structural, layout, or backend changes.

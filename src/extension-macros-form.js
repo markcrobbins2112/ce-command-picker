@@ -95,7 +95,8 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         chord2Flags,
         initialWhen,
         currentKeysLabel,
-        currentWhenLabel
+        currentWhenLabel,
+        sourceToFill ? sourceToFill.key : ''
     );
 
     panel.webview.onDidReceiveMessage(
@@ -173,6 +174,9 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                 case 'editJson':
                     try {
                         const currentTarget = targetToEdit || (existingTargets.length > 0 ? existingTargets[0] : null);
+                        const checkKey = message.nativeKey || (currentTarget ? currentTarget.key : '');
+                        const checkWhen = message.when !== undefined ? message.when.trim() : (currentTarget ? (currentTarget.when || '') : '');
+                        
                         const configPath = core.getKeybindingsFilePath();
                         if (!fs.existsSync(configPath)) {
                             vscode.window.showWarningMessage('keybindings.json file does not exist.');
@@ -183,7 +187,8 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                         const rootNode = jsonc.parseTree(fileContent);
                         
                         let bestMatchNode = null;
-                        if (currentTarget && rootNode && rootNode.children) {
+                        if (rootNode && rootNode.children) {
+                            // First attempt: try to match command, key, and when clause
                             rootNode.children.forEach(itemNode => {
                                 if (itemNode.type === 'object' && itemNode.children) {
                                     let currentCmd = '';
@@ -207,19 +212,45 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                                         }
                                     });
 
-                                    if (currentCmd === currentTarget.command) {
+                                    if (currentCmd === commandItem.commandId) {
                                         const normCheck = currentKey.replace(/\s+/g, '').toLowerCase();
-                                        const normTarget = currentTarget.key.replace(/\s+/g, '').toLowerCase();
+                                        const normTarget = checkKey.replace(/\s+/g, '').toLowerCase();
                                         if (normCheck === normTarget) {
-                                            const targetWhen = currentTarget.when || '';
-                                            const checkWhen = currentWhen || '';
-                                            if (targetWhen === checkWhen) {
+                                            const targetWhen = checkWhen;
+                                            const actualWhen = (currentWhen || '').trim();
+                                            if (targetWhen === actualWhen) {
                                                 bestMatchNode = commandNode || itemNode;
                                             }
                                         }
                                     }
                                 }
                             });
+
+                            // Second attempt fallback: if no key matched, match just the command
+                            if (!bestMatchNode) {
+                                rootNode.children.forEach(itemNode => {
+                                    if (itemNode.type === 'object' && itemNode.children) {
+                                        let currentCmd = '';
+                                        let commandNode = null;
+
+                                        itemNode.children.forEach(propertyNode => {
+                                            if (propertyNode.type === 'property' && propertyNode.children && propertyNode.children.length === 2) {
+                                                const keyName = propertyNode.children[0].value;
+                                                const valueNode = propertyNode.children[1];
+
+                                                if (keyName === 'command') {
+                                                    currentCmd = valueNode.value;
+                                                    commandNode = valueNode;
+                                                }
+                                            }
+                                        });
+
+                                        if (currentCmd === commandItem.commandId) {
+                                            bestMatchNode = commandNode || itemNode;
+                                        }
+                                    }
+                                });
+                            }
                         }
 
                         const doc = await vscode.workspace.openTextDocument(configPath);
@@ -240,19 +271,27 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                     break;
 
                 case 'unbind':
-                    const targetToRemove = targetToEdit || (existingTargets.length > 0 ? existingTargets[0] : null);
-                    if (targetToRemove) {
+                    const currentTargetUnbind = targetToEdit || (existingTargets.length > 0 ? existingTargets[0] : null);
+                    const unbindKey = message.nativeKey || (currentTargetUnbind ? currentTargetUnbind.key : '');
+                    const unbindWhen = message.when !== undefined ? message.when.trim() : (currentTargetUnbind ? (currentTargetUnbind.when || '') : '');
+                    
+                    if (unbindKey) {
                         let bindingsList = core.loadFullKeybindingsArray();
+                        const initialLength = bindingsList.length;
                         bindingsList = bindingsList.filter(b => {
                             const normB = b.key.replace(/\s+/g, '').toLowerCase();
-                            const normTarget = targetToRemove.key.replace(/\s+/g, '').toLowerCase();
+                            const normTarget = unbindKey.replace(/\s+/g, '').toLowerCase();
                             const matchesKey = normB === normTarget;
-                            const matchesCmd = b.command === targetToRemove.command;
-                            const matchesWhen = (b.when || '') === (targetToRemove.when || '');
+                            const matchesCmd = b.command === commandItem.commandId;
+                            const matchesWhen = (b.when || '') === (unbindWhen || '');
                             return !(matchesKey && matchesCmd && matchesWhen);
                         });
-                        if (core.saveKeybindingsArray(bindingsList)) {
-                            vscode.window.showInformationMessage(`Successfully removed keybinding mapping for: ${commandItem.commandId}`);
+                        if (bindingsList.length < initialLength) {
+                            if (core.saveKeybindingsArray(bindingsList)) {
+                                vscode.window.showInformationMessage(`Successfully removed keybinding mapping for: ${commandItem.commandId}`);
+                            }
+                        } else {
+                            vscode.window.showWarningMessage('No matching keybinding found to unbind.');
                         }
                     } else {
                         vscode.window.showWarningMessage('No existing keybinding found to unbind.');
