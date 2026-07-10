@@ -50,13 +50,13 @@ title: LOG
 ## 💾 Commit Message
 [[#^toc-commit|TOC]]
 ```text
-build: v1.2.55 - Dual-Mode Search Navigation, Double-Escaped Regex Repair, and Defensive Focus
+build: v1.2.56 - Tab Group Isolation, Stateful Focus Restoration, Boundary Paging, and Dirty Checking Done Handler
 
-- Implemented search-based checkoff navigation for <<[], []>>, <<[x], and [x]>> paging buttons.
-- Added simple < and > previous/next item buttons.
-- Fully automated dynamic paging button enable/disable states based on unchecked/checked item availability.
-- Repaired chord parsing base key extraction by correcting double-escaped backend regexes in front-end.
-- Added smart defensive fullShorthandInput focus listener that ignores other active input elements.
+- Implemented stateful input focus restoration using active document tracking.
+- Prevented paging wrapping by disabling previous/next buttons at boundaries.
+- Isolated editor tab spawning inside opposite columns using the window tabGroups API.
+- Replaced panel closure on Save with saveSuccess status updates.
+- Added Done button next to Save with dirty-checking warning.
 ```
 
 ## 📝 Log Entries
@@ -68,6 +68,28 @@ build: v1.2.55 - Dual-Mode Search Navigation, Double-Escaped Regex Repair, and D
   Use the template structure below:
   ...
 -->
+
+### 📅 [2026-07-10T13:00:00Z]
+#### 🎯 Primary Goals & Requirements
+- Set webview focus to `fullShorthandInput` when tab or webview is focused/drawn, but preserve/restore focus if another element inside the webview was last focused.
+- Ensure 'Save' does not close the webview (allows continuous editing).
+- Update dynamic paging button boundaries: disable `< previous` at first item and `> next` at last item, and prevent wrapping.
+- Force '+' button and Current/New buttons to manage VS Code tab groups correctly, ensuring no new instance is ever opened in the webview's tab group.
+- Implement a 'Done' button next to Save to close the tab, warning if there are unsaved modifications.
+
+#### 🛠️ Completed Changes in this Session
+- **Focus Restoration Engine**: Implemented a stateful focus tracker (`lastFocusedElement` via `focusin`) and updated `focusShorthandIfNoActiveFocus()` to restore focus to whichever input or control was last active before focus was lost.
+- **Paging Button Boundary & Wrap Prevention**: Overrode `< previous` and `> next` click handlers to prevent circular modulo wrap-around, and configured boundary checks so they are disabled at indexes `0` and `total - 1` respectively.
+- **Save State Retention**: Upgraded submission actions to dispatch `saveSuccess` to the webview, updating initial comparison states client-side so the webview remains open without closing.
+- **Tab Group Isolation**: Created `focusOrCreateViewColumn` helper using `vscode.window.tabGroups` to focus or create an instance on the opposite side of the active editor, ensuring no secondary helper tab is ever spawned in the webview's column.
+- **Unsaved Warning & Done Action**: Added a 'Done' action button which verifies if the binding state is modified using client-side dirty checking (`hasBindingChanged()`), displaying a warning message in VS Code before closing the tab.
+
+#### 🔸 Affected Files
+- `src/extension-macros-form.js`
+- `src/extension-macros-html.js`
+- `AIMD/TASKS.md`
+- `AIMD/LOG.md`
+- `AIMD/VERSIONS.md`
 
 ### 📅 [2026-07-10T12:00:00Z]
 #### 🎯 Primary Goals & Requirements

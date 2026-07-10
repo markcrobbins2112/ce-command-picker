@@ -41,6 +41,14 @@ title: VERSIONS
 ## 🚀 Stable Releases & Milestones
 [[#^toc-stable|TOC]]
 
+### 🏷️ v1.2.56 (2026-07-10) - Tab Group Isolation, Stateful Focus Restoration, Boundary Paging, and Dirty Checking Done Handler
+- **Added / Enhanced:**
+  - Implemented stateful input focus restoration using active document tracking so that focusing back to the webview retains whichever input was previously focused.
+  - Isolated editor tab spawning inside opposite columns using the window tabGroups API to prevent any helper tab from ever opening in the webview's column.
+  - Replaced panel closure on Save with saveSuccess status updates to allow continuous editing.
+  - Added a Done button next to Save that closes the tab, with a dirty-checking warning in VS Code if the form has unsaved modifications.
+  - Updated `< previous` and `> next` paging buttons to disable at boundaries (first and last item) and prevented wrap-around behavior.
+
 ### 🏷️ v1.2.55 (2026-07-10) - Dual-Mode Search Navigation, Double-Escaped Regex Repair, and Defensive Focus
 - **Added / Enhanced:**
   - Implemented search-based checkoff navigation for the `<<[]` (unchecked backward), `[]>>` (unchecked forward), `<<[x]` (checked backward), and `[x]>>` (checked forward) paging buttons.

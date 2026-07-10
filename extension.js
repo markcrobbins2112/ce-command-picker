@@ -1938,6 +1938,7 @@ var require_extension_macros_html = __commonJS({
     const btnClone = document.getElementById('btnClone'); // Unbind
     const btnSaveClone = document.getElementById('btnSaveClone'); // Add
     const btnSubmit = document.getElementById('btnSubmit'); // Save
+    const btnDone = document.getElementById('btnDone'); // Done
 
     const btnClear1 = document.getElementById('btnClear1');
     const btnClear2 = document.getElementById('btnClear2');
@@ -2566,8 +2567,8 @@ var require_extension_macros_html = __commonJS({
         if (btnPageFirst) btnPageFirst.disabled = (currentIdx === 0);
         if (btnPageLast) btnPageLast.disabled = (currentIdx === total - 1);
 
-        if (btnPagePrev) btnPagePrev.disabled = false;
-        if (btnPageNext) btnPageNext.disabled = false;
+        if (btnPagePrev) btnPagePrev.disabled = (currentIdx === 0);
+        if (btnPageNext) btnPageNext.disabled = (currentIdx === total - 1);
 
         const nextUncheckedForward = findNextUnchecked(currentIdx, 1);
         if (btnPageNextNoCheckoff) btnPageNextNoCheckoff.disabled = (nextUncheckedForward === -1);
@@ -2680,11 +2681,15 @@ var require_extension_macros_html = __commonJS({
         });
         
         if (btnPagePrev) btnPagePrev.addEventListener('click', () => {
-            pageTo((currentIdx - 1 + total) % total);
+            if (currentIdx > 0) {
+                pageTo(currentIdx - 1);
+            }
         });
 
         if (btnPageNext) btnPageNext.addEventListener('click', () => {
-            pageTo((currentIdx + 1) % total);
+            if (currentIdx < total - 1) {
+                pageTo(currentIdx + 1);
+            }
         });
 
         if (btnPageNextNoCheckoff) btnPageNextNoCheckoff.addEventListener('click', () => {
@@ -2946,6 +2951,20 @@ var require_extension_macros_html = __commonJS({
                 container.innerHTML = formatCurrentKeysJS(message.currentKeys || 'None');
             }
             if (currentWhenClauseLabel) currentWhenClauseLabel.textContent = message.currentWhen;
+        } else if (message.type === 'saveSuccess') {
+            if (window.CE_INITIAL_STATE) {
+                window.CE_INITIAL_STATE.chord1Base = baseInput1.value;
+                window.CE_INITIAL_STATE.chord1Flags = shortcodeInput1.value;
+                window.CE_INITIAL_STATE.chord2Base = baseInput2.value;
+                window.CE_INITIAL_STATE.chord2Flags = shortcodeInput2.value;
+                window.CE_INITIAL_STATE.whenClause = whenInput.value;
+            }
+            const container = document.getElementById('currentKeysContainer');
+            if (container) {
+                container.innerHTML = formatCurrentKeysJS(message.currentKeys || 'None');
+            }
+            if (currentWhenClauseLabel) currentWhenClauseLabel.textContent = message.currentWhen;
+            triggerValidation(true);
         } else if (message.type === 'pasteBindingData') {
             isSynchronizing = true;
             baseInput1.value = message.chord1Base || '';
@@ -3017,6 +3036,15 @@ var require_extension_macros_html = __commonJS({
     btnCancel.addEventListener('click', () => {
         vscode.postMessage({ command: 'cancel' });
     });
+
+    if (btnDone) {
+        btnDone.addEventListener('click', () => {
+            vscode.postMessage({
+                command: 'done',
+                modified: hasBindingChanged()
+            });
+        });
+    }
 
     // Row 1 (Current) Action Handlers
     btnEditJson.addEventListener('click', () => {
@@ -3365,12 +3393,28 @@ var require_extension_macros_html = __commonJS({
         }
     });
 
+    let lastFocusedElement = null;
+    document.addEventListener('focusin', (e) => {
+        if (e.target && e.target.tagName && e.target !== document.body) {
+            lastFocusedElement = e.target;
+        }
+    });
+
     function focusShorthandIfNoActiveFocus() {
         if (!fullShorthandInput) return;
         const active = document.activeElement;
-        if (!active || active === document.body || active.tagName === 'BODY' || (active.tagName !== 'INPUT' && active.tagName !== 'SELECT' && active.tagName !== 'TEXTAREA' && active.tagName !== 'BUTTON')) {
-            fullShorthandInput.focus();
-            fullShorthandInput.select();
+        const hasRealFocus = active && active !== document.body && (active.tagName === 'INPUT' || active.tagName === 'SELECT' || active.tagName === 'TEXTAREA' || active.tagName === 'BUTTON');
+        
+        if (!hasRealFocus) {
+            if (lastFocusedElement && lastFocusedElement !== document.body && document.body.contains(lastFocusedElement)) {
+                lastFocusedElement.focus();
+                if (typeof lastFocusedElement.select === 'function') {
+                    lastFocusedElement.select();
+                }
+            } else {
+                fullShorthandInput.focus();
+                fullShorthandInput.select();
+            }
         }
     }
 
@@ -3693,6 +3737,7 @@ var require_extension_macros_html = __commonJS({
                 <button type="button" class="secondary" id="btnClone" disabled title="Unbind and remove this keyboard shortcut mapping.">Unbind</button>
                 <button type="button" class="secondary" id="btnSaveClone" disabled title="Add the newly configured key combination as an additional secondary shortcut for this action, preserving existing bindings.">Add</button>
                 <button type="button" id="btnSubmit" disabled title="Save and apply the updated key combination assignment for this action (replacing any matched existing binding).">Save</button>
+                <button type="button" id="btnDone" title="Close this configuration view. Warns if there are unsaved changes.">Done</button>
             </div>
         </div>
     </div>
@@ -3887,6 +3932,24 @@ var require_extension_macros_form = __commonJS({
         await vscode.commands.executeCommand("workbench.action.focusFirstEditorGroup");
       }
     }
+    async function focusOrCreateViewColumn(targetCol, panelViewColumn) {
+      const allGroups = vscode.window.tabGroups && vscode.window.tabGroups.all || [];
+      const groupExists = allGroups.some((g) => g.viewColumn === targetCol);
+      if (!groupExists) {
+        let maxExistingCol = 0;
+        allGroups.forEach((g) => {
+          if (typeof g.viewColumn === "number" && g.viewColumn > maxExistingCol) {
+            maxExistingCol = g.viewColumn;
+          }
+        });
+        if (maxExistingCol > 0) {
+          await focusViewColumn(maxExistingCol);
+        }
+        await vscode.commands.executeCommand("workbench.action.newGroupRight");
+      } else {
+        await focusViewColumn(targetCol);
+      }
+    }
     async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
       const core = require_extension_core();
       const ui2 = require_extension_ui();
@@ -3994,7 +4057,7 @@ var require_extension_macros_form = __commonJS({
               } else {
                 targetCol = findGroupForReusing("keybindings", null, panelViewCol);
               }
-              await focusViewColumn(targetCol);
+              await focusOrCreateViewColumn(targetCol, panelViewCol);
               if (message.args) {
                 await vscode.commands.executeCommand(message.commandName, ...message.args);
               } else {
@@ -4037,7 +4100,7 @@ var require_extension_macros_form = __commonJS({
                 }
               }
               break;
-            case "submit":
+            case "submit": {
               let currentBindings = core.loadFullKeybindingsArray();
               const nativeKey = message.nativeKey;
               const finalWhen = message.when.trim();
@@ -4063,23 +4126,40 @@ var require_extension_macros_form = __commonJS({
               if (core.saveKeybindingsArray(currentBindings)) {
                 vscode.window.showInformationMessage(`Successfully saved key updates matching web form values (${actionType}).`);
               }
-              if (actionType === "saveAndClone") {
-                fullBindings = core.loadFullKeybindingsArray();
-                const updatedExistingTargets = fullBindings.filter((b) => b.command === commandItem.commandId);
-                const updatedKeysLabel = updatedExistingTargets.map((t) => `${core.formatToCustomShorthand(t.key)} (${t.key})`).join("  |  ") || "None";
-                const updatedWhenLabel = (targetToEdit ? targetToEdit.when : updatedExistingTargets[0] ? updatedExistingTargets[0].when : "editorTextFocus") || "editorTextFocus";
-                panel.webview.postMessage({
-                  type: "updateLabels",
-                  currentKeys: updatedKeysLabel,
-                  currentWhen: updatedWhenLabel
-                });
-              } else {
-                panel.dispose();
+              fullBindings = core.loadFullKeybindingsArray();
+              const updatedExistingTargets = fullBindings.filter((b) => b.command === commandItem.commandId);
+              if (actionType === "save" && targetToEdit) {
+                const newlySaved = updatedExistingTargets.find((b) => b.key === nativeKey && b.when === finalWhen);
+                if (newlySaved) {
+                  targetToEdit = newlySaved;
+                }
               }
+              const updatedKeysLabel = updatedExistingTargets.map((t) => `${core.formatToCustomShorthand(t.key)} (${t.key})`).join("  |  ") || "None";
+              const updatedWhenLabel = (targetToEdit ? targetToEdit.when : updatedExistingTargets[0] ? updatedExistingTargets[0].when : "editorTextFocus") || "editorTextFocus";
+              panel.webview.postMessage({
+                type: "saveSuccess",
+                currentKeys: updatedKeysLabel,
+                currentWhen: updatedWhenLabel
+              });
               break;
+            }
             case "cancel":
               panel.dispose();
               ui2.renderPrimaryMenu(context, originalArgs);
+              break;
+            case "done":
+              if (message.modified) {
+                const choice = await vscode.window.showWarningMessage(
+                  "You have unsaved changes in the keybindings form. Are you sure you want to close?",
+                  { modal: true },
+                  "Close Anyway",
+                  "Keep Editing"
+                );
+                if (choice !== "Close Anyway") {
+                  break;
+                }
+              }
+              panel.dispose();
               break;
             case "editJson":
               try {
@@ -4101,6 +4181,7 @@ var require_extension_macros_form = __commonJS({
                       let currentCmd = "";
                       let currentKey = "";
                       let currentWhen = "";
+                      let currentArgs = null;
                       let commandNode = null;
                       itemNode.children.forEach((propertyNode) => {
                         if (propertyNode.type === "property" && propertyNode.children && propertyNode.children.length === 2) {
@@ -4113,17 +4194,28 @@ var require_extension_macros_form = __commonJS({
                             currentKey = valueNode.value;
                           } else if (keyName === "when") {
                             currentWhen = valueNode.value;
+                          } else if (keyName === "args" && valueNode.type === "array" && valueNode.children) {
+                            currentArgs = valueNode.children.map((c) => c.value);
                           }
                         }
                       });
                       if (currentCmd === targetCmdId) {
-                        const normCheck = currentKey.replace(/\s+/g, "").toLowerCase();
-                        const normTarget = checkKey.replace(/\s+/g, "").toLowerCase();
-                        if (normCheck === normTarget) {
-                          const targetWhen = checkWhen;
-                          const actualWhen = (currentWhen || "").trim();
-                          if (targetWhen === actualWhen) {
-                            bestMatchNode = commandNode || itemNode;
+                        if (targetCmdId === "ce-command-picker.show") {
+                          if (Array.isArray(currentArgs) && Array.isArray(originalArgs)) {
+                            const matchAll = currentArgs.length === originalArgs.length && currentArgs.every((val, idx) => val === originalArgs[idx]);
+                            if (matchAll) {
+                              bestMatchNode = commandNode || itemNode;
+                            }
+                          }
+                        } else {
+                          const normCheck = currentKey.replace(/\s+/g, "").toLowerCase();
+                          const normTarget = checkKey.replace(/\s+/g, "").toLowerCase();
+                          if (normCheck === normTarget) {
+                            const targetWhen = checkWhen;
+                            const actualWhen = (currentWhen || "").trim();
+                            if (targetWhen === actualWhen) {
+                              bestMatchNode = commandNode || itemNode;
+                            }
                           }
                         }
                       }
@@ -4159,6 +4251,7 @@ var require_extension_macros_form = __commonJS({
                 } else {
                   targetC = findGroupForReusing("json", configPath, pViewCol);
                 }
+                await focusOrCreateViewColumn(targetC, pViewCol);
                 const editor = await vscode.window.showTextDocument(doc, targetC);
                 if (bestMatchNode) {
                   const targetPos = doc.positionAt(bestMatchNode.offset);

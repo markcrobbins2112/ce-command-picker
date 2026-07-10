@@ -56,7 +56,14 @@ title: TASKS
 -->
 ## 💬 Incoming tasks from chat
 [[#^toc-chat|TOC]]
-- [x] Auto-focus fullShorthandInput when tab/webview is focused or first drawn
+- [x] Auto-focus fullShorthandInput when tab/webview is focused or first drawn (respecting last-focused element)
+- [x] Support Edit Picker Key for ce-command-picker.show via args matching in keybindings.json
+- [x] Prevent Save button from closing the webview (remains open for editing)
+- [x] Disable < previous item button when at first item
+- [x] Disable > next item button when at last item
+- [x] Make '+' buttons before Current/New always open a new instance (creating a new tab group) and never open in webview's group
+- [x] Make Current/New buttons focus existing instance if available before opening new instance, never in webview's group
+- [x] Add Done Button after Save button to close webview tab, with warning if modified
 - [x] Correct Close All KB Json function to close all keybindings.json file tabs
 - [x] Correct Close All KB UI to successfully close all Keyboard Shortcuts tabs
 - [x] Rename Copy Binding to Copy Current Binding, which copies original/current settings

@@ -93,6 +93,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     const btnClone = document.getElementById('btnClone'); // Unbind
     const btnSaveClone = document.getElementById('btnSaveClone'); // Add
     const btnSubmit = document.getElementById('btnSubmit'); // Save
+    const btnDone = document.getElementById('btnDone'); // Done
 
     const btnClear1 = document.getElementById('btnClear1');
     const btnClear2 = document.getElementById('btnClear2');
@@ -721,8 +722,8 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         if (btnPageFirst) btnPageFirst.disabled = (currentIdx === 0);
         if (btnPageLast) btnPageLast.disabled = (currentIdx === total - 1);
 
-        if (btnPagePrev) btnPagePrev.disabled = false;
-        if (btnPageNext) btnPageNext.disabled = false;
+        if (btnPagePrev) btnPagePrev.disabled = (currentIdx === 0);
+        if (btnPageNext) btnPageNext.disabled = (currentIdx === total - 1);
 
         const nextUncheckedForward = findNextUnchecked(currentIdx, 1);
         if (btnPageNextNoCheckoff) btnPageNextNoCheckoff.disabled = (nextUncheckedForward === -1);
@@ -835,11 +836,15 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         });
         
         if (btnPagePrev) btnPagePrev.addEventListener('click', () => {
-            pageTo((currentIdx - 1 + total) % total);
+            if (currentIdx > 0) {
+                pageTo(currentIdx - 1);
+            }
         });
 
         if (btnPageNext) btnPageNext.addEventListener('click', () => {
-            pageTo((currentIdx + 1) % total);
+            if (currentIdx < total - 1) {
+                pageTo(currentIdx + 1);
+            }
         });
 
         if (btnPageNextNoCheckoff) btnPageNextNoCheckoff.addEventListener('click', () => {
@@ -1101,6 +1106,20 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
                 container.innerHTML = formatCurrentKeysJS(message.currentKeys || 'None');
             }
             if (currentWhenClauseLabel) currentWhenClauseLabel.textContent = message.currentWhen;
+        } else if (message.type === 'saveSuccess') {
+            if (window.CE_INITIAL_STATE) {
+                window.CE_INITIAL_STATE.chord1Base = baseInput1.value;
+                window.CE_INITIAL_STATE.chord1Flags = shortcodeInput1.value;
+                window.CE_INITIAL_STATE.chord2Base = baseInput2.value;
+                window.CE_INITIAL_STATE.chord2Flags = shortcodeInput2.value;
+                window.CE_INITIAL_STATE.whenClause = whenInput.value;
+            }
+            const container = document.getElementById('currentKeysContainer');
+            if (container) {
+                container.innerHTML = formatCurrentKeysJS(message.currentKeys || 'None');
+            }
+            if (currentWhenClauseLabel) currentWhenClauseLabel.textContent = message.currentWhen;
+            triggerValidation(true);
         } else if (message.type === 'pasteBindingData') {
             isSynchronizing = true;
             baseInput1.value = message.chord1Base || '';
@@ -1172,6 +1191,15 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     btnCancel.addEventListener('click', () => {
         vscode.postMessage({ command: 'cancel' });
     });
+
+    if (btnDone) {
+        btnDone.addEventListener('click', () => {
+            vscode.postMessage({
+                command: 'done',
+                modified: hasBindingChanged()
+            });
+        });
+    }
 
     // Row 1 (Current) Action Handlers
     btnEditJson.addEventListener('click', () => {
@@ -1520,12 +1548,28 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         }
     });
 
+    let lastFocusedElement = null;
+    document.addEventListener('focusin', (e) => {
+        if (e.target && e.target.tagName && e.target !== document.body) {
+            lastFocusedElement = e.target;
+        }
+    });
+
     function focusShorthandIfNoActiveFocus() {
         if (!fullShorthandInput) return;
         const active = document.activeElement;
-        if (!active || active === document.body || active.tagName === 'BODY' || (active.tagName !== 'INPUT' && active.tagName !== 'SELECT' && active.tagName !== 'TEXTAREA' && active.tagName !== 'BUTTON')) {
-            fullShorthandInput.focus();
-            fullShorthandInput.select();
+        const hasRealFocus = active && active !== document.body && (active.tagName === 'INPUT' || active.tagName === 'SELECT' || active.tagName === 'TEXTAREA' || active.tagName === 'BUTTON');
+        
+        if (!hasRealFocus) {
+            if (lastFocusedElement && lastFocusedElement !== document.body && document.body.contains(lastFocusedElement)) {
+                lastFocusedElement.focus();
+                if (typeof lastFocusedElement.select === 'function') {
+                    lastFocusedElement.select();
+                }
+            } else {
+                fullShorthandInput.focus();
+                fullShorthandInput.select();
+            }
         }
     }
 
@@ -1849,6 +1893,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
                 <button type="button" class="secondary" id="btnClone" disabled title="Unbind and remove this keyboard shortcut mapping.">Unbind</button>
                 <button type="button" class="secondary" id="btnSaveClone" disabled title="Add the newly configured key combination as an additional secondary shortcut for this action, preserving existing bindings.">Add</button>
                 <button type="button" id="btnSubmit" disabled title="Save and apply the updated key combination assignment for this action (replacing any matched existing binding).">Save</button>
+                <button type="button" id="btnDone" title="Close this configuration view. Warns if there are unsaved changes.">Done</button>
             </div>
         </div>
     </div>

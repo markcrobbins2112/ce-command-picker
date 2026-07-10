@@ -67,6 +67,25 @@ async function focusViewColumn(column) {
     }
 }
 
+async function focusOrCreateViewColumn(targetCol, panelViewColumn) {
+    const allGroups = (vscode.window.tabGroups && vscode.window.tabGroups.all) || [];
+    const groupExists = allGroups.some(g => g.viewColumn === targetCol);
+    if (!groupExists) {
+        let maxExistingCol = 0;
+        allGroups.forEach(g => {
+            if (typeof g.viewColumn === 'number' && g.viewColumn > maxExistingCol) {
+                maxExistingCol = g.viewColumn;
+            }
+        });
+        if (maxExistingCol > 0) {
+            await focusViewColumn(maxExistingCol);
+        }
+        await vscode.commands.executeCommand('workbench.action.newGroupRight');
+    } else {
+        await focusViewColumn(targetCol);
+    }
+}
+
 /**
  * Presents a side-by-side adaptive form layout panel.
  * Uses dynamic view type rotation to forcefully break service worker caching loops.
@@ -193,7 +212,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                     } else {
                         targetCol = findGroupForReusing('keybindings', null, panelViewCol);
                     }
-                    await focusViewColumn(targetCol);
+                    await focusOrCreateViewColumn(targetCol, panelViewCol);
                     if (message.args) {
                         await vscode.commands.executeCommand(message.commandName, ...message.args);
                     } else {
@@ -241,7 +260,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                     }
                     break;
 
-                case 'submit':
+                case 'submit': {
                     let currentBindings = core.loadFullKeybindingsArray();
                     const nativeKey = message.nativeKey;
                     const finalWhen = message.when.trim();
@@ -271,26 +290,45 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                         vscode.window.showInformationMessage(`Successfully saved key updates matching web form values (${actionType}).`);
                     }
 
-                    if (actionType === 'saveAndClone') {
-                        // Update fullBindings variable so that subsequent validations reflect the newly added bindings
-                        fullBindings = core.loadFullKeybindingsArray();
-                        const updatedExistingTargets = fullBindings.filter(b => b.command === commandItem.commandId);
-                        const updatedKeysLabel = updatedExistingTargets.map(t => `${core.formatToCustomShorthand(t.key)} (${t.key})`).join('  |  ') || 'None';
-                        const updatedWhenLabel = (targetToEdit ? targetToEdit.when : (updatedExistingTargets[0] ? updatedExistingTargets[0].when : 'editorTextFocus')) || 'editorTextFocus';
-                        panel.webview.postMessage({
-                            type: 'updateLabels',
-                            currentKeys: updatedKeysLabel,
-                            currentWhen: updatedWhenLabel
-                        });
-                    } else {
-                        panel.dispose();
-                        // Save button should not reopen the menu
+                    fullBindings = core.loadFullKeybindingsArray();
+                    const updatedExistingTargets = fullBindings.filter(b => b.command === commandItem.commandId);
+
+                    if (actionType === 'save' && targetToEdit) {
+                        const newlySaved = updatedExistingTargets.find(b => b.key === nativeKey && b.when === finalWhen);
+                        if (newlySaved) {
+                            targetToEdit = newlySaved;
+                        }
                     }
+
+                    const updatedKeysLabel = updatedExistingTargets.map(t => `${core.formatToCustomShorthand(t.key)} (${t.key})`).join('  |  ') || 'None';
+                    const updatedWhenLabel = (targetToEdit ? targetToEdit.when : (updatedExistingTargets[0] ? updatedExistingTargets[0].when : 'editorTextFocus')) || 'editorTextFocus';
+
+                    panel.webview.postMessage({
+                        type: 'saveSuccess',
+                        currentKeys: updatedKeysLabel,
+                        currentWhen: updatedWhenLabel
+                    });
                     break;
+                }
 
                 case 'cancel':
                     panel.dispose();
                     ui.renderPrimaryMenu(context, originalArgs);
+                    break;
+
+                case 'done':
+                    if (message.modified) {
+                        const choice = await vscode.window.showWarningMessage(
+                            'You have unsaved changes in the keybindings form. Are you sure you want to close?',
+                            { modal: true },
+                            'Close Anyway',
+                            'Keep Editing'
+                        );
+                        if (choice !== 'Close Anyway') {
+                            break;
+                        }
+                    }
+                    panel.dispose();
                     break;
 
                 case 'editJson':
@@ -317,6 +355,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                                     let currentCmd = '';
                                     let currentKey = '';
                                     let currentWhen = '';
+                                    let currentArgs = null;
                                     let commandNode = null;
 
                                     itemNode.children.forEach(propertyNode => {
@@ -331,18 +370,30 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                                                 currentKey = valueNode.value;
                                             } else if (keyName === 'when') {
                                                 currentWhen = valueNode.value;
+                                            } else if (keyName === 'args' && valueNode.type === 'array' && valueNode.children) {
+                                                currentArgs = valueNode.children.map(c => c.value);
                                             }
                                         }
                                     });
 
                                     if (currentCmd === targetCmdId) {
-                                        const normCheck = currentKey.replace(/\s+/g, '').toLowerCase();
-                                        const normTarget = checkKey.replace(/\s+/g, '').toLowerCase();
-                                        if (normCheck === normTarget) {
-                                            const targetWhen = checkWhen;
-                                            const actualWhen = (currentWhen || '').trim();
-                                            if (targetWhen === actualWhen) {
-                                                bestMatchNode = commandNode || itemNode;
+                                        if (targetCmdId === 'ce-command-picker.show') {
+                                            if (Array.isArray(currentArgs) && Array.isArray(originalArgs)) {
+                                                const matchAll = currentArgs.length === originalArgs.length && 
+                                                    currentArgs.every((val, idx) => val === originalArgs[idx]);
+                                                if (matchAll) {
+                                                    bestMatchNode = commandNode || itemNode;
+                                                }
+                                            }
+                                        } else {
+                                            const normCheck = currentKey.replace(/\s+/g, '').toLowerCase();
+                                            const normTarget = checkKey.replace(/\s+/g, '').toLowerCase();
+                                            if (normCheck === normTarget) {
+                                                const targetWhen = checkWhen;
+                                                const actualWhen = (currentWhen || '').trim();
+                                                if (targetWhen === actualWhen) {
+                                                    bestMatchNode = commandNode || itemNode;
+                                                }
                                             }
                                         }
                                     }
@@ -386,6 +437,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                             targetC = findGroupForReusing('json', configPath, pViewCol);
                         }
                         
+                        await focusOrCreateViewColumn(targetC, pViewCol);
                         const editor = await vscode.window.showTextDocument(doc, targetC);
                         
                         if (bestMatchNode) {
