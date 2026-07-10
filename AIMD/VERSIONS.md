@@ -41,6 +41,18 @@ title: VERSIONS
 ## 🚀 Stable Releases & Milestones
 [[#^toc-stable|TOC]]
 
+### 🏷️ v1.2.42 (2026-07-10) - Bidirectional Shorthand Key Input & Layout Redesign
+- **Added / Enhanced:**
+  - Redesigned Key UI panel layouts to exact visual specifications: Base Key | Code | Mods [W] [C] [A] [S].
+  - Introduced bidirectional shorthand 'Key:' field located immediately below 'Current When', allowing fast key mappings directly via string input.
+  - Added visual "Changed" badge indicator indicating when inputs no longer mirror original current keybinding configuration state.
+  - Divided helper actions into two cleanly labeled rows: 'Current' and 'New' for precise native VS Code Keyboard Shortcut configuration panel links.
+  - Added extensive, rich tooltips describing functionalities of all available interface controls.
+- **Fixed / Patched:**
+  - Removed old unassigned KB UI Clear button.
+  - Fixed Unbind action parameters to cleanly reference selected command bindings.
+  - Bounded esbuild packaging configurations.
+
 ### 🏷️ v1.2.35 (2026-07-10) - Advanced Form Controls & Keyboard Shortcut Integrations
 - **Added / Enhanced:**
   - Redesigned visual Current Key(s) displays to list active mappings cleanly as separate "Binding: shorthand" and "Binding: native" entries.

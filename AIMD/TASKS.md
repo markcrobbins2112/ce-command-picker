@@ -56,25 +56,15 @@ title: TASKS
 -->
 ## 💬 Incoming tasks from chat
 [[#^toc-chat|TOC]]
+- [x] Add dynamic "Changed" indicator badge to show if form is no longer equal to the original "Current" state
+- [x] Implement bidirectional "Key:" shorthand text field after 'Current When' linked natively to underlying chord panels
+- [x] Rework Chord panel layouts to conform to strict format: Base Key | Code | Mods [W] [C] [A] [S]
+- [x] Restructure Button layout into three distinctive rows:
+  - [x] Row 1 (Current): Edit Json, KB UI Cmd, KB UI Key, KB UI User, KB UI Default, KB UI Extension, KB UI Ext
+  - [x] Row 2 (New): same helper actions dynamically updating with active form/input values
+  - [x] Row 3 (Standard): Left (Reset, Clear, Copy, Paste) & Right (Cancel, Unbind, Add, Save)
+- [x] Put exhaustive HTML tooltips on all helper and control buttons
 - [x] Synchronize and complete entire AIMD documentation suite
-- [x] Escape regular expression patterns within Webview template literal (e.g. converting `\+` to `\\+` and `\s` to `\\s` and `\.` to `\\.`) to prevent syntax compilation errors
-- [x] Resolve outstanding binding form bugs:
-  - [x] Fix keys filling from source by passing initial native key and escaping window.CE_INITIAL_STATE injection to prevent syntax errors
-  - [x] Fix When Clause filling from source
-  - [x] Keep modifier checkboxes and shortcode boxes completely synchronized with exhaustively-triggered input/keyup/change/click event handlers
-  - [x] Update Edit Json button to open keybindings.json at the exact current form key and when clause state
-  - [x] Ensure Clear Button fully resets the form, validation status, and button states
-  - [x] Fix Unbind Button to remove the exact current form key and when-clause combination from keybindings.json
-  - [x] Redirect Goto Binding UI action to open the native shortcuts UI searching for the current command
-- [x] Enhance Form Layout and Action Controls:
-  - [x] Convert Current Key(s) displays to clean individual "Binding: shorthand" and "Binding: native" lines
-  - [x] Add Reset button before Clear button to copy original settings back to inputs
-  - [x] Rename "Save Mappings" to "Save" and enable only upon changes
-  - [x] Rename "Save and Clone" to "Add" and enable only upon changes
-  - [x] Remove old Unbind button, change Clone button to "Unbind"
-  - [x] Implement robust client-side validation for base keys, highlighting invalid fields in red
-  - [x] Convert "Edit Json" to a small button, and add 8 customizable keyboard shortcut UI helper buttons afterwards
-  - [x] Provide descriptive HTML tooltips for all action buttons
 
 <!-- 
   INSTRUCTION: Checklists of ongoing file structural, layout, or backend changes.

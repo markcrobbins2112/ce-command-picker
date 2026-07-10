@@ -50,11 +50,14 @@ title: LOG
 ## 💾 Commit Message
 [[#^toc-commit|TOC]]
 ```text
-fix: resolve insert lowercase preservation and multi-chord baseKey population
+feat: redesign keybinding layout with bidirectional shorthand key, changed indicator, and dual-row native helpers
 
-- Fixed lowercase 'insert' preservation in base inputs and shorthand results to prevent unexpected capitalization to uppercase
-- Corrected message and shorthand parser loops to correctly map and populate baseKey and baseKey2 fields from multi-chord source keys (e.g. 'alt+insert shift+insert')
-- Strengthened incoming init payload extraction to correctly fill in whenClause properties from multiple context parameters
+- Implemented layout with Base Key, Code, and Mods [W][C][A][S] aligned cleanly in responsive panels
+- Added a bidirectional shorthand "Key:" string input field with instant bidirectional sync
+- Added a visual "Changed" badge indicator displaying when settings differ from current state
+- Divided shortcut helpers into Row 1 "Current" and Row 2 "New" for precise native shortcuts UI links
+- Put exhaustive, rich HTML tooltips on all available action and helper buttons
+- Packaged and compiled extension bundle successfully via build.js pipeline
 ```
 
 ## 📝 Log Entries
@@ -66,6 +69,59 @@ fix: resolve insert lowercase preservation and multi-chord baseKey population
   Use the template structure below:
   ...
 -->
+
+### 📅 [2026-07-10T08:15:00Z]
+#### 🎯 Primary Goals & Requirements
+- Redesign Key UI panels to strict layout format: Base Key | Code | Mods [W][C][A][S].
+- Implement a bidirectional shorthand "Key:" string input field below 'Current When' with instant bidirectional synchronization.
+- Integrate a visual "Changed" badge indicator showing if the form states differ from 'Current'.
+- Structure shortcut helper actions into Row 1 "Current" and Row 2 "New" for precise native shortcut UI comparisons.
+- Put detailed HTML tooltips describing actions for all available buttons.
+
+#### 🛠️ Completed Changes in this Session
+- **Bidirectional Shorthand Key Input**: Added `#fullShorthandInput` styled cleanly with CSS in the info container, matching the "Key:" label. Linked its `input` events with `parseAndPopulateShorthand()` to sync Key 1/2 fields.
+- **Key UI Form Redesign**: Formatted Key 1 and Key 2 chord panels to align labels ("Base Key", "Code", "Mods") with their corresponding controls in a tight grid.
+- **Changed Badge Indicator**: Created a prominent `#changedIndicator` label inside the heading, toggle-displayed when `hasBindingChanged()` is evaluated.
+- **Two-Row Helper Actions**: Organized the helpers into Row 1 "Current" (pre-filled with original values) and Row 2 "New" (pre-filled with active form/input values), and removed the obsolete `KB UI Clear` helper.
+- **Exhaustive Tooltips**: Put descriptive, comprehensive tooltips on all helper and control buttons.
+- **Bundle Compilation & VSIX Packaging**: Ran the build script which generated the updated, clean `.vsix` archive without errors.
+
+#### 🔸 Affected Files
+- `/src/extension-macros-html.js`
+- `/AIMD/TASKS.md`
+- `/AIMD/VERSIONS.md`
+- `/AIMD/LOG.md`
+
+#### 🤖 Next Steps, Concerns and Suggestions
+- Code is fully compiled, type-checked, and packaged successfully. The feature set matches the requirements.
+
+### 📅 [2026-07-10T07:20:00Z]
+#### 🎯 Primary Goals & Requirements
+- Redesign keybinding display formatting to show separate visual "Binding: " entries for both shorthand and native values.
+- Integrate a pre-positioned Reset button reverting all active form inputs to initial page values.
+- Re-align button labels ("Save Mappings" -> "Save", "Save and Clone" -> "Add", obsolete "Unbind" removed, "Clone" -> "Unbind").
+- Enforce strict state validation for "Save" and "Add", only enabling when changes are detected, and color base inputs red when syntactically invalid.
+- Convert "Edit Json" to a compact small button and append 8 Global Keybindings UI trigger buttons afterward.
+- Attach detailed descriptive HTML tooltips (`title` attribute) on all interactive buttons.
+
+#### 🛠️ Completed Changes in this Session
+- **Visual Keybinding Redesign**: Refactored `formatCurrentKeys` inside `extension-macros-html.js` to split multiple chords/native entries into distinct, highly readable "Binding:" lines.
+- **State Restoration (Reset & Clear)**: Placed a "Reset" button preceding the "Clear" button that invokes a client-side recovery function, resetting inputs back to `window.CE_INITIAL_STATE` properties.
+- **Button Refactoring & Change Checking**: Renamed primary submission targets to "Save" and "Add". Implemented `hasBindingChanged` inside webview script, conditionally disabling those actions unless inputs differ from initial values.
+- **Unbind Mapping & Redundancy Removal**: Removed the old unbind action block and mapped the "Unbind" message command to the secondary "Unbind" action button (which replaced the old Clone button).
+- **Red Highlight Validation**: Connected client-side `validateBaseKeys` checks which dynamically paint borders/outlines of `baseKey`/`baseKey2` inputs red if the input is non-empty and fails typical base key constraints.
+- **Helper Shortcuts & Small Button Conversion**: Rendered "Edit Json" as `secondary small`, and appended 8 custom small button shortcuts (e.g., "KB UI", "KB UI Cmd") posting commands directly to the backend VS Code runner.
+- **Descriptive HTML Tooltips**: Added explicit, detailed descriptive tooltips to every single interactive form button for user-friendly guidance.
+
+#### 🔸 Affected Files
+- `/src/extension-macros-html.js`
+- `/src/extension-macros-form.js`
+- `/AIMD/TASKS.md`
+- `/AIMD/VERSIONS.md`
+- `/AIMD/LOG.md`
+
+#### 🤖 Next Steps, Concerns and Suggestions
+- The extension was fully compiled with success, matching all expected functional scopes.
 
 ### 📅 [2026-07-10T06:05:00Z]
 #### 🎯 Primary Goals & Requirements

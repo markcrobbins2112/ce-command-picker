@@ -1875,29 +1875,40 @@ var require_extension_macros_html = __commonJS({
     };
 
     const whenInput = document.getElementById('whenClause');
+    const fullShorthandInput = document.getElementById('fullShorthandInput');
     const statusBox = document.getElementById('statusBox');
     
     const btnCancel = document.getElementById('btnCancel');
-    const btnClone = document.getElementById('btnClone'); // Now Unbind
-    const btnSaveClone = document.getElementById('btnSaveClone'); // Now Add
-    const btnSubmit = document.getElementById('btnSubmit'); // Now Save
+    const btnClone = document.getElementById('btnClone'); // Unbind
+    const btnSaveClone = document.getElementById('btnSaveClone'); // Add
+    const btnSubmit = document.getElementById('btnSubmit'); // Save
 
     const btnClear1 = document.getElementById('btnClear1');
     const btnClear2 = document.getElementById('btnClear2');
-    const btnClear = document.getElementById('btnClear');
-    const btnEditJson = document.getElementById('btnEditJson');
+    
+    // Left side actions
     const btnReset = document.getElementById('btnReset');
+    const btnClear = document.getElementById('btnClear');
     const btnCopyBinding = document.getElementById('btnCopyBinding');
     const btnPasteBinding = document.getElementById('btnPasteBinding');
 
-    const btnKbUi = document.getElementById('btnKbUi');
+    // Row 1 (Current)
+    const btnEditJson = document.getElementById('btnEditJson');
     const btnKbUiCmd = document.getElementById('btnKbUiCmd');
     const btnKbUiKey = document.getElementById('btnKbUiKey');
     const btnKbUiUser = document.getElementById('btnKbUiUser');
     const btnKbUiDefault = document.getElementById('btnKbUiDefault');
     const btnKbUiExtension = document.getElementById('btnKbUiExtension');
     const btnKbUiExt = document.getElementById('btnKbUiExt');
-    const btnKbUiClear = document.getElementById('btnKbUiClear');
+
+    // Row 2 (New)
+    const btnEditJsonNew = document.getElementById('btnEditJsonNew');
+    const btnKbUiCmdNew = document.getElementById('btnKbUiCmdNew');
+    const btnKbUiKeyNew = document.getElementById('btnKbUiKeyNew');
+    const btnKbUiUserNew = document.getElementById('btnKbUiUserNew');
+    const btnKbUiDefaultNew = document.getElementById('btnKbUiDefaultNew');
+    const btnKbUiExtensionNew = document.getElementById('btnKbUiExtensionNew');
+    const btnKbUiExtNew = document.getElementById('btnKbUiExtNew');
 
     const currentWhenClauseLabel = document.getElementById('currentWhenClauseLabel');
 
@@ -1985,12 +1996,18 @@ var require_extension_macros_html = __commonJS({
     }
 
     function updateButtonStates(isValid) {
+        const changed = hasBindingChanged();
+        
+        const changedIndicator = document.getElementById('changedIndicator');
+        if (changedIndicator) {
+            changedIndicator.style.display = changed ? 'inline-block' : 'none';
+        }
+
         if (!isValid) {
             btnSubmit.disabled = true;
             btnSaveClone.disabled = true;
             btnClone.disabled = true;
         } else {
-            const changed = hasBindingChanged();
             btnSubmit.disabled = !changed;
             btnSaveClone.disabled = !changed;
             btnClone.disabled = false;
@@ -2033,9 +2050,20 @@ var require_extension_macros_html = __commonJS({
         }
     }
 
-    function triggerValidation() {
+    function triggerValidation(updateShorthandText = true) {
         validateBaseKeys();
         const textValue = getFullShorthand();
+        
+        if (updateShorthandText) {
+            fullShorthandInput.value = textValue;
+        }
+
+        const changed = hasBindingChanged();
+        const changedIndicator = document.getElementById('changedIndicator');
+        if (changedIndicator) {
+            changedIndicator.style.display = changed ? 'inline-block' : 'none';
+        }
+
         if (!textValue) {
             statusBox.style.display = 'none';
             btnSubmit.disabled = true;
@@ -2044,6 +2072,54 @@ var require_extension_macros_html = __commonJS({
             return;
         }
         vscode.postMessage({ command: 'validate', value: textValue });
+    }
+
+    function parseAndPopulateShorthand(shorthandStr) {
+        const chords = (shorthandStr || '').trim().split(/\\\\s+/);
+        let b1 = '', f1 = '', b2 = '', f2 = '';
+
+        if (chords.length >= 1 && chords[0]) {
+            const match = chords[0].match(/(.*)\\\\.([wcas]*)$/i);
+            if (match) {
+                b1 = match[1];
+                f1 = match[2];
+            } else {
+                b1 = chords[0];
+                f1 = '';
+            }
+        }
+        if (chords.length >= 2 && chords[1]) {
+            const match = chords[1].match(/(.*)\\\\.([wcas]*)$/i);
+            if (match) {
+                b2 = match[1];
+                f2 = match[2];
+            } else {
+                b2 = chords[1];
+                f2 = '';
+            }
+        }
+
+        baseInput1.value = cleanBaseKeyInput(b1);
+        shortcodeInput1.value = cleanShortcodeInput(f1);
+        checkboxes1.w.checked = f1.includes('w');
+        checkboxes1.c.checked = f1.includes('c');
+        checkboxes1.a.checked = f1.includes('a');
+        checkboxes1.s.checked = f1.includes('s');
+
+        baseInput2.value = cleanBaseKeyInput(b2);
+        shortcodeInput2.value = cleanShortcodeInput(f2);
+        checkboxes2.w.checked = f2.includes('w');
+        checkboxes2.c.checked = f2.includes('c');
+        checkboxes2.a.checked = f2.includes('a');
+        checkboxes2.s.checked = f2.includes('s');
+    }
+
+    function syncFromFullShorthand() {
+        if (isSynchronizing) return;
+        isSynchronizing = true;
+        parseAndPopulateShorthand(fullShorthandInput.value);
+        isSynchronizing = false;
+        triggerValidation(false);
     }
 
     function syncFromUIForm1() {
@@ -2096,7 +2172,7 @@ var require_extension_macros_html = __commonJS({
         shortcodeInput1.value = f;
 
         isSynchronizing = false;
-        triggerValidation();
+        triggerValidation(true);
     }
 
     function syncFromShortcode1() {
@@ -2110,7 +2186,7 @@ var require_extension_macros_html = __commonJS({
         checkboxes1.s.checked = shortcodeInput1.value.includes('s');
 
         isSynchronizing = false;
-        triggerValidation();
+        triggerValidation(true);
     }
 
     function syncFromUIForm2() {
@@ -2163,7 +2239,7 @@ var require_extension_macros_html = __commonJS({
         shortcodeInput2.value = f;
 
         isSynchronizing = false;
-        triggerValidation();
+        triggerValidation(true);
     }
 
     function syncFromShortcode2() {
@@ -2177,8 +2253,10 @@ var require_extension_macros_html = __commonJS({
         checkboxes2.s.checked = shortcodeInput2.value.includes('s');
 
         isSynchronizing = false;
-        triggerValidation();
+        triggerValidation(true);
     }
+
+    fullShorthandInput.addEventListener('input', syncFromFullShorthand);
 
     baseInput1.addEventListener('input', syncFromUIForm1);
     Object.values(checkboxes1).forEach(cb => {
@@ -2208,7 +2286,7 @@ var require_extension_macros_html = __commonJS({
             checkboxes1.s.checked = false;
             shortcodeInput1.value = '';
             isSynchronizing = false;
-            triggerValidation();
+            triggerValidation(true);
         });
     }
 
@@ -2222,7 +2300,7 @@ var require_extension_macros_html = __commonJS({
             checkboxes2.s.checked = false;
             shortcodeInput2.value = '';
             isSynchronizing = false;
-            triggerValidation();
+            triggerValidation(true);
         });
     }
 
@@ -2248,7 +2326,7 @@ var require_extension_macros_html = __commonJS({
             statusBox.style.display = 'none';
             statusBox.textContent = '';
             isSynchronizing = false;
-            triggerValidation();
+            triggerValidation(true);
         });
     }
 
@@ -2328,7 +2406,7 @@ var require_extension_macros_html = __commonJS({
             whenInput.value = incomingWhen !== undefined ? incomingWhen : 'editorTextFocus';
 
             isSynchronizing = false;
-            triggerValidation();
+            triggerValidation(true);
         } else if (message.type === 'status') {
             statusBox.textContent = message.text;
             statusBox.style.display = 'block';
@@ -2370,7 +2448,7 @@ var require_extension_macros_html = __commonJS({
 
             whenInput.value = message.when || '';
             isSynchronizing = false;
-            triggerValidation();
+            triggerValidation(true);
         }
     });
 
@@ -2398,10 +2476,10 @@ var require_extension_macros_html = __commonJS({
     });
 
     btnClone.addEventListener('click', () => {
-        // Change Clone Button to Unbind
+        // Trigger unbind action using the new/form UI parameters or current parameters
         vscode.postMessage({
             command: 'unbind',
-            nativeKey: lastValidatedNativeKey,
+            nativeKey: lastValidatedNativeKey || (window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.initialNativeKey : ''),
             when: whenInput.value
         });
     });
@@ -2420,13 +2498,88 @@ var require_extension_macros_html = __commonJS({
         vscode.postMessage({ command: 'cancel' });
     });
 
+    // Row 1 (Current) Action Handlers
     btnEditJson.addEventListener('click', () => {
+        vscode.postMessage({
+            command: 'editJson',
+            nativeKey: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.initialNativeKey : '',
+            when: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.whenClause : ''
+        });
+    });
+
+    btnKbUiCmd.addEventListener('click', () => {
+        const cmd = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '';
+        vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: [cmd] });
+    });
+
+    btnKbUiKey.addEventListener('click', () => {
+        const key = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.initialNativeKey : '';
+        vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@key:"' + key + '"'] });
+    });
+
+    btnKbUiUser.addEventListener('click', () => {
+        vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@source:user'] });
+    });
+
+    btnKbUiDefault.addEventListener('click', () => {
+        vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@source:default'] });
+    });
+
+    btnKbUiExtension.addEventListener('click', () => {
+        vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@source:extension'] });
+    });
+
+    btnKbUiExt.addEventListener('click', () => {
+        const commandId = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '';
+        let targetExtensionId = '';
+        const dotIndex = commandId.indexOf('.');
+        if (dotIndex !== -1) {
+            targetExtensionId = commandId.substring(0, dotIndex);
+        }
+        vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@ext:' + targetExtensionId] });
+    });
+
+
+    // Row 2 (New) Action Handlers
+    btnEditJsonNew.addEventListener('click', () => {
         vscode.postMessage({
             command: 'editJson',
             nativeKey: lastValidatedNativeKey,
             when: whenInput.value
         });
     });
+
+    btnKbUiCmdNew.addEventListener('click', () => {
+        const cmd = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '';
+        vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: [cmd] });
+    });
+
+    btnKbUiKeyNew.addEventListener('click', () => {
+        vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@key:"' + (lastValidatedNativeKey || '') + '"'] });
+    });
+
+    btnKbUiUserNew.addEventListener('click', () => {
+        vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@source:user'] });
+    });
+
+    btnKbUiDefaultNew.addEventListener('click', () => {
+        vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@source:default'] });
+    });
+
+    btnKbUiExtensionNew.addEventListener('click', () => {
+        vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@source:extension'] });
+    });
+
+    btnKbUiExtNew.addEventListener('click', () => {
+        const commandId = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '';
+        let targetExtensionId = '';
+        const dotIndex = commandId.indexOf('.');
+        if (dotIndex !== -1) {
+            targetExtensionId = commandId.substring(0, dotIndex);
+        }
+        vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@ext:' + targetExtensionId] });
+    });
+
 
     btnCopyBinding.addEventListener('click', () => {
         const textValue = getFullShorthand();
@@ -2475,53 +2628,11 @@ var require_extension_macros_html = __commonJS({
 
         whenInput.value = window.CE_INITIAL_STATE.whenClause !== undefined ? window.CE_INITIAL_STATE.whenClause : '';
         isSynchronizing = false;
-        triggerValidation();
+        triggerValidation(true);
     }
 
     if (btnReset) {
         btnReset.addEventListener('click', resetToInitial);
-    }
-
-    // Connect Keyboard Shortcuts Helper Buttons
-    if (btnKbUi) {
-        btnKbUi.addEventListener('click', () => {
-            vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings' });
-        });
-    }
-    if (btnKbUiCmd) {
-        btnKbUiCmd.addEventListener('click', () => {
-            vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['todo-tree.filter'] });
-        });
-    }
-    if (btnKbUiKey) {
-        btnKbUiKey.addEventListener('click', () => {
-            vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@key:"alt+. f1"'] });
-        });
-    }
-    if (btnKbUiUser) {
-        btnKbUiUser.addEventListener('click', () => {
-            vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@source:user'] });
-        });
-    }
-    if (btnKbUiDefault) {
-        btnKbUiDefault.addEventListener('click', () => {
-            vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@source:default'] });
-        });
-    }
-    if (btnKbUiExtension) {
-        btnKbUiExtension.addEventListener('click', () => {
-            vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@source:extension'] });
-        });
-    }
-    if (btnKbUiExt) {
-        btnKbUiExt.addEventListener('click', () => {
-            vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@ext:gruntfuggly.todo-tree'] });
-        });
-    }
-    if (btnKbUiClear) {
-        btnKbUiClear.addEventListener('click', () => {
-            vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['todo-tree clear'] });
-        });
     }
 
     if (window.CE_INITIAL_STATE) {
@@ -2586,13 +2697,38 @@ var require_extension_macros_html = __commonJS({
         .checkbox-group { display: flex; gap: 12px; padding: 4px 0; flex-wrap: wrap; }
         .checkbox-item { display: flex; align-items: center; gap: 6px; cursor: pointer; }
         .checkbox-item input { cursor: pointer; }
-        .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 16px; flex-wrap: wrap; }
+        
+        .actions-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            padding-top: 16px;
+            margin-top: 10px;
+        }
+        .helper-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .helper-row-label {
+            font-weight: bold;
+            font-size: 0.9em;
+            width: 70px;
+            opacity: 0.85;
+        }
+        .helper-buttons {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
         button { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: 500; font-family: inherit; }
         button:hover { background: var(--vscode-button-hoverBackground); }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
         button.secondary { background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground); }
         button.secondary:hover { background-color: var(--vscode-button-secondaryHoverBackground); }
         button.small { padding: 4px 8px; font-size: 0.85em; }
+        
         #statusBox {
             padding: 10px 14px;
             border-radius: 4px;
@@ -2604,9 +2740,16 @@ var require_extension_macros_html = __commonJS({
 </head>
 <body>
     <div class="current-info-container">
-        <div style="font-weight: bold; font-size: 1.1em; margin-bottom: 2px;">Action: ` + (title || "") + `</div>
+        <div style="font-weight: bold; font-size: 1.1em; margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between;">
+            <span>Action: ` + (title || "") + `</span>
+            <span id="changedIndicator" style="display: none; background: #e5c07b; color: #1e1e1e; padding: 2px 6px; border-radius: 3px; font-size: 0.8em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Changed</span>
+        </div>
         <div id="currentKeysContainer">` + formatCurrentKeys(currentKeys) + `</div>
         <div><span style="opacity: 0.7;">Current When:</span> <strong id="currentWhenClauseLabel">` + (currentWhen || "No context") + `</strong></div>
+        <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+            <span style="opacity: 0.85; font-weight: bold;">Key:</span>
+            <input type="text" id="fullShorthandInput" placeholder="e.g., INS.a E" title="Editable full binding in cas shorthand format (e.g., INS.a E). Modifying this field instantly parses and populates the individual key controls below, and vice versa.">
+        </div>
     </div>
     
     <div class="chords-grid">
@@ -2617,24 +2760,24 @@ var require_extension_macros_html = __commonJS({
                 <button type="button" class="secondary small" id="btnClear1" title="Clear the Base Key, modifier checkboxes, and shortcode box for the primary chord.">Clear</button>
             </div>
             
-            <div class="form-group">
-                <label for="baseKey" style="font-weight: 500;">Base Key</label>
-                <input type="text" id="baseKey" placeholder="e.g., K, F11, ENTER, LEFT">
-            </div>
-
-            <div class="form-group">
-                <label style="font-weight: 500;">Modifiers</label>
-                <div class="checkbox-group">
-                    <label class="checkbox-item"><input type="checkbox" id="modW" value="w"> Windows</label>
-                    <label class="checkbox-item"><input type="checkbox" id="modC" value="c"> Control</label>
-                    <label class="checkbox-item"><input type="checkbox" id="modA" value="a"> Alt</label>
-                    <label class="checkbox-item"><input type="checkbox" id="modS" value="s"> Shift</label>
+            <div style="display: grid; grid-template-columns: 2fr 1fr 2fr; gap: 12px; align-items: end;">
+                <div class="form-group">
+                    <label for="baseKey" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Base Key</label>
+                    <input type="text" id="baseKey" placeholder="e.g., K, F11, ENTER, LEFT" title="Specify the primary key identifier. Non-recognized keys will be highlighted with red border borders.">
                 </div>
-            </div>
-
-            <div class="form-group">
-                <label for="shortcode" style="font-weight: 500;">Modifier Shortcode Box (wcas)</label>
-                <input type="text" id="shortcode" placeholder="e.g., ca, s, wcas">
+                <div class="form-group">
+                    <label for="shortcode" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Code</label>
+                    <input type="text" id="shortcode" placeholder="cas" title="Compact modifier flags: w (Windows), c (Control), a (Alt), s (Shift)">
+                </div>
+                <div class="form-group">
+                    <label style="font-weight: 500; font-size: 0.9em; opacity: 0.85; margin-bottom: 6px;">Mods</label>
+                    <div class="checkbox-group" style="display: flex; gap: 6px; align-items: center; justify-content: flex-start; margin-bottom: 2px;">
+                        <label class="checkbox-item" title="Windows modifier key flag"><input type="checkbox" id="modW" value="w">W</label>
+                        <label class="checkbox-item" title="Control modifier key flag"><input type="checkbox" id="modC" value="c">C</label>
+                        <label class="checkbox-item" title="Alt modifier key flag"><input type="checkbox" id="modA" value="a">A</label>
+                        <label class="checkbox-item" title="Shift modifier key flag"><input type="checkbox" id="modS" value="s">S</label>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -2645,55 +2788,82 @@ var require_extension_macros_html = __commonJS({
                 <button type="button" class="secondary small" id="btnClear2" title="Clear the Base Key, modifier checkboxes, and shortcode box for the secondary optional chord.">Clear</button>
             </div>
             
-            <div class="form-group">
-                <label for="baseKey2" style="font-weight: 500;">Base Key</label>
-                <input type="text" id="baseKey2" placeholder="e.g., W, ESC, DOWN">
-            </div>
-
-            <div class="form-group">
-                <label style="font-weight: 500;">Modifiers</label>
-                <div class="checkbox-group">
-                    <label class="checkbox-item"><input type="checkbox" id="modW2" value="w"> Windows</label>
-                    <label class="checkbox-item"><input type="checkbox" id="modC2" value="c"> Control</label>
-                    <label class="checkbox-item"><input type="checkbox" id="modA2" value="a"> Alt</label>
-                    <label class="checkbox-item"><input type="checkbox" id="modS2" value="s"> Shift</label>
+            <div style="display: grid; grid-template-columns: 2fr 1fr 2fr; gap: 12px; align-items: end;">
+                <div class="form-group">
+                    <label for="baseKey2" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Base Key</label>
+                    <input type="text" id="baseKey2" placeholder="e.g., W, ESC, DOWN" title="Specify the secondary key identifier for chord combinations. Non-recognized keys will be highlighted with red border borders.">
                 </div>
-            </div>
-
-            <div class="form-group">
-                <label for="shortcode2" style="font-weight: 500;">Modifier Shortcode Box (wcas)</label>
-                <input type="text" id="shortcode2" placeholder="e.g., ca, s, wcas">
+                <div class="form-group">
+                    <label for="shortcode2" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Code</label>
+                    <input type="text" id="shortcode2" placeholder="cas" title="Compact modifier flags: w (Windows), c (Control), a (Alt), s (Shift)">
+                </div>
+                <div class="form-group">
+                    <label style="font-weight: 500; font-size: 0.9em; opacity: 0.85; margin-bottom: 6px;">Mods</label>
+                    <div class="checkbox-group" style="display: flex; gap: 6px; align-items: center; justify-content: flex-start; margin-bottom: 2px;">
+                        <label class="checkbox-item" title="Windows modifier key flag"><input type="checkbox" id="modW2" value="w">W</label>
+                        <label class="checkbox-item" title="Control modifier key flag"><input type="checkbox" id="modC2" value="c">C</label>
+                        <label class="checkbox-item" title="Alt modifier key flag"><input type="checkbox" id="modA2" value="a">A</label>
+                        <label class="checkbox-item" title="Shift modifier key flag"><input type="checkbox" id="modS2" value="s">S</label>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="form-group" style="margin-top: 8px;">
         <label for="whenClause" style="font-weight: 500;">Context Clause Constraint (When)</label>
-        <input type="text" id="whenClause" placeholder="e.g., editorTextFocus">
+        <input type="text" id="whenClause" placeholder="e.g., editorTextFocus" title="Specifies the context condition when the keybinding is active (e.g., editorTextFocus, terminalFocus).">
     </div>
 
     <div id="statusBox" style="display: none;"></div>
 
-    <div class="actions">
-        <button class="secondary small" id="btnEditJson" title="Open keybindings.json file to manually view or edit raw JSON records.">Edit Json</button>
-        <button class="secondary small" id="btnKbUi" title="Open the native VS Code Keybindings Keyboard Shortcuts configuration panel.">KB UI</button>
-        <button class="secondary small" id="btnKbUiCmd" title="Search and filter the VS Code Keyboard Shortcuts panel specifically for the 'todo-tree.filter' command.">KB UI Cmd</button>
-        <button class="secondary small" id="btnKbUiKey" title="Search the VS Code Keyboard Shortcuts panel specifically for the 'alt+. f1' key combination.">KB UI Key</button>
-        <button class="secondary small" id="btnKbUiUser" title="Filter the Keyboard Shortcuts panel to show only custom user-configured keybindings.">KB UI User</button>
-        <button class="secondary small" id="btnKbUiDefault" title="Filter the Keyboard Shortcuts panel to show only built-in default VS Code system keybindings.">KB UI Default</button>
-        <button class="secondary small" id="btnKbUiExtension" title="Filter the Keyboard Shortcuts panel to show only keybindings contributed by extensions.">KB UI Extension</button>
-        <button class="secondary small" id="btnKbUiExt" title="Filter the Keyboard Shortcuts panel to display only keybindings contributed specifically by the 'gruntfuggly.todo-tree' extension.">KB UI Ext</button>
-        <button class="secondary small" id="btnKbUiClear" title="Search the Keyboard Shortcuts panel for unassigned keybindings related to 'todo-tree' to assist in resolving conflicts.">KB UI Clear</button>
-        
-        <button class="secondary" id="btnReset" title="Reset and restore all input fields, checkboxes, and modifier settings to their initial values when the form opened.">Reset</button>
-        <button class="secondary" id="btnClear" title="Clear all fields, checkboxes, and validation states across the entire form.">Clear</button>
-        <button class="secondary" id="btnCopyBinding" title="Copy the current keybinding, command, and when-clause properties to the clipboard as a standard VS Code JSON block.">Copy Binding</button>
-        <button class="secondary" id="btnPasteBinding" title="Read a keybinding JSON object from the clipboard and automatically populate the form fields with its values.">Paste Binding</button>
-        <div style="flex-grow: 1;"></div>
-        <button class="secondary" id="btnCancel" title="Discard any pending changes and return back to the main command picker menu.">Cancel</button>
-        <button class="secondary" id="btnClone" disabled title="Remove the active keybinding assignment for this command.">Unbind</button>
-        <button class="secondary" id="btnSaveClone" disabled title="Add the newly configured keybinding as an additional shortcut for this command without deleting any existing mappings.">Add</button>
-        <button id="btnSubmit" disabled title="Save and apply the updated keybinding assignment for this command.">Save</button>
+    <div class="actions-group">
+        <!-- Row 1: Current Helpers -->
+        <div class="helper-row">
+            <span class="helper-row-label">Current:</span>
+            <div class="helper-buttons">
+                <button type="button" class="secondary small" id="btnEditJson" title="Open the user keybindings.json configuration file and highlight the exact location of the current active binding record.">Edit Json</button>
+                <button type="button" class="secondary small" id="btnKbUiCmd" title="Open the native VS Code Keyboard Shortcuts panel with a search filter focused specifically on the command ID of this action.">KB UI Cmd</button>
+                <button type="button" class="secondary small" id="btnKbUiKey" title="Open the native VS Code Keyboard Shortcuts panel pre-filtered for the current keyboard shortcut assignment.">KB UI Key</button>
+                <button type="button" class="secondary small" id="btnKbUiUser" title="Open the native VS Code Keyboard Shortcuts panel displaying only your custom user-configured keybindings.">KB UI User</button>
+                <button type="button" class="secondary small" id="btnKbUiDefault" title="Open the native VS Code Keyboard Shortcuts panel displaying all default built-in keybindings.">KB UI Default</button>
+                <button type="button" class="secondary small" id="btnKbUiExtension" title="Open the native VS Code Keyboard Shortcuts panel filtering to show keybindings contributed by extensions.">KB UI Extension</button>
+                <button type="button" class="secondary small" id="btnKbUiExt" title="Open the native VS Code Keyboard Shortcuts panel showing only the keybindings contributed by the extension namespace of this command.">KB UI Ext</button>
+            </div>
+        </div>
+
+        <!-- Row 2: New Helpers -->
+        <div class="helper-row" style="margin-bottom: 8px;">
+            <span class="helper-row-label">New:</span>
+            <div class="helper-buttons">
+                <button type="button" class="secondary small" id="btnEditJsonNew" title="Open keybindings.json file and look up or highlight entries matching the newly configured key combination and context.">Edit Json</button>
+                <button type="button" class="secondary small" id="btnKbUiCmdNew" title="Open the native VS Code Keyboard Shortcuts panel filtering specifically for this action's command.">KB UI Cmd</button>
+                <button type="button" class="secondary small" id="btnKbUiKeyNew" title="Open the native VS Code Keyboard Shortcuts panel with search pre-filled for the new key combination typed in the form.">KB UI Key</button>
+                <button type="button" class="secondary small" id="btnKbUiUserNew" title="Open the native VS Code Keyboard Shortcuts panel displaying custom user keybinding modifications.">KB UI User</button>
+                <button type="button" class="secondary small" id="btnKbUiDefaultNew" title="Open the native VS Code Keyboard Shortcuts panel to view default VS Code keyboard mappings.">KB UI Default</button>
+                <button type="button" class="secondary small" id="btnKbUiExtensionNew" title="Open the native VS Code Keyboard Shortcuts panel showing extension-supplied default bindings.">KB UI Extension</button>
+                <button type="button" class="secondary small" id="btnKbUiExtNew" title="Open the native VS Code Keyboard Shortcuts panel filtered specifically to the extension package that contributes this command.">KB UI Ext</button>
+            </div>
+        </div>
+
+        <!-- Row 3: Standard Actions -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 12px;">
+            <!-- Align Left -->
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="secondary" id="btnReset" title="Discard current unsaved changes and reset the entire form and validation state back to the original values.">Reset</button>
+                <button type="button" class="secondary" id="btnClear" title="Clear all input fields, checkboxes, modifier labels, and validation indicators to let you configure a clean, empty key combination.">Clear</button>
+                <button type="button" class="secondary" id="btnCopyBinding" title="Copy the current key combination, command ID, and context clause to your system clipboard formatted as a valid VS Code keybindings JSON object.">Copy Binding</button>
+                <button type="button" class="secondary" id="btnPasteBinding" title="Read a keybinding JSON object from your system clipboard and instantly parse its properties to populate this form.">Paste Binding</button>
+            </div>
+            
+            <!-- Align Right -->
+            <div style="display: flex; gap: 8px;">
+                <button type="button" class="secondary" id="btnCancel" title="Close this configuration view and return to the main command picker menu.">Cancel</button>
+                <button type="button" class="secondary" id="btnClone" disabled title="Unbind and remove this keyboard shortcut mapping.">Unbind</button>
+                <button type="button" class="secondary" id="btnSaveClone" disabled title="Add the newly configured key combination as an additional secondary shortcut for this action, preserving existing bindings.">Add</button>
+                <button type="button" id="btnSubmit" disabled title="Save and apply the updated key combination assignment for this action (replacing any matched existing binding).">Save</button>
+            </div>
+        </div>
     </div>
 
     <script>
