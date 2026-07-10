@@ -130,10 +130,10 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         }
 
         if (hasModifiers) {
-            checkboxes1.w.checked = checkboxes1.w.checked || w;
-            checkboxes1.c.checked = checkboxes1.c.checked || c;
-            checkboxes1.a.checked = checkboxes1.a.checked || a;
-            checkboxes1.s.checked = checkboxes1.s.checked || s;
+            checkboxes1.w.checked = w;
+            checkboxes1.c.checked = c;
+            checkboxes1.a.checked = a;
+            checkboxes1.s.checked = s;
         }
 
         baseInput1.value = cleanBaseKeyInput(val);
@@ -197,10 +197,10 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         }
 
         if (hasModifiers) {
-            checkboxes2.w.checked = checkboxes2.w.checked || w;
-            checkboxes2.c.checked = checkboxes2.c.checked || c;
-            checkboxes2.a.checked = checkboxes2.a.checked || a;
-            checkboxes2.s.checked = checkboxes2.s.checked || s;
+            checkboxes2.w.checked = w;
+            checkboxes2.c.checked = c;
+            checkboxes2.a.checked = a;
+            checkboxes2.s.checked = s;
         }
 
         baseInput2.value = cleanBaseKeyInput(val);
@@ -279,6 +279,9 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             shortcodeInput2.value = '';
 
             whenInput.value = '';
+            lastValidatedNativeKey = '';
+            statusBox.style.display = 'none';
+            statusBox.textContent = '';
             isSynchronizing = false;
             triggerValidation();
         });
@@ -326,7 +329,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             checkboxes2.a.checked = shortcodeInput2.value.includes('a');
             checkboxes2.s.checked = shortcodeInput2.value.includes('s');
 
-            whenInput.value = message.when || 'editorTextFocus';
+            whenInput.value = message.when || '';
             isSynchronizing = false;
             triggerValidation();
         }
@@ -407,7 +410,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         checkboxes2.a.checked = shortcodeInput2.value.includes('a');
         checkboxes2.s.checked = shortcodeInput2.value.includes('s');
 
-        whenInput.value = window.CE_INITIAL_STATE.whenClause || 'editorTextFocus';
+        whenInput.value = window.CE_INITIAL_STATE.whenClause !== undefined ? window.CE_INITIAL_STATE.whenClause : '';
         
         if (currentKeysLabel) currentKeysLabel.textContent = window.CE_INITIAL_STATE.currentKeys || 'None';
         if (currentWhenClauseLabel) currentWhenClauseLabel.textContent = window.CE_INITIAL_STATE.currentWhen || 'No context';
@@ -578,7 +581,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             chord1Flags: "` + (chord1Flags || '') + `",
             chord2Base: "` + (chord2Base || '') + `",
             chord2Flags: "` + (chord2Flags || '') + `",
-            whenClause: "` + (whenClause || 'editorTextFocus') + `",
+            whenClause: "` + (whenClause !== undefined ? whenClause : '') + `",
             currentKeys: "` + (currentKeys || '') + `",
             currentWhen: "` + (currentWhen || '') + `"
         };

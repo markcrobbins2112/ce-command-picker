@@ -207,11 +207,15 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                                         }
                                     });
 
-                                    if (currentCmd === currentTarget.command && currentKey === currentTarget.key) {
-                                        const targetWhen = currentTarget.when || '';
-                                        const checkWhen = currentWhen || '';
-                                        if (targetWhen === checkWhen) {
-                                            bestMatchNode = commandNode || itemNode;
+                                    if (currentCmd === currentTarget.command) {
+                                        const normCheck = currentKey.replace(/\s+/g, '').toLowerCase();
+                                        const normTarget = currentTarget.key.replace(/\s+/g, '').toLowerCase();
+                                        if (normCheck === normTarget) {
+                                            const targetWhen = currentTarget.when || '';
+                                            const checkWhen = currentWhen || '';
+                                            if (targetWhen === checkWhen) {
+                                                bestMatchNode = commandNode || itemNode;
+                                            }
                                         }
                                     }
                                 }
@@ -239,7 +243,14 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                     const targetToRemove = targetToEdit || (existingTargets.length > 0 ? existingTargets[0] : null);
                     if (targetToRemove) {
                         let bindingsList = core.loadFullKeybindingsArray();
-                        bindingsList = bindingsList.filter(b => !(b.key === targetToRemove.key && b.command === targetToRemove.command && (b.when || '') === (targetToRemove.when || '')));
+                        bindingsList = bindingsList.filter(b => {
+                            const normB = b.key.replace(/\s+/g, '').toLowerCase();
+                            const normTarget = targetToRemove.key.replace(/\s+/g, '').toLowerCase();
+                            const matchesKey = normB === normTarget;
+                            const matchesCmd = b.command === targetToRemove.command;
+                            const matchesWhen = (b.when || '') === (targetToRemove.when || '');
+                            return !(matchesKey && matchesCmd && matchesWhen);
+                        });
                         if (core.saveKeybindingsArray(bindingsList)) {
                             vscode.window.showInformationMessage(`Successfully removed keybinding mapping for: ${commandItem.commandId}`);
                         }

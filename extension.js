@@ -1954,10 +1954,10 @@ var require_extension_macros_html = __commonJS({
         }
 
         if (hasModifiers) {
-            checkboxes1.w.checked = checkboxes1.w.checked || w;
-            checkboxes1.c.checked = checkboxes1.c.checked || c;
-            checkboxes1.a.checked = checkboxes1.a.checked || a;
-            checkboxes1.s.checked = checkboxes1.s.checked || s;
+            checkboxes1.w.checked = w;
+            checkboxes1.c.checked = c;
+            checkboxes1.a.checked = a;
+            checkboxes1.s.checked = s;
         }
 
         baseInput1.value = cleanBaseKeyInput(val);
@@ -2021,10 +2021,10 @@ var require_extension_macros_html = __commonJS({
         }
 
         if (hasModifiers) {
-            checkboxes2.w.checked = checkboxes2.w.checked || w;
-            checkboxes2.c.checked = checkboxes2.c.checked || c;
-            checkboxes2.a.checked = checkboxes2.a.checked || a;
-            checkboxes2.s.checked = checkboxes2.s.checked || s;
+            checkboxes2.w.checked = w;
+            checkboxes2.c.checked = c;
+            checkboxes2.a.checked = a;
+            checkboxes2.s.checked = s;
         }
 
         baseInput2.value = cleanBaseKeyInput(val);
@@ -2103,6 +2103,9 @@ var require_extension_macros_html = __commonJS({
             shortcodeInput2.value = '';
 
             whenInput.value = '';
+            lastValidatedNativeKey = '';
+            statusBox.style.display = 'none';
+            statusBox.textContent = '';
             isSynchronizing = false;
             triggerValidation();
         });
@@ -2150,7 +2153,7 @@ var require_extension_macros_html = __commonJS({
             checkboxes2.a.checked = shortcodeInput2.value.includes('a');
             checkboxes2.s.checked = shortcodeInput2.value.includes('s');
 
-            whenInput.value = message.when || 'editorTextFocus';
+            whenInput.value = message.when || '';
             isSynchronizing = false;
             triggerValidation();
         }
@@ -2231,7 +2234,7 @@ var require_extension_macros_html = __commonJS({
         checkboxes2.a.checked = shortcodeInput2.value.includes('a');
         checkboxes2.s.checked = shortcodeInput2.value.includes('s');
 
-        whenInput.value = window.CE_INITIAL_STATE.whenClause || 'editorTextFocus';
+        whenInput.value = window.CE_INITIAL_STATE.whenClause !== undefined ? window.CE_INITIAL_STATE.whenClause : '';
         
         if (currentKeysLabel) currentKeysLabel.textContent = window.CE_INITIAL_STATE.currentKeys || 'None';
         if (currentWhenClauseLabel) currentWhenClauseLabel.textContent = window.CE_INITIAL_STATE.currentWhen || 'No context';
@@ -2401,7 +2404,7 @@ var require_extension_macros_html = __commonJS({
             chord1Flags: "` + (chord1Flags || "") + `",
             chord2Base: "` + (chord2Base || "") + `",
             chord2Flags: "` + (chord2Flags || "") + `",
-            whenClause: "` + (whenClause || "editorTextFocus") + `",
+            whenClause: "` + (whenClause !== void 0 ? whenClause : "") + `",
             currentKeys: "` + (currentKeys || "") + `",
             currentWhen: "` + (currentWhen || "") + `"
         };
@@ -2678,11 +2681,15 @@ var require_extension_macros_form = __commonJS({
                           }
                         }
                       });
-                      if (currentCmd === currentTarget.command && currentKey === currentTarget.key) {
-                        const targetWhen = currentTarget.when || "";
-                        const checkWhen = currentWhen || "";
-                        if (targetWhen === checkWhen) {
-                          bestMatchNode = commandNode || itemNode;
+                      if (currentCmd === currentTarget.command) {
+                        const normCheck = currentKey.replace(/\s+/g, "").toLowerCase();
+                        const normTarget = currentTarget.key.replace(/\s+/g, "").toLowerCase();
+                        if (normCheck === normTarget) {
+                          const targetWhen = currentTarget.when || "";
+                          const checkWhen = currentWhen || "";
+                          if (targetWhen === checkWhen) {
+                            bestMatchNode = commandNode || itemNode;
+                          }
                         }
                       }
                     }
@@ -2707,7 +2714,14 @@ var require_extension_macros_form = __commonJS({
               const targetToRemove = targetToEdit || (existingTargets.length > 0 ? existingTargets[0] : null);
               if (targetToRemove) {
                 let bindingsList = core.loadFullKeybindingsArray();
-                bindingsList = bindingsList.filter((b) => !(b.key === targetToRemove.key && b.command === targetToRemove.command && (b.when || "") === (targetToRemove.when || "")));
+                bindingsList = bindingsList.filter((b) => {
+                  const normB = b.key.replace(/\s+/g, "").toLowerCase();
+                  const normTarget = targetToRemove.key.replace(/\s+/g, "").toLowerCase();
+                  const matchesKey = normB === normTarget;
+                  const matchesCmd = b.command === targetToRemove.command;
+                  const matchesWhen = (b.when || "") === (targetToRemove.when || "");
+                  return !(matchesKey && matchesCmd && matchesWhen);
+                });
                 if (core.saveKeybindingsArray(bindingsList)) {
                   vscode.window.showInformationMessage(`Successfully removed keybinding mapping for: ${commandItem.commandId}`);
                 }
@@ -3000,6 +3014,7 @@ var require_extension_ui = __commonJS({
         { label: "Copy Bindings", detail: "Copy full system JSON config structures", actionKey: "COPY_BIND" },
         { label: "Assign Key", detail: "Write a newly structured key map parameter", actionKey: "ASSIGN_KEY" },
         { label: "Edit Binding", detail: "Modify existing parameters matching this action ID", actionKey: "EDIT_BINDING" },
+        { label: "Goto Binding UI", detail: "Configure keybindings using the visual webview form", actionKey: "GOTO_BINDING_UI" },
         { label: "Remove Key", detail: "Selectively purge structural mappings", actionKey: "REMOVE_KEY" },
         { label: "Goto Binding JSON", detail: "Locate structural code array within standard settings files", actionKey: "GOTO_JSON" }
       ];
@@ -3035,6 +3050,11 @@ var require_extension_ui = __commonJS({
           case "EDIT_BINDING":
             formMacro.promptAssignKey(context, commandItem, originalArgs, true);
             break;
+          case "GOTO_BINDING_UI": {
+            const hasExisting = core.loadFullKeybindingsArray().some((b) => b.command === commandItem.commandId);
+            formMacro.promptAssignKey(context, commandItem, originalArgs, hasExisting);
+            break;
+          }
           case "REMOVE_KEY":
             purgeMacro.promptRemoveKey(context, commandItem, originalArgs);
             break;

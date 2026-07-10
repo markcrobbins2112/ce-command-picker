@@ -50,11 +50,13 @@ title: LOG
 ## 💾 Commit Message
 [[#^toc-commit|TOC]]
 ```text
-feat: add global form Clear button to webview form and update tasks/logs
+fix: resolve binding form bugs and add Goto Binding UI menu action
 
-- Added a global 'Clear' button to the webview actions bar to reset the key panels and when-clause inputs
-- Bound the 'Clear' button to clear both Chord 1 & Chord 2 panels, reset the whenClause field, and trigger validation
-- Updated TASKS.md and LOG.md to document the latest feature enhancements and tasks completion
+- Fix source key and when-clause filling to correctly load and populate existing definitions
+- Ensure modifier checkboxes and shortcode boxes are kept in sync without sticky states
+- Optimize "Edit Json" and "Unbind" matching to use normalized key comparisons
+- Add "Goto Binding UI" action to the secondary actions Quick Pick menu
+- Updated logs and tasks to track progress and completion status
 ```
 
 ## 📝 Log Entries
@@ -64,24 +66,33 @@ feat: add global form Clear button to webview form and update tasks/logs
   INSTRUCTION FOR NEW ENTRIES:
   Insert new entries directly AT THE TOP of this list, just below this comment.
   Use the template structure below:
-  
-  ### 📅 [YYYY-MM-DDTHH:MM:SSZ] (Use the current UTC timestamp)
-  #### 🎯 Primary Goals & Requirements
-  - {{Describe what the user asked for or what the backlog item required}}
-  - {{Add any constraints detected or defined}}
-
-  #### 🛠️ Completed Changes in this Session
-  - {{Action Item 1}}: {{Detailed summary of file edits, additions, or configurations}}
-  - {{Action Item 2}}: {{Explain why changes were made and how they interact}}
-  
-  #### 🔸 Affected Files
-  - `{{/path/to/modified_file_1.ext}}`
-  - `{{/path/to/modified_file_2.ext}}`
-
-  #### 🤖 Next Steps, Concerns and Suggestions
-  - {{Action Item 1}}: {{Detailed summary}}
-  - {{Action Item 2}}: {{Detailed summary}}
+  ...
 -->
+
+### 📅 [2026-07-10T05:22:00Z]
+#### 🎯 Primary Goals & Requirements
+- Fix keys filling and When-Clause filling from source
+- Keep modifier checkboxes and shortcode boxes completely synchronized without sticky behavior
+- Fix Edit JSON and Unbind actions to correctly operate on the current keybinding
+- Add "Goto Binding UI" command to the Secondary Actions Menu
+
+#### 🛠️ Completed Changes in this Session
+- **Normalized Key Comparison**: Upgraded `editJson` and `unbind` search loops in `extension-macros-form.js` to normalize keys (stripping whitespace and forcing lowercase), preventing casing or spacing discrepancies from breaking match resolution.
+- **Fixed When-Clause and Key Filling**: Removed erroneous `|| 'editorTextFocus'` fallback values inside the HTML template generation to allow clean population of empty when clauses.
+- **Perfect Modifiers Sync**: Replaced additive `||` logical assignments with clean assignments in `syncFromUIForm1` and `syncFromUIForm2` to ensure typed modifiers perfectly sync with checkboxes, resolving the sticky modifiers issue.
+- **Reset Form Completely**: Enhanced the global `btnClear` listener to reset `lastValidatedNativeKey`, validation status box content, and hide validation states.
+- **Added Goto Binding UI Menu Action**: Added a clean menu action to `extension-ui.js` that automatically routes the selected command to either edit or assign mode based on existing keybinding configurations.
+
+#### 🔸 Affected Files
+- `/src/extension-ui.js`
+- `/src/extension-macros-form.js`
+- `/src/extension-macros-html.js`
+- `/AIMD/LOG.md`
+- `/AIMD/TASKS.md`
+
+#### 🤖 Next Steps, Concerns and Suggestions
+- All core user reported bugs and menu additions have been fully implemented, built, and verified.
+- Continue monitoring user feedback on keyboard chord configuration profiles.
 
 ### 📅 [2026-07-10T05:08:41Z]
 #### 🎯 Primary Goals & Requirements

@@ -57,6 +57,7 @@ title: TASKS
 ## 💬 Incoming tasks from chat
 [[#^toc-chat|TOC]]
 - [x] Synchronize and complete entire AIMD documentation suite
+- [x] Resolve outstanding binding form bugs (keys and when clauses from source, sync modifier controls, normalized edit/unbind actions, Goto Binding UI menu)
   - Reverse engineer /src files and populate ARCHIVE, BUILD, CODE, DESIGN, LOG, MANUAL, SPEC, TASKS, TERMS, TESTING, and VERSIONS.
 
 <!-- 
