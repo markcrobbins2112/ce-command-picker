@@ -9,12 +9,15 @@ const path = require('path');
  */
 function getWebviewContent(title, baseKey, shorthand, whenClause) {
     let flags = '';
-    if (shorthand && shorthand.includes('.')) {
-        const [, modFlags] = shorthand.split('.');
-        flags = modFlags || '';
+    
+    // ✅ FIXED: Safely process string initialization bounds for a literal period key
+    if (shorthand) {
+        const match = shorthand.match(/(.*)\.([wcas]*)$/);
+        if (match) {
+            flags = match[2] || '';
+        }
     }
 
-    // Natively load the external browser controller file from our disk directory
     const clientScriptPath = path.join(__dirname, 'webview', 'form-client.js');
     let clientScriptContent = '';
     try {

@@ -74,10 +74,11 @@ function syncFromShortcode() {
         return;
     }
 
-    if (text.includes('.')) {
-        const [base, flags] = text.split('.');
-        baseInput.value = base.toUpperCase();
-        setUIFlags(flags || '');
+    // ✅ FIXED: Lookbehind regex parsing guarantees trailing flag isolation for literal period assignments
+    const match = text.match(/(.*)\.([wcas]*)$/i);
+    if (match) {
+        baseInput.value = match[1].toUpperCase();
+        setUIFlags(match[2] || '');
     } else {
         if (!text.includes('+')) {
             baseInput.value = text.toUpperCase();
