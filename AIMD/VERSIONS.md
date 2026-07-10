@@ -41,6 +41,19 @@ title: VERSIONS
 ## 🚀 Stable Releases & Milestones
 [[#^toc-stable|TOC]]
 
+### 🏷️ v1.2.54 (2026-07-10) - Auto-Focus, Multi-Tab Close Fixes, Distinct Copy Actions, and Dual-Mode Paging
+- **Added / Enhanced:**
+  - Implemented automatic, timing-isolated focus mechanism for the `fullShorthandInput` keybinding input field when the webview is first drawn or focused.
+  - Divided copy capabilities into distinct **Copy Current Binding** (captures the raw initial/original keybinding settings) and **Copy New Binding** (captures the user-modified form values) actions.
+  - Re-engineered the queue navigation paging controls to support dual-mode traversal:
+    - **Previous/Next without Checkoff** (`<<[]` and `[]>>`): Standard list paging.
+    - **Previous/Next with Checkoff** (`<<[x]` and `[x]>>`): Marks the active item completed/checked-off and pages in one click.
+  - Formulated descriptive, contextual tooltips for all custom paging icons.
+  - Restructured the **Add** button (`btnSaveClone`) to always append new mappings to settings (mirroring clone), ensuring a new entry is generated instead of modifying the existing one.
+- **Fixed / Patched:**
+  - Patched `Close All KB Json` and `Close All KB UI` tab destruction algorithms to iterate over non-mutated target collections, successfully closing all open files and native settings pages rather than just the first found.
+  - Prevented the **Save** button (`btnSubmit`) from reopening the primary Pick menu panel upon panel disposal, allowing seamless, silent completions.
+
 ### 🏷️ v1.2.53 (2026-07-10) - Custom Modifier Styling, Secondary Menu Reordering, and Collision Solver UI
 - **Added / Enhanced:**
   - Integrated customizable dynamic modifier label styling: modC is red, modA is the blue alt-color (#2f2bfb), and if both Ctrl and Alt are checked, they both turn purple.

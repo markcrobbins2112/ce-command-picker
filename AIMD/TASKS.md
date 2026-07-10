@@ -56,6 +56,16 @@ title: TASKS
 -->
 ## 💬 Incoming tasks from chat
 [[#^toc-chat|TOC]]
+- [x] Auto-focus fullShorthandInput when tab/webview is focused or first drawn
+- [x] Correct Close All KB Json function to close all keybindings.json file tabs
+- [x] Correct Close All KB UI to successfully close all Keyboard Shortcuts tabs
+- [x] Rename Copy Binding to Copy Current Binding, which copies original/current settings
+- [x] Add Copy New Binding button next to Copy Current Binding, which copies form-constructed key values
+- [x] Rename << and >> paging buttons to <<[] and []>> representing next/prev without checkoff
+- [x] Add <<[x] and [x]>> paging buttons representing next/prev with checkoff
+- [x] Adjust paging buttons tooltips accordingly
+- [x] Fix Add button (btnSaveClone) to always create a new entry instead of editing the existing one
+- [x] Fix Save button (btnSubmit) to not reopen the primary menu upon disposal
 - [x] Remove Assign Key from secondary menu
 - [x] Reorder secondary menu options
 - [x] Set Alt color to #2f2bfb

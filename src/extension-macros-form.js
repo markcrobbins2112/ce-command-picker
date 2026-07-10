@@ -241,8 +241,8 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                     const finalWhen = message.when.trim();
                     const actionType = message.actionType || 'save'; // 'save', 'clone', 'saveAndClone'
 
-                    if (actionType === 'clone') {
-                        // Clone mode: ALWAYS appends as a new binding, keeping the original intact
+                    if (actionType === 'clone' || actionType === 'saveAndClone') {
+                        // Clone/Add mode: ALWAYS appends as a new binding, keeping the original intact
                         const freshMapping = { key: nativeKey, command: commandItem.commandId };
                         if (finalWhen) freshMapping.when = finalWhen;
                         currentBindings.push(freshMapping);
@@ -278,7 +278,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                         });
                     } else {
                         panel.dispose();
-                        ui.renderPrimaryMenu(context, originalArgs);
+                        // Save button should not reopen the menu
                     }
                     break;
 
@@ -531,13 +531,19 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                         const configPath = core.getKeybindingsFilePath();
                         const allGroups = (vscode.window.tabGroups && vscode.window.tabGroups.all) || [];
                         let closedCount = 0;
+                        const tabsToClose = [];
                         for (const group of allGroups) {
                             for (const tab of group.tabs) {
-                                if (tab.input instanceof vscode.TabInputText && tab.input.uri.fsPath === configPath) {
-                                    await vscode.window.tabGroups.close(tab);
-                                    closedCount++;
+                                const isKbJson = (tab.input && tab.input.uri && tab.input.uri.fsPath === configPath) || 
+                                                 (tab.label && tab.label.toLowerCase() === 'keybindings.json');
+                                if (isKbJson) {
+                                    tabsToClose.push(tab);
                                 }
                             }
+                        }
+                        for (const tab of tabsToClose) {
+                            await vscode.window.tabGroups.close(tab);
+                            closedCount++;
                         }
                         if (closedCount > 0) {
                             vscode.window.showInformationMessage(`Closed ${closedCount} keybindings.json file tab(s).`);
@@ -553,13 +559,17 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                     try {
                         const allGroups = (vscode.window.tabGroups && vscode.window.tabGroups.all) || [];
                         let closedCount = 0;
+                        const tabsToClose = [];
                         for (const group of allGroups) {
                             for (const tab of group.tabs) {
                                 if (tab.label === 'Keyboard Shortcuts' || tab.label === 'keybindings' || (tab.input && tab.input.viewType === 'keybindings')) {
-                                    await vscode.window.tabGroups.close(tab);
-                                    closedCount++;
+                                    tabsToClose.push(tab);
                                 }
                             }
+                        }
+                        for (const tab of tabsToClose) {
+                            await vscode.window.tabGroups.close(tab);
+                            closedCount++;
                         }
                         if (closedCount > 0) {
                             vscode.window.showInformationMessage(`Closed ${closedCount} Keyboard Shortcuts tab(s).`);

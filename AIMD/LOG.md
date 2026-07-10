@@ -50,13 +50,13 @@ title: LOG
 ## 💾 Commit Message
 [[#^toc-commit|TOC]]
 ```text
-build: v1.2.53 - Custom Modifier Styling, Secondary Menu Reordering, and Collision Solver UI
+build: v1.2.54 - Auto-Focus, Multi-Tab Close Fixes, Distinct Copy Actions, and Dual-Mode Paging
 
-- Integrated customizable dynamic modifier label styling and a Windows key lighter-color flag listener.
-- Reordered secondary menu options with specific hierarchy rules and removed old Assign Key action.
-- Implemented automatic launch-to-edit action buttons in validation status warnings for colliding command IDs.
-- Combined Copy Binding, Edit Picker Key, and paging buttons on a single unified row.
-- Patched syntax issues with template strings inside the html template file.
+- Implemented automatic fullShorthandInput focus on webview load and focus event triggers.
+- Resolved Close All KB Json and Close All KB UI multi-tab closure bugs by collecting non-mutating tab targets.
+- Created distinct Copy Current Binding and Copy New Binding actions.
+- Added dual-mode navigation paging buttons (with and without automatic checkoff) with customized tooltips.
+- Refactored Add button (btnSaveClone) to always append new mappings, and prevented Save (btnSubmit) from reopening the menu.
 ```
 
 ## 📝 Log Entries
@@ -68,6 +68,29 @@ build: v1.2.53 - Custom Modifier Styling, Secondary Menu Reordering, and Collisi
   Use the template structure below:
   ...
 -->
+
+### 📅 [2026-07-10T11:20:00Z]
+#### 🎯 Primary Goals & Requirements
+- Focus `fullShorthandInput` when the tab or webview is focused or first drawn.
+- Repair Close All KB Json and Close All KB UI to close all matched tabs rather than just the first found.
+- Rename Copy Binding to Copy Current Binding, and add a Copy New Binding button next to it.
+- Rename paging buttons `<<` and `>>` to `<<[]` and `[]>>` (without checkoff), and add `<<[x]` and `[x]>>` (with checkoff).
+- Refactor Add button to create a new entry (always append) instead of saving over the edited item.
+- Prevent Save button from reopening the menu.
+
+#### 🛠️ Completed Changes in this Session
+- **Focus Mechanics**: Configured asynchronous initial focus and standard window focus listeners on the webview text input element.
+- **Tab Destruction Safety**: Revised tab closing algorithms to parse through non-mutated arrays of all active groups, closing all matched files or native shortcuts panels successfully.
+- **Differentiated Clipboard Copies**: Segmented the copy action row into separate Copy Current (capturing raw initial data) and Copy New (capturing user form inputs) actions.
+- **Extended Paging Engine**: Enhanced navigation by inserting specialized checkoff paging commands that trigger standard checkoff completions while transitioning through the original command queue.
+- **Submission Rules**: Restricted "Add" button to append fresh mappings to bindings, and isolated "Save" completion to dispose the panel silently without reopening the primary pick palette.
+
+#### 🔸 Affected Files
+- `src/extension-macros-form.js`
+- `src/extension-macros-html.js`
+- `AIMD/TASKS.md`
+- `AIMD/LOG.md`
+- `AIMD/VERSIONS.md`
 
 ### 📅 [2026-07-10T11:00:00Z]
 #### 🎯 Primary Goals & Requirements

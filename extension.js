@@ -1947,7 +1947,8 @@ var require_extension_macros_html = __commonJS({
     // Left side actions and copies
     const btnReset = document.getElementById('btnResetHeader');
     const btnClear = document.getElementById('btnClear');
-    const btnCopyBinding = document.getElementById('btnCopyBindingHeader');
+    const btnCopyCurrentBinding = document.getElementById('btnCopyCurrentBinding');
+    const btnCopyNewBinding = document.getElementById('btnCopyNewBinding');
     const btnEditInstigator = document.getElementById('btnEditInstigator');
     const btnPasteBinding = document.getElementById('btnPasteBinding');
     const btnCopyCommand = document.getElementById('btnCopyCommand');
@@ -2557,12 +2558,27 @@ var require_extension_macros_html = __commonJS({
 
     // Paging functionality
     const btnPageFirst = document.getElementById('btnPageFirst');
-    const btnPagePrev5 = document.getElementById('btnPagePrev5');
-    const btnPagePrev = document.getElementById('btnPagePrev');
-    const btnPageNext = document.getElementById('btnPageNext');
-    const btnPageNext5 = document.getElementById('btnPageNext5');
+    const btnPagePrevWithCheckoff = document.getElementById('btnPagePrevWithCheckoff');
+    const btnPagePrevNoCheckoff = document.getElementById('btnPagePrevNoCheckoff');
+    const btnPageNextNoCheckoff = document.getElementById('btnPageNextNoCheckoff');
+    const btnPageNextWithCheckoff = document.getElementById('btnPageNextWithCheckoff');
     const btnPageLast = document.getElementById('btnPageLast');
     const lblPageNum = document.getElementById('lblPageNum');
+
+    function checkoffCurrent() {
+        const currentCmdId = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '';
+        const checkedOff = window.CE_CHECKED_OFF_COMMANDS || [];
+        if (currentCmdId && !checkedOff.includes(currentCmdId)) {
+            checkedOff.push(currentCmdId);
+            window.CE_CHECKED_OFF_COMMANDS = checkedOff;
+            updateCheckoffUI();
+            vscode.postMessage({
+                command: 'toggleCheckoff',
+                commandId: currentCmdId,
+                checked: true
+            });
+        }
+    }
 
     function pageTo(targetIdx) {
         const originalArgs = window.CE_ORIGINAL_ARGS || [];
@@ -2582,17 +2598,27 @@ var require_extension_macros_html = __commonJS({
 
     if (total > 0 && currentIdx !== -1) {
         if (btnPageFirst) btnPageFirst.addEventListener('click', () => pageTo(0));
-        if (btnPagePrev5) btnPagePrev5.addEventListener('click', () => pageTo(currentIdx - 1 < 0 ? total - 1 : currentIdx - 1));
-        if (btnPagePrev) btnPagePrev.addEventListener('click', () => pageTo(currentIdx - 1 < 0 ? total - 1 : currentIdx - 1));
-        if (btnPageNext) btnPageNext.addEventListener('click', () => pageTo(currentIdx + 1 >= total ? 0 : currentIdx + 1));
-        if (btnPageNext5) btnPageNext5.addEventListener('click', () => pageTo(currentIdx + 1 >= total ? 0 : currentIdx + 1));
+        if (btnPagePrevWithCheckoff) btnPagePrevWithCheckoff.addEventListener('click', () => {
+            checkoffCurrent();
+            pageTo(currentIdx - 1 < 0 ? total - 1 : currentIdx - 1);
+        });
+        if (btnPagePrevNoCheckoff) btnPagePrevNoCheckoff.addEventListener('click', () => {
+            pageTo(currentIdx - 1 < 0 ? total - 1 : currentIdx - 1);
+        });
+        if (btnPageNextNoCheckoff) btnPageNextNoCheckoff.addEventListener('click', () => {
+            pageTo(currentIdx + 1 >= total ? 0 : currentIdx + 1);
+        });
+        if (btnPageNextWithCheckoff) btnPageNextWithCheckoff.addEventListener('click', () => {
+            checkoffCurrent();
+            pageTo(currentIdx + 1 >= total ? 0 : currentIdx + 1);
+        });
         if (btnPageLast) btnPageLast.addEventListener('click', () => pageTo(total - 1));
         
         if (lblPageNum) {
             lblPageNum.textContent = (currentIdx + 1) + ' of ' + total;
         }
     } else {
-        [btnPageFirst, btnPagePrev5, btnPagePrev, btnPageNext, btnPageNext5, btnPageLast].forEach(btn => {
+        [btnPageFirst, btnPagePrevWithCheckoff, btnPagePrevNoCheckoff, btnPageNextNoCheckoff, btnPageNextWithCheckoff, btnPageLast].forEach(btn => {
             if (btn) btn.disabled = true;
         });
         if (lblPageNum) lblPageNum.textContent = '1 of 1';
@@ -3066,18 +3092,31 @@ var require_extension_macros_html = __commonJS({
     });
 
 
-    btnCopyBinding.addEventListener('click', () => {
-        const textValue = getFullShorthand();
-        if (!textValue) return;
-        vscode.postMessage({
-            command: 'copyBinding',
-            value: JSON.stringify({
-                key: lastValidatedNativeKey || '',
-                command: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '',
-                when: whenInput.value
-            }, null, 4)
+    if (btnCopyCurrentBinding) {
+        btnCopyCurrentBinding.addEventListener('click', () => {
+            vscode.postMessage({
+                command: 'copyBinding',
+                value: JSON.stringify({
+                    key: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.initialNativeKey : '',
+                    command: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '',
+                    when: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.whenClause : ''
+                }, null, 4)
+            });
         });
-    });
+    }
+
+    if (btnCopyNewBinding) {
+        btnCopyNewBinding.addEventListener('click', () => {
+            vscode.postMessage({
+                command: 'copyBinding',
+                value: JSON.stringify({
+                    key: lastValidatedNativeKey || '',
+                    command: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '',
+                    when: whenInput.value
+                }, null, 4)
+            });
+        });
+    }
 
     if (btnEditInstigator) {
         btnEditInstigator.addEventListener('click', () => {
@@ -3242,6 +3281,21 @@ var require_extension_macros_html = __commonJS({
         }
         if (currentWhenClauseLabel) currentWhenClauseLabel.textContent = window.CE_INITIAL_STATE.currentWhen || 'No context';
     }
+
+    // Set focus to fullShorthandInput on first load
+    setTimeout(() => {
+        if (fullShorthandInput) {
+            fullShorthandInput.focus();
+            fullShorthandInput.select();
+        }
+    }, 50);
+
+    // Also set focus when the window gets focus
+    window.addEventListener('focus', () => {
+        if (fullShorthandInput) {
+            fullShorthandInput.focus();
+        }
+    });
     `;
       return `<!DOCTYPE html>
 <html lang="en">
@@ -3357,17 +3411,18 @@ var require_extension_macros_html = __commonJS({
         <!-- Copy Binding, Edit Instigator & Paging Row -->
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; margin-bottom: 8px; flex-wrap: wrap;">
             <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1; min-width: 180px;">
-                <button type="button" class="secondary small" id="btnCopyBindingHeader" title="Copy Binding JSON" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Copy Binding</button>
+                <button type="button" class="secondary small" id="btnCopyCurrentBinding" title="Copy Current Binding JSON" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Copy Current Binding</button>
+                <button type="button" class="secondary small" id="btnCopyNewBinding" title="Copy New Binding JSON" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Copy New Binding</button>
                 <button type="button" class="secondary small" id="btnEditInstigator" title="Edit the keybinding for ce-command-picker.show (the command that instigated the Menu)" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Edit Picker Key</button>
             </div>
             <!-- Paging Row (right-aligned!) -->
             <div style="display: flex; justify-content: flex-end; align-items: center; gap: 4px;">
                 <button type="button" class="secondary small" id="btnPageFirst" title="First item">&lt;&lt;&lt;</button>
-                <button type="button" class="secondary small" id="btnPagePrev5" title="Previous item">&lt;&lt;</button>
-                <button type="button" class="secondary small" id="btnPagePrev" title="Previous item">&lt;</button>
+                <button type="button" class="secondary small" id="btnPagePrevWithCheckoff" title="Check off current command and page to previous item">&lt;&lt;[x]</button>
+                <button type="button" class="secondary small" id="btnPagePrevNoCheckoff" title="Page to previous item without checkoff">&lt;&lt;[]</button>
                 <span id="lblPageNum" style="font-size: 0.9em; font-weight: bold; margin: 0 4px; opacity: 0.85; min-width: 3.5em; text-align: center;">1 of 1</span>
-                <button type="button" class="secondary small" id="btnPageNext" title="Next item">&gt;</button>
-                <button type="button" class="secondary small" id="btnPageNext5" title="Next item">&gt;&gt;</button>
+                <button type="button" class="secondary small" id="btnPageNextNoCheckoff" title="Page to next item without checkoff">[]&gt;&gt;</button>
+                <button type="button" class="secondary small" id="btnPageNextWithCheckoff" title="Check off current command and page to next item">[x]&gt;&gt;</button>
                 <button type="button" class="secondary small" id="btnPageLast" title="Last item">&gt;&gt;&gt;</button>
             </div>
         </div>
@@ -3888,7 +3943,7 @@ var require_extension_macros_form = __commonJS({
               const nativeKey = message.nativeKey;
               const finalWhen = message.when.trim();
               const actionType = message.actionType || "save";
-              if (actionType === "clone") {
+              if (actionType === "clone" || actionType === "saveAndClone") {
                 const freshMapping = { key: nativeKey, command: commandItem.commandId };
                 if (finalWhen) freshMapping.when = finalWhen;
                 currentBindings.push(freshMapping);
@@ -3921,7 +3976,6 @@ var require_extension_macros_form = __commonJS({
                 });
               } else {
                 panel.dispose();
-                ui2.renderPrimaryMenu(context, originalArgs);
               }
               break;
             case "cancel":
@@ -4148,13 +4202,18 @@ var require_extension_macros_form = __commonJS({
                 const configPath = core.getKeybindingsFilePath();
                 const allGroups = vscode.window.tabGroups && vscode.window.tabGroups.all || [];
                 let closedCount = 0;
+                const tabsToClose = [];
                 for (const group of allGroups) {
                   for (const tab of group.tabs) {
-                    if (tab.input instanceof vscode.TabInputText && tab.input.uri.fsPath === configPath) {
-                      await vscode.window.tabGroups.close(tab);
-                      closedCount++;
+                    const isKbJson = tab.input && tab.input.uri && tab.input.uri.fsPath === configPath || tab.label && tab.label.toLowerCase() === "keybindings.json";
+                    if (isKbJson) {
+                      tabsToClose.push(tab);
                     }
                   }
+                }
+                for (const tab of tabsToClose) {
+                  await vscode.window.tabGroups.close(tab);
+                  closedCount++;
                 }
                 if (closedCount > 0) {
                   vscode.window.showInformationMessage(`Closed ${closedCount} keybindings.json file tab(s).`);
@@ -4169,13 +4228,17 @@ var require_extension_macros_form = __commonJS({
               try {
                 const allGroups = vscode.window.tabGroups && vscode.window.tabGroups.all || [];
                 let closedCount = 0;
+                const tabsToClose = [];
                 for (const group of allGroups) {
                   for (const tab of group.tabs) {
                     if (tab.label === "Keyboard Shortcuts" || tab.label === "keybindings" || tab.input && tab.input.viewType === "keybindings") {
-                      await vscode.window.tabGroups.close(tab);
-                      closedCount++;
+                      tabsToClose.push(tab);
                     }
                   }
+                }
+                for (const tab of tabsToClose) {
+                  await vscode.window.tabGroups.close(tab);
+                  closedCount++;
                 }
                 if (closedCount > 0) {
                   vscode.window.showInformationMessage(`Closed ${closedCount} Keyboard Shortcuts tab(s).`);
