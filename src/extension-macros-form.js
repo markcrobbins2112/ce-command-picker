@@ -5,6 +5,70 @@ const fs = require('fs');
 const jsonc = require('jsonc-parser');
 const htmlTemplate = require('./extension-macros-html');
 
+function findGroupForNewInstance(targetType, configPath) {
+    const allGroups = (vscode.window.tabGroups && vscode.window.tabGroups.all) || [];
+    for (let i = 0; i < allGroups.length; i++) {
+        const group = allGroups[i];
+        let hasTarget = false;
+        for (const tab of group.tabs) {
+            if (targetType === 'json') {
+                if (tab.input instanceof vscode.TabInputText && tab.input.uri.fsPath === configPath) {
+                    hasTarget = true;
+                    break;
+                }
+            } else {
+                if (tab.label === 'Keyboard Shortcuts' || tab.label === 'keybindings' || (tab.input && tab.input.viewType === 'keybindings')) {
+                    hasTarget = true;
+                    break;
+                }
+            }
+        }
+        if (!hasTarget) {
+            return group.viewColumn;
+        }
+    }
+    return vscode.ViewColumn.Beside;
+}
+
+function findGroupForReusing(targetType, configPath, panelViewColumn) {
+    const allGroups = (vscode.window.tabGroups && vscode.window.tabGroups.all) || [];
+    for (const group of allGroups) {
+        if (group.viewColumn === panelViewColumn) continue;
+        for (const tab of group.tabs) {
+            if (targetType === 'json') {
+                if (tab.input instanceof vscode.TabInputText && tab.input.uri.fsPath === configPath) {
+                    return group.viewColumn;
+                }
+            } else {
+                if (tab.label === 'Keyboard Shortcuts' || tab.label === 'keybindings' || (tab.input && tab.input.viewType === 'keybindings')) {
+                    return group.viewColumn;
+                }
+            }
+        }
+    }
+    if (panelViewColumn === vscode.ViewColumn.One) {
+        return vscode.ViewColumn.Two;
+    } else {
+        return vscode.ViewColumn.One;
+    }
+}
+
+async function focusViewColumn(column) {
+    if (column === vscode.ViewColumn.One) {
+        await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup');
+    } else if (column === vscode.ViewColumn.Two) {
+        await vscode.commands.executeCommand('workbench.action.focusSecondEditorGroup');
+    } else if (column === vscode.ViewColumn.Three) {
+        await vscode.commands.executeCommand('workbench.action.focusThirdEditorGroup');
+    } else if (column === vscode.ViewColumn.Four) {
+        await vscode.commands.executeCommand('workbench.action.focusFourthEditorGroup');
+    } else if (column === vscode.ViewColumn.Five) {
+        await vscode.commands.executeCommand('workbench.action.focusFifthEditorGroup');
+    } else {
+        await vscode.commands.executeCommand('workbench.action.focusFirstEditorGroup');
+    }
+}
+
 /**
  * Presents a side-by-side adaptive form layout panel.
  * Uses dynamic view type rotation to forcefully break service worker caching loops.
@@ -110,6 +174,22 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                     }
                     break;
 
+                case 'openKeybindings':
+                    const panelViewCol = panel.viewColumn;
+                    let targetCol;
+                    if (message.newInstance) {
+                        targetCol = findGroupForNewInstance('keybindings', null);
+                    } else {
+                        targetCol = findGroupForReusing('keybindings', null, panelViewCol);
+                    }
+                    await focusViewColumn(targetCol);
+                    if (message.args) {
+                        await vscode.commands.executeCommand(message.commandName, ...message.args);
+                    } else {
+                        await vscode.commands.executeCommand(message.commandName);
+                    }
+                    break;
+
                 case 'validate':
                     const checkText = message.value.trim();
                     const validator = require('./extension-macros-validator');
@@ -118,11 +198,19 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                     if (!verification.isValid) {
                         panel.webview.postMessage({ type: 'status', status: 'error', text: verification.errorReason });
                     } else {
-                        const collisions = fullBindings.filter(b => b.key.toLowerCase() === verification.nativeKey.toLowerCase() && b.command !== commandItem.commandId);
+                        let shCode = '';
+                        let natKey = verification.nativeKey;
+                        try {
+                            shCode = core.formatToCustomShorthand(natKey);
+                        } catch (e) {
+                            shCode = checkText;
+                        }
+
+                        const collisions = fullBindings.filter(b => b.key.toLowerCase() === natKey.toLowerCase() && b.command !== commandItem.commandId);
                         if (collisions.length > 0) {
-                            panel.webview.postMessage({ type: 'status', status: 'warning', text: `⚠️ Collision! Maps to: ${collisions.map(c => c.command).join(', ')}`, nativeKey: verification.nativeKey });
+                            panel.webview.postMessage({ type: 'status', status: 'warning', text: `⚠️ Collision! Maps to: ${collisions.map(c => c.command).join(', ')}`, nativeKey: natKey, shortCode: shCode });
                         } else {
-                            panel.webview.postMessage({ type: 'status', status: 'success', text: `✓ Translates to native: "${verification.nativeKey}"`, nativeKey: verification.nativeKey });
+                            panel.webview.postMessage({ type: 'status', status: 'success', text: `✓ ${natKey}`, nativeKey: natKey, shortCode: shCode });
                         }
                     }
                     break;
@@ -262,7 +350,16 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                         }
 
                         const doc = await vscode.workspace.openTextDocument(configPath);
-                        const editor = await vscode.window.showTextDocument(doc);
+                        
+                        const pViewCol = panel.viewColumn;
+                        let targetC;
+                        if (message.newInstance) {
+                            targetC = findGroupForNewInstance('json', configPath);
+                        } else {
+                            targetC = findGroupForReusing('json', configPath, pViewCol);
+                        }
+                        
+                        const editor = await vscode.window.showTextDocument(doc, targetC);
                         
                         if (bestMatchNode) {
                             const targetPos = doc.positionAt(bestMatchNode.offset);
