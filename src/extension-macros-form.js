@@ -1,4 +1,5 @@
 // START OF FILE: src/extension-macros-form.js
+
 const vscode = require('vscode');
 const htmlTemplate = require('./extension-macros-html');
 
@@ -53,23 +54,25 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         vscode.ViewColumn.Beside,
         {
             enableScripts: true,
-            retainContextWhenHidden: true,
-            // Allow access to local workspace directory structures
-            localResourceRoots: [vscode.Uri.file(context.extensionPath)]
+            retainContextWhenHidden: true
         }
     );
 
-    // Pass the webview manager reference directly down into your layout engine helper
-    panel.webview.html = htmlTemplate.getWebviewContent(panel.webview, commandItem.commandId || derivedTitle);
+    // Initialize layout injection 
+    panel.webview.html = htmlTemplate.getWebviewContent(commandItem.commandId || derivedTitle);
 
-    // 🌟 THE FIX: Pass data down safely via postMessage right after the DOM thread mounts!
-    panel.webview.postMessage({
-        type: 'init',
-        baseKey: initialBaseKey,
-        shorthand: initialShorthand,
-        flags: initialFlags,
-        whenClause: initialWhen
-    });
+    // 🌟 THE CRITICAL FIX: Give the base64 browser script 100ms to register its window message hooks securely!
+    setTimeout(() => {
+        if (panel && panel.webview) {
+            panel.webview.postMessage({
+                type: 'init',
+                baseKey: initialBaseKey,
+                shorthand: initialShorthand,
+                flags: initialFlags,
+                whenClause: initialWhen
+            });
+        }
+    }, 100);
 
     panel.webview.onDidReceiveMessage(
         async (message) => {
@@ -131,4 +134,5 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
 }
 
 module.exports = { promptAssignKey };
+
 // END OF FILE: src/extension-macros-form.js
