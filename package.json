@@ -2,7 +2,7 @@
   "name": "ce-command-picker",
   "displayName": "CE Command Picker",
   "description": "Isolated command pickers via keybinding arguments.",
-  "version": "1.2.6",
+  "version": "1.2.11",
   "publisher": "markrobbins",
   "license": "MIT",
   "engines": {
@@ -30,10 +30,7 @@
   ],
   "scripts": {
     "build": "node build.js",
-    "lint": "echo \"No lint configured yet\"",
-    "test": "echo \"No tests configured yet\"",
-    "pkg": "vsce package",
-    "package": "node build.js && vsce package"
+    "package": "node build.js"
   },
   "activationEvents": [
     "onCommand:ce-command-picker.show"

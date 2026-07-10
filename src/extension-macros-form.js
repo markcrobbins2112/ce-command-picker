@@ -1,10 +1,16 @@
 // START OF FILE: src/extension-macros-form.js
-const vscode = require('vscode');
-const core = require('./extension-core');
-const validator = require('./extension-macros-validator');
-const ui = require('./extension-ui');
 
-async function promptAssignKey(commandItem, originalArgs, isEditMode) {
+const vscode = require('vscode');
+const htmlTemplate = require('./extension-macros-html');
+
+/**
+ * Presents a side-by-side adaptive form layout panel.
+ * Extracts string segments from existing keyboard shortcuts to populate input fields.
+ */
+async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
+    const core = require('./extension-core');
+    const ui = require('./extension-ui');
+
     const fullBindings = core.loadFullKeybindingsArray();
     const existingTargets = fullBindings.filter(b => b.command === commandItem.commandId);
 
@@ -13,184 +19,104 @@ async function promptAssignKey(commandItem, originalArgs, isEditMode) {
         if (existingTargets.length === 0) {
             vscode.window.showWarningMessage('No bindings exist to edit. Swapping to fresh Assignment Mode.');
         } else if (existingTargets.length === 1) {
-            targetToEdit = existingTargets[0];
+            targetToEdit = existingTargets;
         } else {
             const choice = await vscode.window.showQuickPick(
                 existingTargets.map(t => ({ label: t.key, detail: t.when || 'No context clause', raw: t })),
                 { placeHolder: 'Select specific configuration signature row to modify:' }
             );
-            if (!choice) { ui.renderPrimaryMenu(originalArgs); return; }
+            if (!choice) { ui.renderPrimaryMenu(context, originalArgs); return; }
             targetToEdit = choice.raw;
         }
     }
 
     let initialBaseKey = '';
     let initialShorthand = '';
+    let initialWhen = 'editorTextFocus';
+
     if (targetToEdit) {
         initialShorthand = core.formatToCustomShorthand(targetToEdit.key);
-        initialBaseKey = initialShorthand.split('.')[0] || '';
+        initialWhen = targetToEdit.when || '';
+        
+        if (initialShorthand.includes('.')) {
+            const parts = initialShorthand.split('.');
+            initialBaseKey = parts[0]; // ✅ FIXED: Explicitly extract index 0 string token
+        } else {
+            initialBaseKey = initialShorthand;
+        }
     }
 
-    const baseKeyInput = await vscode.window.showInputBox({
-        title: isEditMode ? `Step 1: Edit Character Base Key` : `Step 1: Assign Character Base Key`,
-        placeHolder: "Type a single letter, number, or special label (e.g., X, F5, DOWN, ENTER)",
-        value: initialBaseKey,
-        validateInput: text => {
-            if (!text.trim()) return 'Base key is required.';
-            if (text.includes('+') || text.includes('.')) return 'Type only the main key here. No modifier prefixes or periods.';
-            return null;
+    const panel = vscode.window.createWebviewPanel(
+        'ceCommandPickerForm',
+        isEditMode ? `Edit Binding: ${commandItem.label}` : `Assign Key: ${commandItem.label}`,
+        vscode.ViewColumn.Beside,
+        {
+            enableScripts: true,
+            retainContextWhenHidden: true
         }
-    });
+    );
 
-    if (!baseKeyInput) { ui.renderPrimaryMenu(originalArgs); return; }
-    const validatedBase = baseKeyInput.trim().toUpperCase();
+    panel.webview.html = htmlTemplate.getWebviewContent(commandItem.label, initialBaseKey, initialShorthand, initialWhen);
 
-    const formQuickPick = vscode.window.createQuickPick();
-    formQuickPick.title = `Step 2: Sync Modifiers & Shortcode for "${validatedBase}"`;
-    formQuickPick.placeholder = "Type/Edit shortcode notation directly here...";
-    formQuickPick.canSelectMany = true;
+    panel.webview.onDidReceiveMessage(
+        async (message) => {
+            switch (message.command) {
+                case 'validate':
+                    const checkText = message.value.trim();
+                    const validator = require('./extension-macros-validator');
+                    const verification = validator.validateAndParseInput(checkText);
 
-    const winItem   = { label: '$(device-desktop) Super / Windows Key Modifier', description: 'w', flag: 'w' };
-    const ctrlItem  = { label: '$(terminal) Control / Command Key Modifier',   description: 'c', flag: 'c' };
-    const altItem   = { label: '$(gear) Alt / Option Key Modifier',         description: 'a', flag: 'a' };
-    const shiftItem = { label: '$(arrow-up) Shift Key Modifier',              description: 's', flag: 's' };
+                    if (!verification.isValid) {
+                        panel.webview.postMessage({ type: 'status', status: 'error', text: verification.errorReason });
+                    } else {
+                        const collisions = fullBindings.filter(b => b.key.toLowerCase() === verification.nativeKey.toLowerCase() && b.command !== commandItem.commandId);
+                        if (collisions.length > 0) {
+                            panel.webview.postMessage({ type: 'status', status: 'warning', text: `⚠️ Collision! Maps to: ${collisions.map(c => c.command).join(', ')}` });
+                        } else {
+                            panel.webview.postMessage({ type: 'status', status: 'success', text: `✓ Translates to native: "${verification.nativeKey}"`, nativeKey: verification.nativeKey });
+                        }
+                    }
+                    break;
 
-    formQuickPick.items = [winItem, ctrlItem, altItem, shiftItem];
+                case 'submit':
+                    let currentBindings = core.loadFullKeybindingsArray();
+                    const nativeKey = message.nativeKey;
+                    const finalWhen = message.when.trim();
 
-    let activeFlags = '';
-    if (targetToEdit && initialShorthand.includes('.')) {
-        activeFlags = initialShorthand.split('.')[1] || '';
-    }
+                    if (isEditMode && targetToEdit) {
+                        currentBindings = currentBindings.map(b => {
+                            if (b.key === targetToEdit.key && b.command === targetToEdit.command && b.when === targetToEdit.when) {
+                                const freshObj = { key: nativeKey, command: commandItem.commandId };
+                                if (finalWhen) freshObj.when = finalWhen;
+                                return freshObj;
+                            }
+                            return b;
+                        });
+                    } else {
+                        const freshMapping = { key: nativeKey, command: commandItem.commandId };
+                        if (finalWhen) freshMapping.when = finalWhen;
+                        currentBindings.push(freshMapping);
+                    }
 
-    const syncUIFromFlags = (flagsStr) => {
-        const selected = [];
-        if (flagsStr.includes('w')) selected.push(winItem);
-        if (flagsStr.includes('c')) selected.push(ctrlItem);
-        if (flagsStr.includes('a')) selected.push(altItem);
-        if (flagsStr.includes('s')) selected.push(shiftItem);
-        
-        isSynchronizing = true;
-        formQuickPick.selectedItems = selected;
-        isSynchronizing = false;
-    };
+                    if (core.saveKeybindingsArray(currentBindings)) {
+                        vscode.window.showInformationMessage('Successfully saved key updates matching web form values.');
+                    }
 
-    formQuickPick.value = activeFlags ? `${validatedBase}.${activeFlags}` : validatedBase;
-    syncUIFromFlags(activeFlags);
+                    panel.dispose();
+                    ui.renderPrimaryMenu(context, originalArgs);
+                    break;
 
-    let isSynchronizing = false;
-    let finalComputedNative = '';
-
-    formQuickPick.onDidChangeValue(value => {
-        if (isSynchronizing) return;
-        const currentText = value.trim();
-
-        if (!currentText) {
-            formQuickPick.selectedItems = [];
-            finalComputedNative = '';
-            return;
-        }
-
-        const verification = validator.validateAndParseInput(currentText);
-        if (!verification.isValid) {
-            formQuickPick.title = `⚠️ Syntax Error: ${verification.errorReason}`;
-            finalComputedNative = '';
-            return;
-        }
-
-        finalComputedNative = verification.nativeKey;
-
-        if (currentText.includes('.')) {
-            const flagsPart = currentText.split('.')[1] || '';
-            syncUIFromFlags(flagsPart);
-        } else {
-            isSynchronizing = true;
-            formQuickPick.selectedItems = [];
-            isSynchronizing = false;
-        }
-
-        const collisions = fullBindings.filter(b => b.key.toLowerCase() === finalComputedNative.toLowerCase() && b.command !== commandItem.commandId);
-        if (collisions.length > 0) {
-            formQuickPick.title = `⚠️ Collision! Maps to: ${collisions.map(c => c.command).join(', ')}`;
-        } else {
-            formQuickPick.title = `✓ Valid Native Translation: "${finalComputedNative}"`;
-        }
-    });
-
-    formQuickPick.onDidChangeSelection(selectedItems => {
-        if (isSynchronizing) return;
-
-        let freshFlags = '';
-        if (selectedItems.includes(winItem))   freshFlags += 'w';
-        if (selectedItems.includes(ctrlItem))  freshFlags += 'c';
-        if (selectedItems.includes(altItem))   freshFlags += 'a';
-        if (selectedItems.includes(shiftItem)) freshFlags += 's';
-
-        const updatedShorthandText = freshFlags ? `${validatedBase}.${freshFlags}` : validatedBase;
-
-        isSynchronizing = true;
-        formQuickPick.value = updatedShorthandText;
-        isSynchronizing = false;
-
-        const verification = validator.validateAndParseInput(updatedShorthandText);
-        if (verification.isValid) {
-            finalComputedNative = verification.nativeKey;
-            const collisions = fullBindings.filter(b => b.key.toLowerCase() === finalComputedNative.toLowerCase() && b.command !== commandItem.commandId);
-            if (collisions.length > 0) {
-                formQuickPick.title = `⚠️ Collision! Maps to: ${collisions.map(c => c.command).join(', ')}`;
-            } else {
-                formQuickPick.title = `✓ Valid Native Translation: "${finalComputedNative}"`;
+                case 'cancel':
+                    panel.dispose();
+                    ui.renderPrimaryMenu(context, originalArgs);
+                    break;
             }
-        }
-    });
-
-    formQuickPick.onDidAccept(async () => {
-        if (!finalComputedNative) {
-            const currentText = formQuickPick.value.trim();
-            const verification = validator.validateAndParseInput(currentText);
-            if (verification.isValid) {
-                finalComputedNative = verification.nativeKey;
-            } else {
-                vscode.window.showErrorMessage('Form validation failed: Please specify a clean key structure.');
-                return;
-            }
-        }
-
-        formQuickPick.hide();
-
-        const finalWhen = await vscode.window.showInputBox({
-            title: `Context Clause Parameter: ${commandItem.label}`,
-            placeHolder: "Enter 'when' clause condition (e.g. editorTextFocus)",
-            value: targetToEdit ? (targetToEdit.when || '') : 'editorTextFocus'
-        });
-
-        let currentBindings = core.loadFullKeybindingsArray();
-
-        if (isEditMode && targetToEdit) {
-            currentBindings = currentBindings.map(b => {
-                if (b.key === targetToEdit.key && b.command === targetToEdit.command && b.when === targetToEdit.when) {
-                    const freshObj = { key: finalComputedNative, command: commandItem.commandId };
-                    if (finalWhen) freshObj.when = finalWhen;
-                    return freshObj;
-                }
-                return b;
-            });
-        } else {
-            const freshMapping = { key: finalComputedNative, command: commandItem.commandId };
-            if (finalWhen) freshMapping.when = finalWhen;
-            currentBindings.push(freshMapping);
-        }
-
-        if (core.saveKeybindingsArray(currentBindings)) {
-            vscode.window.showInformationMessage('Successfully mapped key updates matching synchronized values.');
-        }
-        
-        formQuickPick.dispose();
-        ui.renderPrimaryMenu(originalArgs);
-    });
-
-    formQuickPick.onDidHide(() => formQuickPick.dispose());
-    formQuickPick.show();
+        },
+        undefined,
+        context.subscriptions
+    );
 }
 
 module.exports = { promptAssignKey };
+
 // END OF FILE: src/extension-macros-form.js
