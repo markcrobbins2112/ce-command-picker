@@ -19,7 +19,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         if (existingTargets.length === 0) {
             vscode.window.showWarningMessage('No bindings exist to edit. Swapping to fresh Assignment Mode.');
         } else if (existingTargets.length === 1) {
-            targetToEdit = existingTargets;
+            targetToEdit = existingTargets[0];
         } else {
             const choice = await vscode.window.showQuickPick(
                 existingTargets.map(t => ({ label: t.key, detail: t.when || 'No context clause', raw: t })),
@@ -52,12 +52,11 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
 
     const panelTitle = isEditMode ? `Edit Binding: ${derivedTitle}` : `Assign Key: ${derivedTitle}`;
 
-    // 🌟 THE FIX PART 1: Rotate the viewType string using a high-res timestamp.
-    // This forces Chromium to completely drop previous service worker routing states!
-    const uniqueViewType = `ceIdForm-${Date.now()}`;
+    // Use a stable, static viewType string to avoid polluting service workers and causing controller-change mismatch errors.
+    const viewType = 'ceCommandPickerForm';
 
     const panel = vscode.window.createWebviewPanel(
-        uniqueViewType,
+        viewType,
         panelTitle,
         vscode.ViewColumn.Beside,
         {
@@ -66,19 +65,14 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         }
     );
 
-    // 🌟 THE FIX PART 2: Let the iframe initialize on a blank canvas, then pass the HTML content
-    // after a brief 50ms tick. This prevents the network thread race condition entirely.
-    setTimeout(() => {
-        if (panel && panel.webview) {
-            panel.webview.html = htmlTemplate.getWebviewContent(
-                commandItem.commandId || derivedTitle,
-                initialBaseKey,
-                initialShorthand,
-                initialFlags,
-                initialWhen
-            );
-        }
-    }, 50);
+    // Initialize HTML synchronously to establish the service worker scope cleanly in a single tick.
+    panel.webview.html = htmlTemplate.getWebviewContent(
+        commandItem.commandId || derivedTitle,
+        initialBaseKey,
+        initialShorthand,
+        initialFlags,
+        initialWhen
+    );
 
     panel.webview.onDidReceiveMessage(
         async (message) => {

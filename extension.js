@@ -2138,7 +2138,7 @@ var require_extension_macros_form = __commonJS({
         if (existingTargets.length === 0) {
           vscode.window.showWarningMessage("No bindings exist to edit. Swapping to fresh Assignment Mode.");
         } else if (existingTargets.length === 1) {
-          targetToEdit = existingTargets;
+          targetToEdit = existingTargets[0];
         } else {
           const choice = await vscode.window.showQuickPick(
             existingTargets.map((t) => ({ label: t.key, detail: t.when || "No context clause", raw: t })),
@@ -2168,9 +2168,9 @@ var require_extension_macros_form = __commonJS({
         }
       }
       const panelTitle = isEditMode ? `Edit Binding: ${derivedTitle}` : `Assign Key: ${derivedTitle}`;
-      const uniqueViewType = `ceIdForm-${Date.now()}`;
+      const viewType = "ceCommandPickerForm";
       const panel = vscode.window.createWebviewPanel(
-        uniqueViewType,
+        viewType,
         panelTitle,
         vscode.ViewColumn.Beside,
         {
@@ -2178,17 +2178,13 @@ var require_extension_macros_form = __commonJS({
           retainContextWhenHidden: true
         }
       );
-      setTimeout(() => {
-        if (panel && panel.webview) {
-          panel.webview.html = htmlTemplate.getWebviewContent(
-            commandItem.commandId || derivedTitle,
-            initialBaseKey,
-            initialShorthand,
-            initialFlags,
-            initialWhen
-          );
-        }
-      }, 50);
+      panel.webview.html = htmlTemplate.getWebviewContent(
+        commandItem.commandId || derivedTitle,
+        initialBaseKey,
+        initialShorthand,
+        initialFlags,
+        initialWhen
+      );
       panel.webview.onDidReceiveMessage(
         async (message) => {
           switch (message.command) {

@@ -1,4 +1,5 @@
 *.vsix
 *.exe
+*.zip
 \!*.*
 node_modules/

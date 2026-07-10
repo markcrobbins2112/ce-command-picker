@@ -50,11 +50,11 @@ title: LOG
 ## 💾 Commit Message
 [[#^toc-commit|TOC]]
 ```text
-docs: synchronize and complete full AIMD documentation suite
+fix: resolve keybinding property passing to webview and service worker errors
 
-- Reverse-engineered entire VS Code extension logic in /src to fill out all markdown templates
-- Completed ARCHIVE, BUILD, CODE, DESIGN, MANUAL, SPEC, TASKS, TERMS, TESTING, and VERSIONS
-- Documented key algorithms, esbuild and vsce compilation steps, and architecture topology
+- Fixed targetToEdit unpacking by extracting targetToEdit[0] instead of passing the entire array
+- Stabilized webview viewType to use a static identifier ('ceCommandPickerForm')
+- Initialized HTML synchronously to avoid service worker race conditions and prevent 'unexpected service worker controller' warnings
 ```
 
 ## 📝 Log Entries
@@ -82,6 +82,26 @@ docs: synchronize and complete full AIMD documentation suite
   - {{Action Item 1}}: {{Detailed summary}}
   - {{Action Item 2}}: {{Detailed summary}}
 -->
+
+### 📅 [2026-07-10T04:20:00Z]
+#### 🎯 Primary Goals & Requirements
+- Resolve the failure to pass keybinding properties to the webview form when there is exactly one existing keybinding.
+- Prevent VS Code's "Found unexpected service worker controller" warning from clogging the console and delaying webview loading.
+
+#### 🛠️ Completed Changes in this Session
+- **Fixed targetToEdit Unpacking**: Corrected the filter array extraction assignment in `extension-macros-form.js` from `targetToEdit = existingTargets` to `targetToEdit = existingTargets[0]`. This correctly exposes the `.key` property to `formatToCustomShorthand` instead of sending an empty string to the webview script.
+- **Stabilized Webview ViewType**: Replaced the dynamic viewType rotation (`ceIdForm-${Date.now()}`) with a static, stable `'ceCommandPickerForm'` identifier. This stops VS Code from registering redundant webview service workers, avoiding scope pollution.
+- **Synchronous HTML Loading**: Removed the asynchronous `setTimeout` block during webview HTML initialization to load the template synchronously. This prevents the initial blank-canvas load-racing condition that triggers service worker controller mismatch warnings.
+
+#### 🔸 Affected Files
+- `/src/extension-macros-form.js`
+- `/AIMD/LOG.md`
+
+#### 🤖 Next Steps, Concerns and Suggestions
+- Run a full compilation test of the extension workspace bundle.
+- Verify that standard edit-mode configuration inputs correctly display pre-populated key coordinates in the webview.
+
+---
 
 ### 📅 [2026-07-09T21:07:00Z]
 #### 🎯 Primary Goals & Requirements
