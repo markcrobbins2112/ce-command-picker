@@ -97,6 +97,8 @@ title: TASKS
 -->
 ## 🚀 New Features
 [[#^toc-new-features|TOC]]
+- [x] Clear Button resets the entire form region
+  - Clears both chords, modifier flags, and when constraint fields instantly.
 - [x] Shorthand Chord Condensation
   - Automatically minimizes long native bindings into a clean visual trailing suffix representation.
 

@@ -37,6 +37,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
 
     const btnClear1 = document.getElementById('btnClear1');
     const btnClear2 = document.getElementById('btnClear2');
+    const btnClear = document.getElementById('btnClear');
     const btnEditJson = document.getElementById('btnEditJson');
     const btnUnbind = document.getElementById('btnUnbind');
     const btnCopyBinding = document.getElementById('btnCopyBinding');
@@ -98,7 +99,44 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         if (isSynchronizing) return;
         isSynchronizing = true;
 
-        baseInput1.value = cleanBaseKeyInput(baseInput1.value);
+        let val = baseInput1.value.trim();
+        let w = false, c = false, a = false, s = false;
+        let hasModifiers = false;
+
+        if (val.includes('+')) {
+            const elements = val.toLowerCase().split('+');
+            const newElements = [];
+            elements.forEach(el => {
+                const p = el.trim();
+                if (p === 'win' || p === 'windows') { w = true; hasModifiers = true; }
+                else if (p === 'ctrl' || p === 'control' || p === 'cmd' || p === 'meta') { c = true; hasModifiers = true; }
+                else if (p === 'alt') { a = true; hasModifiers = true; }
+                else if (p === 'shift') { s = true; hasModifiers = true; }
+                else if (p) { newElements.push(p); }
+            });
+            val = newElements.join('+');
+        }
+
+        if (val.includes('.')) {
+            const parts = val.toLowerCase().split('.');
+            if (parts.length === 2) {
+                val = parts[0].trim();
+                const flags = parts[1].trim();
+                if (flags.includes('w')) { w = true; hasModifiers = true; }
+                if (flags.includes('c')) { c = true; hasModifiers = true; }
+                if (flags.includes('a')) { a = true; hasModifiers = true; }
+                if (flags.includes('s')) { s = true; hasModifiers = true; }
+            }
+        }
+
+        if (hasModifiers) {
+            checkboxes1.w.checked = checkboxes1.w.checked || w;
+            checkboxes1.c.checked = checkboxes1.c.checked || c;
+            checkboxes1.a.checked = checkboxes1.a.checked || a;
+            checkboxes1.s.checked = checkboxes1.s.checked || s;
+        }
+
+        baseInput1.value = cleanBaseKeyInput(val);
         let f = '';
         if (checkboxes1.w.checked) f += 'w';
         if (checkboxes1.c.checked) f += 'c';
@@ -128,7 +166,44 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         if (isSynchronizing) return;
         isSynchronizing = true;
 
-        baseInput2.value = cleanBaseKeyInput(baseInput2.value);
+        let val = baseInput2.value.trim();
+        let w = false, c = false, a = false, s = false;
+        let hasModifiers = false;
+
+        if (val.includes('+')) {
+            const elements = val.toLowerCase().split('+');
+            const newElements = [];
+            elements.forEach(el => {
+                const p = el.trim();
+                if (p === 'win' || p === 'windows') { w = true; hasModifiers = true; }
+                else if (p === 'ctrl' || p === 'control' || p === 'cmd' || p === 'meta') { c = true; hasModifiers = true; }
+                else if (p === 'alt') { a = true; hasModifiers = true; }
+                else if (p === 'shift') { s = true; hasModifiers = true; }
+                else if (p) { newElements.push(p); }
+            });
+            val = newElements.join('+');
+        }
+
+        if (val.includes('.')) {
+            const parts = val.toLowerCase().split('.');
+            if (parts.length === 2) {
+                val = parts[0].trim();
+                const flags = parts[1].trim();
+                if (flags.includes('w')) { w = true; hasModifiers = true; }
+                if (flags.includes('c')) { c = true; hasModifiers = true; }
+                if (flags.includes('a')) { a = true; hasModifiers = true; }
+                if (flags.includes('s')) { s = true; hasModifiers = true; }
+            }
+        }
+
+        if (hasModifiers) {
+            checkboxes2.w.checked = checkboxes2.w.checked || w;
+            checkboxes2.c.checked = checkboxes2.c.checked || c;
+            checkboxes2.a.checked = checkboxes2.a.checked || a;
+            checkboxes2.s.checked = checkboxes2.s.checked || s;
+        }
+
+        baseInput2.value = cleanBaseKeyInput(val);
         let f = '';
         if (checkboxes2.w.checked) f += 'w';
         if (checkboxes2.c.checked) f += 'c';
@@ -185,6 +260,29 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         isSynchronizing = false;
         triggerValidation();
     });
+
+    if (btnClear) {
+        btnClear.addEventListener('click', () => {
+            isSynchronizing = true;
+            baseInput1.value = '';
+            checkboxes1.w.checked = false;
+            checkboxes1.c.checked = false;
+            checkboxes1.a.checked = false;
+            checkboxes1.s.checked = false;
+            shortcodeInput1.value = '';
+
+            baseInput2.value = '';
+            checkboxes2.w.checked = false;
+            checkboxes2.c.checked = false;
+            checkboxes2.a.checked = false;
+            checkboxes2.s.checked = false;
+            shortcodeInput2.value = '';
+
+            whenInput.value = '';
+            isSynchronizing = false;
+            triggerValidation();
+        });
+    }
 
     window.addEventListener('message', event => {
         const message = event.data;
@@ -463,6 +561,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     <div class="actions">
         <button class="secondary" id="btnEditJson">Edit Json</button>
         <button class="secondary" id="btnUnbind">Unbind</button>
+        <button class="secondary" id="btnClear">Clear</button>
         <button class="secondary" id="btnCopyBinding">Copy Binding</button>
         <button class="secondary" id="btnPasteBinding">Paste Binding</button>
         <div style="flex-grow: 1;"></div>

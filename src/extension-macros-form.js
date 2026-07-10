@@ -1,6 +1,8 @@
 // START OF FILE: src/extension-macros-form.js
 
 const vscode = require('vscode');
+const fs = require('fs');
+const jsonc = require('jsonc-parser');
 const htmlTemplate = require('./extension-macros-html');
 
 /**
@@ -42,7 +44,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
 
     if (sourceToFill) {
         const fullShorthand = core.formatToCustomShorthand(sourceToFill.key);
-        initialWhen = sourceToFill.when || 'editorTextFocus';
+        initialWhen = sourceToFill.when !== undefined ? sourceToFill.when : '';
         
         const chords = fullShorthand.trim().split(/\s+/);
         if (chords.length >= 1 && chords[0]) {
@@ -169,11 +171,65 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                     break;
 
                 case 'editJson':
-                    const configPath = core.getKeybindingsFilePath();
                     try {
+                        const currentTarget = targetToEdit || (existingTargets.length > 0 ? existingTargets[0] : null);
+                        const configPath = core.getKeybindingsFilePath();
+                        if (!fs.existsSync(configPath)) {
+                            vscode.window.showWarningMessage('keybindings.json file does not exist.');
+                            break;
+                        }
+
+                        const fileContent = fs.readFileSync(configPath, 'utf8');
+                        const rootNode = jsonc.parseTree(fileContent);
+                        
+                        let bestMatchNode = null;
+                        if (currentTarget && rootNode && rootNode.children) {
+                            rootNode.children.forEach(itemNode => {
+                                if (itemNode.type === 'object' && itemNode.children) {
+                                    let currentCmd = '';
+                                    let currentKey = '';
+                                    let currentWhen = '';
+                                    let commandNode = null;
+
+                                    itemNode.children.forEach(propertyNode => {
+                                        if (propertyNode.type === 'property' && propertyNode.children && propertyNode.children.length === 2) {
+                                            const keyName = propertyNode.children[0].value;
+                                            const valueNode = propertyNode.children[1];
+
+                                            if (keyName === 'command') {
+                                                currentCmd = valueNode.value;
+                                                commandNode = valueNode;
+                                            } else if (keyName === 'key') {
+                                                currentKey = valueNode.value;
+                                            } else if (keyName === 'when') {
+                                                currentWhen = valueNode.value;
+                                            }
+                                        }
+                                    });
+
+                                    if (currentCmd === currentTarget.command && currentKey === currentTarget.key) {
+                                        const targetWhen = currentTarget.when || '';
+                                        const checkWhen = currentWhen || '';
+                                        if (targetWhen === checkWhen) {
+                                            bestMatchNode = commandNode || itemNode;
+                                        }
+                                    }
+                                }
+                            });
+                        }
+
                         const doc = await vscode.workspace.openTextDocument(configPath);
-                        await vscode.window.showTextDocument(doc);
-                        vscode.window.showInformationMessage('Opened keybindings.json file.');
+                        const editor = await vscode.window.showTextDocument(doc);
+                        
+                        if (bestMatchNode) {
+                            const targetPos = doc.positionAt(bestMatchNode.offset);
+                            const nextSelection = new vscode.Selection(targetPos, targetPos);
+                            editor.selection = nextSelection;
+                            editor.revealRange(new vscode.Range(targetPos, targetPos), vscode.TextEditorRevealType.InCenter);
+                            vscode.window.showInformationMessage('Opened keybindings.json at the current binding.');
+                        } else {
+                            vscode.window.showInformationMessage('Opened keybindings.json file.');
+                        }
                     } catch (e) {
                         vscode.window.showErrorMessage(`Failed to open keybindings file: ${e.message}`);
                     }
@@ -183,7 +239,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                     const targetToRemove = targetToEdit || (existingTargets.length > 0 ? existingTargets[0] : null);
                     if (targetToRemove) {
                         let bindingsList = core.loadFullKeybindingsArray();
-                        bindingsList = bindingsList.filter(b => !(b.key === targetToRemove.key && b.command === targetToRemove.command && b.when === targetToRemove.when));
+                        bindingsList = bindingsList.filter(b => !(b.key === targetToRemove.key && b.command === targetToRemove.command && (b.when || '') === (targetToRemove.when || '')));
                         if (core.saveKeybindingsArray(bindingsList)) {
                             vscode.window.showInformationMessage(`Successfully removed keybinding mapping for: ${commandItem.commandId}`);
                         }
@@ -237,7 +293,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                                     chord1Flags: c1Flags,
                                     chord2Base: c2Base,
                                     chord2Flags: c2Flags,
-                                    when: parsed.when || 'editorTextFocus'
+                                    when: parsed.when !== undefined ? parsed.when : ''
                                 });
                                 vscode.window.showInformationMessage('Successfully pasted keybinding JSON from clipboard.');
                             } else {

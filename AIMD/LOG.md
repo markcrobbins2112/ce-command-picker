@@ -50,11 +50,11 @@ title: LOG
 ## 💾 Commit Message
 [[#^toc-commit|TOC]]
 ```text
-fix: resolve keybinding property passing to webview and service worker errors
+feat: add global form Clear button to webview form and update tasks/logs
 
-- Fixed targetToEdit unpacking by extracting targetToEdit[0] instead of passing the entire array
-- Stabilized webview viewType to use a static identifier ('ceCommandPickerForm')
-- Initialized HTML synchronously to avoid service worker race conditions and prevent 'unexpected service worker controller' warnings
+- Added a global 'Clear' button to the webview actions bar to reset the key panels and when-clause inputs
+- Bound the 'Clear' button to clear both Chord 1 & Chord 2 panels, reset the whenClause field, and trigger validation
+- Updated TASKS.md and LOG.md to document the latest feature enhancements and tasks completion
 ```
 
 ## 📝 Log Entries
@@ -82,6 +82,26 @@ fix: resolve keybinding property passing to webview and service worker errors
   - {{Action Item 1}}: {{Detailed summary}}
   - {{Action Item 2}}: {{Detailed summary}}
 -->
+
+### 📅 [2026-07-10T05:08:41Z]
+#### 🎯 Primary Goals & Requirements
+- Implement a global form Clear button that resets both key panels, the when clause constraint, and triggers validation.
+- Update development tasks, logs, and commit messages dynamically as requested.
+
+#### 🛠️ Completed Changes in this Session
+- **Integrated Global Clear Button**: Appended a secondary action button with the ID `#btnClear` to the form's primary actions bar.
+- **Implemented Clear Handler**: Bound a click event listener that resets base inputs, checkboxes, modifier shortcode fields, and when clause constraints, then fires state validation to update submission controls.
+- **Synchronized Backlog Docs**: Consolidated task registries, changelogs, and commit messages within the project's markdown workspace.
+
+#### 🔸 Affected Files
+- `/src/extension-macros-html.js`
+- `/AIMD/LOG.md`
+- `/AIMD/TASKS.md`
+
+#### 🤖 Next Steps, Concerns and Suggestions
+- Verify that clicking the new "Clear" button correctly zeroes out both chord base keys, checkboxes, shortcodes, and whenClause, and disables form submission buttons as expected.
+
+---
 
 ### 📅 [2026-07-10T04:20:00Z]
 #### 🎯 Primary Goals & Requirements

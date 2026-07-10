@@ -30,8 +30,8 @@ function validateAndParseInput(inputString) {
             if (baseKeys.length > 1) {
                 return { isValid: false, nativeKey: '', errorReason: `Native format error: Too many base keys ("${baseKeys.join(', ')}") inside chord.` };
             }
-            if (!isValidBaseKey(baseKeys)) {
-                return { isValid: false, nativeKey: '', errorReason: `Syntax Error: "${baseKeys}" is not recognized.` };
+            if (!isValidBaseKey(baseKeys[0])) {
+                return { isValid: false, nativeKey: '', errorReason: `Syntax Error: "${baseKeys[0]}" is not recognized.` };
             }
         }
         return { isValid: true, nativeKey: value.toLowerCase(), errorReason: null };

@@ -1861,6 +1861,7 @@ var require_extension_macros_html = __commonJS({
 
     const btnClear1 = document.getElementById('btnClear1');
     const btnClear2 = document.getElementById('btnClear2');
+    const btnClear = document.getElementById('btnClear');
     const btnEditJson = document.getElementById('btnEditJson');
     const btnUnbind = document.getElementById('btnUnbind');
     const btnCopyBinding = document.getElementById('btnCopyBinding');
@@ -1922,7 +1923,44 @@ var require_extension_macros_html = __commonJS({
         if (isSynchronizing) return;
         isSynchronizing = true;
 
-        baseInput1.value = cleanBaseKeyInput(baseInput1.value);
+        let val = baseInput1.value.trim();
+        let w = false, c = false, a = false, s = false;
+        let hasModifiers = false;
+
+        if (val.includes('+')) {
+            const elements = val.toLowerCase().split('+');
+            const newElements = [];
+            elements.forEach(el => {
+                const p = el.trim();
+                if (p === 'win' || p === 'windows') { w = true; hasModifiers = true; }
+                else if (p === 'ctrl' || p === 'control' || p === 'cmd' || p === 'meta') { c = true; hasModifiers = true; }
+                else if (p === 'alt') { a = true; hasModifiers = true; }
+                else if (p === 'shift') { s = true; hasModifiers = true; }
+                else if (p) { newElements.push(p); }
+            });
+            val = newElements.join('+');
+        }
+
+        if (val.includes('.')) {
+            const parts = val.toLowerCase().split('.');
+            if (parts.length === 2) {
+                val = parts[0].trim();
+                const flags = parts[1].trim();
+                if (flags.includes('w')) { w = true; hasModifiers = true; }
+                if (flags.includes('c')) { c = true; hasModifiers = true; }
+                if (flags.includes('a')) { a = true; hasModifiers = true; }
+                if (flags.includes('s')) { s = true; hasModifiers = true; }
+            }
+        }
+
+        if (hasModifiers) {
+            checkboxes1.w.checked = checkboxes1.w.checked || w;
+            checkboxes1.c.checked = checkboxes1.c.checked || c;
+            checkboxes1.a.checked = checkboxes1.a.checked || a;
+            checkboxes1.s.checked = checkboxes1.s.checked || s;
+        }
+
+        baseInput1.value = cleanBaseKeyInput(val);
         let f = '';
         if (checkboxes1.w.checked) f += 'w';
         if (checkboxes1.c.checked) f += 'c';
@@ -1952,7 +1990,44 @@ var require_extension_macros_html = __commonJS({
         if (isSynchronizing) return;
         isSynchronizing = true;
 
-        baseInput2.value = cleanBaseKeyInput(baseInput2.value);
+        let val = baseInput2.value.trim();
+        let w = false, c = false, a = false, s = false;
+        let hasModifiers = false;
+
+        if (val.includes('+')) {
+            const elements = val.toLowerCase().split('+');
+            const newElements = [];
+            elements.forEach(el => {
+                const p = el.trim();
+                if (p === 'win' || p === 'windows') { w = true; hasModifiers = true; }
+                else if (p === 'ctrl' || p === 'control' || p === 'cmd' || p === 'meta') { c = true; hasModifiers = true; }
+                else if (p === 'alt') { a = true; hasModifiers = true; }
+                else if (p === 'shift') { s = true; hasModifiers = true; }
+                else if (p) { newElements.push(p); }
+            });
+            val = newElements.join('+');
+        }
+
+        if (val.includes('.')) {
+            const parts = val.toLowerCase().split('.');
+            if (parts.length === 2) {
+                val = parts[0].trim();
+                const flags = parts[1].trim();
+                if (flags.includes('w')) { w = true; hasModifiers = true; }
+                if (flags.includes('c')) { c = true; hasModifiers = true; }
+                if (flags.includes('a')) { a = true; hasModifiers = true; }
+                if (flags.includes('s')) { s = true; hasModifiers = true; }
+            }
+        }
+
+        if (hasModifiers) {
+            checkboxes2.w.checked = checkboxes2.w.checked || w;
+            checkboxes2.c.checked = checkboxes2.c.checked || c;
+            checkboxes2.a.checked = checkboxes2.a.checked || a;
+            checkboxes2.s.checked = checkboxes2.s.checked || s;
+        }
+
+        baseInput2.value = cleanBaseKeyInput(val);
         let f = '';
         if (checkboxes2.w.checked) f += 'w';
         if (checkboxes2.c.checked) f += 'c';
@@ -2009,6 +2084,29 @@ var require_extension_macros_html = __commonJS({
         isSynchronizing = false;
         triggerValidation();
     });
+
+    if (btnClear) {
+        btnClear.addEventListener('click', () => {
+            isSynchronizing = true;
+            baseInput1.value = '';
+            checkboxes1.w.checked = false;
+            checkboxes1.c.checked = false;
+            checkboxes1.a.checked = false;
+            checkboxes1.s.checked = false;
+            shortcodeInput1.value = '';
+
+            baseInput2.value = '';
+            checkboxes2.w.checked = false;
+            checkboxes2.c.checked = false;
+            checkboxes2.a.checked = false;
+            checkboxes2.s.checked = false;
+            shortcodeInput2.value = '';
+
+            whenInput.value = '';
+            isSynchronizing = false;
+            triggerValidation();
+        });
+    }
 
     window.addEventListener('message', event => {
         const message = event.data;
@@ -2286,6 +2384,7 @@ var require_extension_macros_html = __commonJS({
     <div class="actions">
         <button class="secondary" id="btnEditJson">Edit Json</button>
         <button class="secondary" id="btnUnbind">Unbind</button>
+        <button class="secondary" id="btnClear">Clear</button>
         <button class="secondary" id="btnCopyBinding">Copy Binding</button>
         <button class="secondary" id="btnPasteBinding">Paste Binding</button>
         <div style="flex-grow: 1;"></div>
@@ -2363,8 +2462,8 @@ var require_extension_macros_validator = __commonJS({
           if (baseKeys.length > 1) {
             return { isValid: false, nativeKey: "", errorReason: `Native format error: Too many base keys ("${baseKeys.join(", ")}") inside chord.` };
           }
-          if (!isValidBaseKey(baseKeys)) {
-            return { isValid: false, nativeKey: "", errorReason: `Syntax Error: "${baseKeys}" is not recognized.` };
+          if (!isValidBaseKey(baseKeys[0])) {
+            return { isValid: false, nativeKey: "", errorReason: `Syntax Error: "${baseKeys[0]}" is not recognized.` };
           }
         }
         return { isValid: true, nativeKey: value.toLowerCase(), errorReason: null };
@@ -2404,6 +2503,8 @@ var require_extension_macros_validator = __commonJS({
 var require_extension_macros_form = __commonJS({
   "src/extension-macros-form.js"(exports2, module2) {
     var vscode = require("vscode");
+    var fs = require("fs");
+    var jsonc = (init_main(), __toCommonJS(main_exports));
     var htmlTemplate = require_extension_macros_html();
     async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
       const core = require_extension_core();
@@ -2437,7 +2538,7 @@ var require_extension_macros_form = __commonJS({
       const sourceToFill = targetToEdit || existingTargets[0];
       if (sourceToFill) {
         const fullShorthand = core.formatToCustomShorthand(sourceToFill.key);
-        initialWhen = sourceToFill.when || "editorTextFocus";
+        initialWhen = sourceToFill.when !== void 0 ? sourceToFill.when : "";
         const chords = fullShorthand.trim().split(/\s+/);
         if (chords.length >= 1 && chords[0]) {
           const match = chords[0].match(/(.*)\.([wcas]*)$/);
@@ -2546,11 +2647,58 @@ var require_extension_macros_form = __commonJS({
               ui2.renderPrimaryMenu(context, originalArgs);
               break;
             case "editJson":
-              const configPath = core.getKeybindingsFilePath();
               try {
+                const currentTarget = targetToEdit || (existingTargets.length > 0 ? existingTargets[0] : null);
+                const configPath = core.getKeybindingsFilePath();
+                if (!fs.existsSync(configPath)) {
+                  vscode.window.showWarningMessage("keybindings.json file does not exist.");
+                  break;
+                }
+                const fileContent = fs.readFileSync(configPath, "utf8");
+                const rootNode = jsonc.parseTree(fileContent);
+                let bestMatchNode = null;
+                if (currentTarget && rootNode && rootNode.children) {
+                  rootNode.children.forEach((itemNode) => {
+                    if (itemNode.type === "object" && itemNode.children) {
+                      let currentCmd = "";
+                      let currentKey = "";
+                      let currentWhen = "";
+                      let commandNode = null;
+                      itemNode.children.forEach((propertyNode) => {
+                        if (propertyNode.type === "property" && propertyNode.children && propertyNode.children.length === 2) {
+                          const keyName = propertyNode.children[0].value;
+                          const valueNode = propertyNode.children[1];
+                          if (keyName === "command") {
+                            currentCmd = valueNode.value;
+                            commandNode = valueNode;
+                          } else if (keyName === "key") {
+                            currentKey = valueNode.value;
+                          } else if (keyName === "when") {
+                            currentWhen = valueNode.value;
+                          }
+                        }
+                      });
+                      if (currentCmd === currentTarget.command && currentKey === currentTarget.key) {
+                        const targetWhen = currentTarget.when || "";
+                        const checkWhen = currentWhen || "";
+                        if (targetWhen === checkWhen) {
+                          bestMatchNode = commandNode || itemNode;
+                        }
+                      }
+                    }
+                  });
+                }
                 const doc = await vscode.workspace.openTextDocument(configPath);
-                await vscode.window.showTextDocument(doc);
-                vscode.window.showInformationMessage("Opened keybindings.json file.");
+                const editor = await vscode.window.showTextDocument(doc);
+                if (bestMatchNode) {
+                  const targetPos = doc.positionAt(bestMatchNode.offset);
+                  const nextSelection = new vscode.Selection(targetPos, targetPos);
+                  editor.selection = nextSelection;
+                  editor.revealRange(new vscode.Range(targetPos, targetPos), vscode.TextEditorRevealType.InCenter);
+                  vscode.window.showInformationMessage("Opened keybindings.json at the current binding.");
+                } else {
+                  vscode.window.showInformationMessage("Opened keybindings.json file.");
+                }
               } catch (e) {
                 vscode.window.showErrorMessage(`Failed to open keybindings file: ${e.message}`);
               }
@@ -2559,7 +2707,7 @@ var require_extension_macros_form = __commonJS({
               const targetToRemove = targetToEdit || (existingTargets.length > 0 ? existingTargets[0] : null);
               if (targetToRemove) {
                 let bindingsList = core.loadFullKeybindingsArray();
-                bindingsList = bindingsList.filter((b) => !(b.key === targetToRemove.key && b.command === targetToRemove.command && b.when === targetToRemove.when));
+                bindingsList = bindingsList.filter((b) => !(b.key === targetToRemove.key && b.command === targetToRemove.command && (b.when || "") === (targetToRemove.when || "")));
                 if (core.saveKeybindingsArray(bindingsList)) {
                   vscode.window.showInformationMessage(`Successfully removed keybinding mapping for: ${commandItem.commandId}`);
                 }
@@ -2611,7 +2759,7 @@ var require_extension_macros_form = __commonJS({
                       chord1Flags: c1Flags,
                       chord2Base: c2Base,
                       chord2Flags: c2Flags,
-                      when: parsed.when || "editorTextFocus"
+                      when: parsed.when !== void 0 ? parsed.when : ""
                     });
                     vscode.window.showInformationMessage("Successfully pasted keybinding JSON from clipboard.");
                   } else {
