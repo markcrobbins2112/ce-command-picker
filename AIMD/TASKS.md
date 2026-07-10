@@ -56,6 +56,11 @@ title: TASKS
 -->
 ## 💬 Incoming tasks from chat
 [[#^toc-chat|TOC]]
+- [x] Configure `cmdTitleLabel` to display the actual command ID instead of human-readable label
+- [x] Prevent '+' buttons for JSON and KB UI from creating blank, empty editor groups; open safely beside or focus existing
+- [x] Fix "Close all KB UI" and "Close all KB JSON" to close all matching tabs in a single atomic call instead of closing only one
+- [x] Add Prefix Key detection warning inside the statusBox status indicator when first key matches a prefix shortcut
+- [x] Add 'Edit Picker Json' button after 'Edit Picker Key' to open `keybindings.json` at the matching `ce-command-picker.show` entry
 - [x] Auto-focus fullShorthandInput when tab/webview is focused or first drawn (respecting last-focused element)
 - [x] Eliminate massive redraw when changing webview items by updating state and DOM in-place
 - [x] Support Edit Picker Key for ce-command-picker.show via args matching in keybindings.json

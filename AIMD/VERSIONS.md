@@ -41,6 +41,15 @@ title: VERSIONS
 ## 🚀 Stable Releases & Milestones
 [[#^toc-stable|TOC]]
 
+### 🏷️ v1.2.59 (2026-07-10) - Prefix Key Detection, Atomic Tab Group Close, and Instigator JSON Editor Link
+- **Added / Enhanced:**
+  - **Actual Command Headers:** Configured `cmdTitleLabel` to display the actual, literal VS Code command ID (e.g. `ce-command-picker.show`) instead of the generic label title.
+  - **Prefix Key Detection:** Added advanced verification checks inside the `'validate'` message handler to detect whether the first key/chord of the entered combination is a standard VS Code prefix key or used in any custom multi-key chords, printing an explicit `(First key is a Prefix Key)` warning in the `statusBox`.
+  - **Edit Picker Json Button:** Added a new button `Edit Picker Json` next to `Edit Picker Key` which opens `keybindings.json` and automatically scrolls to and focuses the matching configuration entry for the instigating command (`ce-command-picker.show`).
+- **Fixed / Patched:**
+  - **Tab Group Isolation Fix:** Replaced `findGroupForNewInstance` and `findGroupForReusing` with `handleOpenHelper` to eliminate the creation of empty, blank editor groups when using the `+` icon buttons for JSON and KB UI.
+  - **Atomic "Close All" Actions:** Upgraded `closeAllKbJson` and `closeAllKbUi` to close all matching tabs in a single atomic `vscode.window.tabGroups.close(tabsToClose)` call to prevent partial or skipped tab closures.
+
 ### 🏷️ v1.2.58 (2026-07-10) - State-Aware Paging Click Listeners and Dynamic Index Resolution
 - **Fixed:**
   - Resolved a closure bug in the webview's click listeners where `currentIdx` was statically bound to the initial command's index upon loading.

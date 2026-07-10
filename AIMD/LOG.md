@@ -50,11 +50,13 @@ title: LOG
 ## 💾 Commit Message
 [[#^toc-commit|TOC]]
 ```text
-fix: v1.2.58 - State-Aware Paging Click Listeners and Dynamic Index Resolution
+feat: v1.2.59 - Prefix Key Detection, Atomic Tab Group Close, and Instigator JSON Editor Link
 
-- Fixed a paging bug where event listeners captured stale initial index closures.
-- Implemented a dynamic index lookup utility inside the client-side event handlers.
-- Enabled continuous multi-item navigation without sticking or freezing after one advance.
+- Configured cmdTitleLabel to display the actual command ID instead of human-readable labels.
+- Prevented '+' buttons for JSON and KB UI from creating blank, empty editor groups; open safely beside or focus existing.
+- Fixed "Close all KB UI" and "Close all KB JSON" to close all matching tabs in a single atomic call.
+- Added Prefix Key detection warning inside the statusBox status indicator.
+- Added 'Edit Picker Json' button after 'Edit Picker Key' to open keybindings.json at the instigating command entry.
 ```
 
 ## 📝 Log Entries
@@ -66,6 +68,28 @@ fix: v1.2.58 - State-Aware Paging Click Listeners and Dynamic Index Resolution
   Use the template structure below:
   ...
 -->
+
+### 📅 [2026-07-10T13:25:00Z]
+#### 🎯 Primary Goals & Requirements
+- Update command header `cmdTitleLabel` to display the literal command ID instead of human-readable names.
+- Resolve tab group isolation bugs where the `+` icon buttons for JSON or KB UI created unrequested blank/empty groups.
+- Enable closing all tabs under the "Close All KB UI" and "Close All KB JSON" triggers, rather than closing only one.
+- Show prefix-key shortcut validation warnings directly in the statusBox status indicator.
+- Introduce an "Edit Picker Json" button that directs the user directly to the keybinding entry for `ce-command-picker.show`.
+
+#### 🛠️ Completed Changes in this Session
+- **Literal Header Rendering**: Set `cmdTitleLabel` to display the absolute, literal command ID (`commandItem.commandId`), reinforcing precision for developer workflows.
+- **Tab Group Preservation (`handleOpenHelper`)**: Designed a centralized tab manager that queries active tab groups, opens files or shortcut UIs in the existing non-webview group, or creates a single new group without leaving empty/blank workspaces.
+- **Atomic Batch Tab Closures**: Upgraded the tab close routines to pass all target tabs directly in a single `vscode.window.tabGroups.close(tabsToClose)` call to prevent partial UI/editor closings.
+- **Prefix Key Detection Alert**: Configured validation logic to parse the primary key/chord and compare it against standard multi-key chord prefixes or active shortcuts, appending an alert `(First key is a Prefix Key)` in the indicator block.
+- **Edit Picker Json Link**: Appended an `Edit Picker Json` button next to `Edit Picker Key` that sends an `editJson` payload to open and highlight the instigating command (`ce-command-picker.show`).
+
+#### 🔸 Affected Files
+- `src/extension-macros-form.js`
+- `src/extension-macros-html.js`
+- `AIMD/TASKS.md`
+- `AIMD/LOG.md`
+- `AIMD/VERSIONS.md`
 
 ### 📅 [2026-07-10T13:20:00Z]
 #### 🎯 Primary Goals & Requirements

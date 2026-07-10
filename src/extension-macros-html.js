@@ -1460,6 +1460,17 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         });
     }
 
+    const btnEditPickerJson = document.getElementById('btnEditPickerJson');
+    if (btnEditPickerJson) {
+        btnEditPickerJson.addEventListener('click', () => {
+            vscode.postMessage({
+                command: 'editJson',
+                newInstance: false,
+                commandId: 'ce-command-picker.show'
+            });
+        });
+    }
+
     btnPasteBinding.addEventListener('click', () => {
         vscode.postMessage({ command: 'pasteBinding' });
     });
@@ -1764,6 +1775,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
                 <button type="button" class="secondary small" id="btnCopyCurrentBinding" title="Copy Current Binding JSON" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Copy Current Binding</button>
                 <button type="button" class="secondary small" id="btnCopyNewBinding" title="Copy New Binding JSON" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Copy New Binding</button>
                 <button type="button" class="secondary small" id="btnEditInstigator" title="Edit the keybinding for ce-command-picker.show (the command that instigated the Menu)" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Edit Picker Key</button>
+                <button type="button" class="secondary small" id="btnEditPickerJson" title="Find and edit the keybindings.json entry for ce-command-picker.show" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Edit Picker Json</button>
             </div>
             <!-- Paging Row (right-aligned!) -->
             <div style="display: flex; justify-content: flex-end; align-items: center; gap: 4px;">

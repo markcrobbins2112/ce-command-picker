@@ -3305,6 +3305,17 @@ var require_extension_macros_html = __commonJS({
         });
     }
 
+    const btnEditPickerJson = document.getElementById('btnEditPickerJson');
+    if (btnEditPickerJson) {
+        btnEditPickerJson.addEventListener('click', () => {
+            vscode.postMessage({
+                command: 'editJson',
+                newInstance: false,
+                commandId: 'ce-command-picker.show'
+            });
+        });
+    }
+
     btnPasteBinding.addEventListener('click', () => {
         vscode.postMessage({ command: 'pasteBinding' });
     });
@@ -3608,6 +3619,7 @@ var require_extension_macros_html = __commonJS({
                 <button type="button" class="secondary small" id="btnCopyCurrentBinding" title="Copy Current Binding JSON" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Copy Current Binding</button>
                 <button type="button" class="secondary small" id="btnCopyNewBinding" title="Copy New Binding JSON" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Copy New Binding</button>
                 <button type="button" class="secondary small" id="btnEditInstigator" title="Edit the keybinding for ce-command-picker.show (the command that instigated the Menu)" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Edit Picker Key</button>
+                <button type="button" class="secondary small" id="btnEditPickerJson" title="Find and edit the keybindings.json entry for ce-command-picker.show" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Edit Picker Json</button>
             </div>
             <!-- Paging Row (right-aligned!) -->
             <div style="display: flex; justify-content: flex-end; align-items: center; gap: 4px;">
@@ -3934,47 +3946,6 @@ var require_extension_macros_form = __commonJS({
     var fs = require("fs");
     var jsonc = (init_main(), __toCommonJS(main_exports));
     var htmlTemplate = require_extension_macros_html();
-    function findGroupForNewInstance(targetType, configPath, panelViewColumn) {
-      const allGroups = vscode.window.tabGroups && vscode.window.tabGroups.all || [];
-      let maxCol = 1;
-      for (const group of allGroups) {
-        if (typeof group.viewColumn === "number" && group.viewColumn > maxCol) {
-          maxCol = group.viewColumn;
-        }
-      }
-      let targetCol = maxCol + 1;
-      if (targetCol === panelViewColumn) {
-        targetCol++;
-      }
-      return targetCol;
-    }
-    function findGroupForReusing(targetType, configPath, panelViewColumn) {
-      const allGroups = vscode.window.tabGroups && vscode.window.tabGroups.all || [];
-      for (const group of allGroups) {
-        if (group.viewColumn === panelViewColumn) continue;
-        for (const tab of group.tabs) {
-          if (targetType === "json") {
-            if (tab.input instanceof vscode.TabInputText && tab.input.uri.fsPath === configPath) {
-              return group.viewColumn;
-            }
-          } else {
-            if (tab.label === "Keyboard Shortcuts" || tab.label === "keybindings" || tab.input && tab.input.viewType === "keybindings") {
-              return group.viewColumn;
-            }
-          }
-        }
-      }
-      for (const group of allGroups) {
-        if (group.viewColumn !== panelViewColumn) {
-          return group.viewColumn;
-        }
-      }
-      if (panelViewColumn === vscode.ViewColumn.One) {
-        return vscode.ViewColumn.Two;
-      } else {
-        return vscode.ViewColumn.One;
-      }
-    }
     async function focusViewColumn(column) {
       if (column === vscode.ViewColumn.One) {
         await vscode.commands.executeCommand("workbench.action.focusFirstEditorGroup");
@@ -3990,22 +3961,46 @@ var require_extension_macros_form = __commonJS({
         await vscode.commands.executeCommand("workbench.action.focusFirstEditorGroup");
       }
     }
-    async function focusOrCreateViewColumn(targetCol, panelViewColumn) {
+    async function handleOpenHelper(targetType, configPath, panelViewCol, newInstance, openAction) {
       const allGroups = vscode.window.tabGroups && vscode.window.tabGroups.all || [];
-      const groupExists = allGroups.some((g) => g.viewColumn === targetCol);
-      if (!groupExists) {
-        let maxExistingCol = 0;
-        allGroups.forEach((g) => {
-          if (typeof g.viewColumn === "number" && g.viewColumn > maxExistingCol) {
-            maxExistingCol = g.viewColumn;
-          }
-        });
-        if (maxExistingCol > 0) {
-          await focusViewColumn(maxExistingCol);
-        }
+      const oppositeCol = panelViewCol === vscode.ViewColumn.One ? vscode.ViewColumn.Two : vscode.ViewColumn.One;
+      if (newInstance) {
         await vscode.commands.executeCommand("workbench.action.newGroupRight");
+        await new Promise((resolve) => setTimeout(resolve, 100));
+        await openAction(vscode.ViewColumn.Active);
       } else {
-        await focusViewColumn(targetCol);
+        let foundGroupCol = null;
+        for (const group of allGroups) {
+          if (group.viewColumn === panelViewCol) continue;
+          for (const tab of group.tabs) {
+            if (targetType === "json") {
+              if (tab.input && tab.input.uri && tab.input.uri.fsPath === configPath) {
+                foundGroupCol = group.viewColumn;
+                break;
+              }
+            } else {
+              if (tab.label === "Keyboard Shortcuts" || tab.label === "keybindings" || tab.input && tab.input.viewType === "keybindings") {
+                foundGroupCol = group.viewColumn;
+                break;
+              }
+            }
+          }
+          if (foundGroupCol !== null) break;
+        }
+        if (foundGroupCol !== null) {
+          await focusViewColumn(foundGroupCol);
+          await openAction(foundGroupCol);
+        } else {
+          const oppositeExists = allGroups.some((g) => g.viewColumn === oppositeCol);
+          if (!oppositeExists) {
+            await vscode.commands.executeCommand("workbench.action.newGroupRight");
+            await new Promise((resolve) => setTimeout(resolve, 100));
+            await openAction(vscode.ViewColumn.Active);
+          } else {
+            await focusViewColumn(oppositeCol);
+            await openAction(oppositeCol);
+          }
+        }
       }
     }
     async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
@@ -4080,7 +4075,7 @@ var require_extension_macros_form = __commonJS({
       );
       panel.webview.html = htmlTemplate.getWebviewContent(
         commandItem.commandId,
-        commandItem.commandId || derivedTitle,
+        commandItem.commandId,
         chord1Base,
         chord1Flags,
         chord2Base,
@@ -4108,19 +4103,13 @@ var require_extension_macros_form = __commonJS({
               }
               break;
             case "openKeybindings":
-              const panelViewCol = panel.viewColumn;
-              let targetCol;
-              if (message.newInstance) {
-                targetCol = findGroupForNewInstance("keybindings", null, panelViewCol);
-              } else {
-                targetCol = findGroupForReusing("keybindings", null, panelViewCol);
-              }
-              await focusOrCreateViewColumn(targetCol, panelViewCol);
-              if (message.args) {
-                await vscode.commands.executeCommand(message.commandName, ...message.args);
-              } else {
-                await vscode.commands.executeCommand(message.commandName);
-              }
+              await handleOpenHelper("keybindings", null, panel.viewColumn, message.newInstance, async (vCol) => {
+                if (message.args) {
+                  await vscode.commands.executeCommand(message.commandName, ...message.args);
+                } else {
+                  await vscode.commands.executeCommand(message.commandName);
+                }
+              });
               break;
             case "launchCollisionUI": {
               const targetCmdId = message.commandId;
@@ -4142,19 +4131,56 @@ var require_extension_macros_form = __commonJS({
                 } catch (e) {
                   shCode = checkText;
                 }
+                const firstChord = natKey.toLowerCase().trim().split(/\s+/)[0];
+                const standardPrefixes = [
+                  "ctrl+k",
+                  "ctrl+x",
+                  "ctrl+y",
+                  "ctrl+g",
+                  "ctrl+e",
+                  "ctrl+h",
+                  "ctrl+m",
+                  "cmd+k",
+                  "cmd+x",
+                  "cmd+y",
+                  "cmd+g",
+                  "cmd+e",
+                  "cmd+h",
+                  "cmd+m"
+                ];
+                const isPrefix = standardPrefixes.includes(firstChord) || fullBindings.some((b) => {
+                  const bKey = b.key.toLowerCase().trim();
+                  return bKey.startsWith(firstChord + " ");
+                });
                 const collisions = fullBindings.filter((b) => b.key.toLowerCase() === natKey.toLowerCase() && b.command !== commandItem.commandId);
                 if (collisions.length > 0) {
                   const collisionCommands = [...new Set(collisions.map((c) => c.command))];
+                  let msg = `\u26A0\uFE0F Collision! Maps to: ${collisionCommands.join(", ")}`;
+                  if (isPrefix) {
+                    msg += ` (First key is a Prefix Key)`;
+                  }
                   panel.webview.postMessage({
                     type: "status",
                     status: "warning",
-                    text: `\u26A0\uFE0F Collision! Maps to: ${collisionCommands.join(", ")}`,
+                    text: msg,
                     nativeKey: natKey,
                     shortCode: shCode,
-                    collisionCommands
+                    collisionCommands,
+                    isPrefix
                   });
                 } else {
-                  panel.webview.postMessage({ type: "status", status: "success", text: `\u2713 ${natKey}`, nativeKey: natKey, shortCode: shCode });
+                  let msg = `\u2713 ${natKey}`;
+                  if (isPrefix) {
+                    msg += ` (First key is a Prefix Key)`;
+                  }
+                  panel.webview.postMessage({
+                    type: "status",
+                    status: "success",
+                    text: msg,
+                    nativeKey: natKey,
+                    shortCode: shCode,
+                    isPrefix
+                  });
                 }
               }
               break;
@@ -4302,24 +4328,18 @@ var require_extension_macros_form = __commonJS({
                   }
                 }
                 const doc = await vscode.workspace.openTextDocument(configPath);
-                const pViewCol = panel.viewColumn;
-                let targetC;
-                if (message.newInstance) {
-                  targetC = findGroupForNewInstance("json", configPath, pViewCol);
-                } else {
-                  targetC = findGroupForReusing("json", configPath, pViewCol);
-                }
-                await focusOrCreateViewColumn(targetC, pViewCol);
-                const editor = await vscode.window.showTextDocument(doc, targetC);
-                if (bestMatchNode) {
-                  const targetPos = doc.positionAt(bestMatchNode.offset);
-                  const nextSelection = new vscode.Selection(targetPos, targetPos);
-                  editor.selection = nextSelection;
-                  editor.revealRange(new vscode.Range(targetPos, targetPos), vscode.TextEditorRevealType.InCenter);
-                  vscode.window.showInformationMessage("Opened keybindings.json at the current binding.");
-                } else {
-                  vscode.window.showInformationMessage("Opened keybindings.json file.");
-                }
+                await handleOpenHelper("json", configPath, panel.viewColumn, message.newInstance, async (vCol) => {
+                  const editor = await vscode.window.showTextDocument(doc, vCol);
+                  if (bestMatchNode) {
+                    const targetPos = doc.positionAt(bestMatchNode.offset);
+                    const nextSelection = new vscode.Selection(targetPos, targetPos);
+                    editor.selection = nextSelection;
+                    editor.revealRange(new vscode.Range(targetPos, targetPos), vscode.TextEditorRevealType.InCenter);
+                    vscode.window.showInformationMessage("Opened keybindings.json at the current binding.");
+                  } else {
+                    vscode.window.showInformationMessage("Opened keybindings.json file.");
+                  }
+                });
               } catch (e) {
                 vscode.window.showErrorMessage(`Failed to open keybindings file: ${e.message}`);
               }
@@ -4497,7 +4517,7 @@ var require_extension_macros_form = __commonJS({
                 panel.webview.postMessage({
                   type: "updateItem",
                   commandId: targetCmdId,
-                  title: targetItem.label || targetCmdId,
+                  title: targetCmdId,
                   chord1Base: targetChord1Base,
                   chord1Flags: targetChord1Flags,
                   chord2Base: targetChord2Base,
@@ -4526,9 +4546,9 @@ var require_extension_macros_form = __commonJS({
                     }
                   }
                 }
-                for (const tab of tabsToClose) {
-                  await vscode.window.tabGroups.close(tab);
-                  closedCount++;
+                if (tabsToClose.length > 0) {
+                  await vscode.window.tabGroups.close(tabsToClose);
+                  closedCount = tabsToClose.length;
                 }
                 if (closedCount > 0) {
                   vscode.window.showInformationMessage(`Closed ${closedCount} keybindings.json file tab(s).`);
@@ -4551,9 +4571,9 @@ var require_extension_macros_form = __commonJS({
                     }
                   }
                 }
-                for (const tab of tabsToClose) {
-                  await vscode.window.tabGroups.close(tab);
-                  closedCount++;
+                if (tabsToClose.length > 0) {
+                  await vscode.window.tabGroups.close(tabsToClose);
+                  closedCount = tabsToClose.length;
                 }
                 if (closedCount > 0) {
                   vscode.window.showInformationMessage(`Closed ${closedCount} Keyboard Shortcuts tab(s).`);
