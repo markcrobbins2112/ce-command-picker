@@ -50,14 +50,11 @@ title: LOG
 ## 💾 Commit Message
 [[#^toc-commit|TOC]]
 ```text
-feat: v1.2.61 - Format Toggle Button, Color-Coded Helper Actions, and Layout Overhaul
+fix: v1.2.65 - Queue List Rendering and Safe Init whenClause Merging
 
-- Replaced "ShortCode:|Native" radio inputs with an inline blue toggle button that switches formats dynamically.
-- Reordered and colored helper button groups (borders with black backgrounds): KB UI Cmd (Red), KB UI User (Purple), KB UI Key (Blue), KB UI Ext (Green), KB UI Default (Yellow), and KB UI Extension (Orange).
-- Styled key actions with borders and black backgrounds: Copy Current Binding (Cyan), Copy New Binding (Blue), Edit Picker Key (Purple), Edit Picker Json (Cyan), Reset (Blue), Done (Yellow).
-- Moved "Checkoff" row to the Command Queue Navigation Title Bar.
-- Moved "When" (whenClause) form-group below the Shorthand Key input enclosing div.
-- Relocated "statusBox" directly after the Shorthand Key input, and limited shorthand input width to 10em.
+- Removed fragile dynamic updateCheckoffUI wrapping hack inside webviewJS to fix queueList rendering runtime crashes.
+- Natively integrated renderQueueList call inside updateCheckoffUI for seamless list state updates on checkoff changes.
+- Safe-guarded the init message event listener to prevent overwriting whenClause with default editorTextFocus if it isn't specified.
 ```
 
 ## 📝 Log Entries
@@ -69,6 +66,22 @@ feat: v1.2.61 - Format Toggle Button, Color-Coded Helper Actions, and Layout Ove
   Use the template structure below:
   ...
 -->
+
+### 📅 [2026-07-10T15:28:00Z]
+#### 🎯 Primary Goals & Requirements
+- Troubleshoot and fix the `queueList` not rendering/populating.
+- Investigate and resolve `whenClause` not being populated or initialized with the proper value.
+
+#### 🛠️ Completed Changes in this Session
+- **Fixed Queue List Rendering**: Located and removed a fragile runtime dynamic wrapper reassignment of `updateCheckoffUI` inside `webviewJS` which was causing script execution errors under certain environments, blocking the rendering of the `queueList`.
+- **Natively Integrated Reactive Updates**: Natively bound `renderQueueList()` within the hoisted `updateCheckoffUI()` definition to seamlessly rebuild and synchronize active selections and completed checkoff badges on demand.
+- **Safe Init whenClause Value Merging**: Restructured the client-side `'init'` message event handler to check for explicit defined field values before applying updates to the `whenInput` DOM element, preventing accidental overwrites with fallback defaults.
+
+#### 🔸 Affected Files
+- `src/extension-macros-html.js`
+- `package.json`
+- `AIMD/VERSIONS.md`
+- `AIMD/LOG.md`
 
 ### 📅 [2026-07-10T15:00:00Z]
 #### 🎯 Primary Goals & Requirements

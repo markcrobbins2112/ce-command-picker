@@ -20,7 +20,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             <div style="display: flex; align-items: center; gap: 8px;">
                 <input type="radio" name="preferredFormat" id="radioShortcode" value="shortcode" style="display: none;" checked>
                 <input type="radio" name="preferredFormat" id="radioNative" value="native" style="display: none;">
-                <button type="button" class="custom-btn btn-blue small" id="btnToggleFormat" title="Toggle between ShortCode and Native format" style="padding: 4px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px;">ShortCode</button>
+                <button type="button" class="custom-btn btn-blue small" id="btnToggleFormat" title="Toggle between Short Code and Native format" style="padding: 4px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px;">Short Code:</button>
                 <span id="formatValueLabel" style="font-weight: bold; font-family: monospace;">None</span>
             </div>`;
         }
@@ -42,7 +42,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         <div style="display: flex; align-items: center; gap: 8px;">
             <input type="radio" name="preferredFormat" id="radioShortcode" value="shortcode" style="display: none;" checked>
             <input type="radio" name="preferredFormat" id="radioNative" value="native" style="display: none;">
-            <button type="button" class="custom-btn btn-blue small" id="btnToggleFormat" data-shorthand="${escapeJS(shorthand)}" data-native="${escapeJS(nativeKey)}" title="Toggle between ShortCode and Native format" style="padding: 4px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px;">ShortCode</button>
+            <button type="button" class="custom-btn btn-blue small" id="btnToggleFormat" data-shorthand="${escapeJS(shorthand)}" data-native="${escapeJS(nativeKey)}" title="Toggle between Short Code and Native format" style="padding: 4px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px;">Short Code:</button>
             <span id="formatValueLabel" style="font-weight: bold; font-family: monospace;">${shorthand}</span>
         </div>`;
     };
@@ -87,8 +87,8 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     // Left side actions and copies
     const btnReset = document.getElementById('btnResetHeader');
     const btnClear = document.getElementById('btnClear');
-    const btnCopyCurrentBinding = document.getElementById('btnCopyCurrentBinding');
-    const btnCopyNewBinding = document.getElementById('btnCopyNewBinding');
+    const btnToggleCurrentNew = document.getElementById('btnToggleCurrentNew');
+    const btnCopyUnifiedBinding = document.getElementById('btnCopyUnifiedBinding');
     const btnEditInstigator = document.getElementById('btnEditInstigator');
     const btnPasteBinding = document.getElementById('btnPasteBinding');
     const btnCopyCommand = document.getElementById('btnCopyCommand');
@@ -203,14 +203,14 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
 
     function formatCurrentKeysJS(keys) {
         const radioNativeChecked = document.getElementById('radioNative') ? document.getElementById('radioNative').checked : false;
-        const activeLabel = radioNativeChecked ? 'Native' : 'ShortCode';
+        const activeLabel = radioNativeChecked ? 'Native:' : 'Short Code:';
         
         if (!keys || keys === 'None') {
             const val = 'None';
             return '<div style="display: flex; align-items: center; gap: 8px;">' +
                 '<input type="radio" name="preferredFormat" id="radioShortcode" value="shortcode" style="display: none;"' + (!radioNativeChecked ? ' checked' : '') + '>' +
                 '<input type="radio" name="preferredFormat" id="radioNative" value="native" style="display: none;"' + (radioNativeChecked ? ' checked' : '') + '>' +
-                '<button type="button" class="custom-btn btn-blue small" id="btnToggleFormat" title="Toggle between ShortCode and Native format" style="padding: 4px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px;">' + activeLabel + '</button>' +
+                '<button type="button" class="custom-btn btn-blue small" id="btnToggleFormat" title="Toggle between Short Code and Native format" style="padding: 4px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px;">' + activeLabel + '</button>' +
                 '<span id="formatValueLabel" style="font-weight: bold; font-family: monospace;">' + val + '</span>' +
             '</div>';
         }
@@ -232,7 +232,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         return '<div style="display: flex; align-items: center; gap: 8px;">' +
             '<input type="radio" name="preferredFormat" id="radioShortcode" value="shortcode" style="display: none;"' + (!radioNativeChecked ? ' checked' : '') + '>' +
             '<input type="radio" name="preferredFormat" id="radioNative" value="native" style="display: none;"' + (radioNativeChecked ? ' checked' : '') + '>' +
-            '<button type="button" class="custom-btn btn-blue small" id="btnToggleFormat" data-shorthand="' + escapeJS(shorthand) + '" data-native="' + escapeJS(nativeKey) + '" title="Toggle between ShortCode and Native format" style="padding: 4px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px;">' + activeLabel + '</button>' +
+            '<button type="button" class="custom-btn btn-blue small" id="btnToggleFormat" data-shorthand="' + escapeJS(shorthand) + '" data-native="' + escapeJS(nativeKey) + '" title="Toggle between Short Code and Native format" style="padding: 4px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px;">' + activeLabel + '</button>' +
             '<span id="formatValueLabel" style="font-weight: bold; font-family: monospace;">' + activeVal + '</span>' +
         '</div>';
     }
@@ -726,6 +726,10 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             lblCheckoffCount.textContent = matchedCount + ' of ' + originalArgs.length;
         }
         updatePagingButtonDisabledStates();
+        
+        if (typeof renderQueueList === 'function') {
+            renderQueueList();
+        }
     }
 
     if (chkCheckoff) {
@@ -1023,7 +1027,9 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             checkboxes2.s.checked = f2.includes('s');
 
             const incomingWhen = message.whenClause !== undefined ? message.whenClause : (message.when !== undefined ? message.when : undefined);
-            whenInput.value = incomingWhen !== undefined ? incomingWhen : 'editorTextFocus';
+            if (incomingWhen !== undefined) {
+                whenInput.value = incomingWhen;
+            }
 
             isSynchronizing = false;
             triggerValidation(true);
@@ -1406,29 +1412,42 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     });
 
 
-    if (btnCopyCurrentBinding) {
-        btnCopyCurrentBinding.addEventListener('click', () => {
-            vscode.postMessage({
-                command: 'copyBinding',
-                value: JSON.stringify({
-                    key: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.initialNativeKey : '',
-                    command: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '',
-                    when: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.whenClause : ''
-                }, null, 4)
-            });
+    let activeCopyMode = 'current'; // default to current
+    if (btnToggleCurrentNew && btnCopyUnifiedBinding) {
+        btnToggleCurrentNew.addEventListener('click', () => {
+            if (activeCopyMode === 'current') {
+                activeCopyMode = 'new';
+                btnToggleCurrentNew.textContent = 'Current:|New: New';
+                btnCopyUnifiedBinding.textContent = 'Copy New Binding';
+                btnCopyUnifiedBinding.className = 'custom-btn btn-blue small';
+            } else {
+                activeCopyMode = 'current';
+                btnToggleCurrentNew.textContent = 'Current:|New: Current';
+                btnCopyUnifiedBinding.textContent = 'Copy Current Binding';
+                btnCopyUnifiedBinding.className = 'custom-btn btn-cyan small';
+            }
         });
-    }
 
-    if (btnCopyNewBinding) {
-        btnCopyNewBinding.addEventListener('click', () => {
-            vscode.postMessage({
-                command: 'copyBinding',
-                value: JSON.stringify({
-                    key: lastValidatedNativeKey || '',
-                    command: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '',
-                    when: whenInput.value
-                }, null, 4)
-            });
+        btnCopyUnifiedBinding.addEventListener('click', () => {
+            if (activeCopyMode === 'current') {
+                vscode.postMessage({
+                    command: 'copyBinding',
+                    value: JSON.stringify({
+                        key: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.initialNativeKey : '',
+                        command: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '',
+                        when: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.whenClause : ''
+                    }, null, 4)
+                });
+            } else {
+                vscode.postMessage({
+                    command: 'copyBinding',
+                    value: JSON.stringify({
+                        key: lastValidatedNativeKey || '',
+                        command: window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '',
+                        when: whenInput ? whenInput.value : ''
+                    }, null, 4)
+                });
+            }
         });
     }
 
@@ -1462,30 +1481,41 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         isSynchronizing = true;
 
         let b1 = window.CE_INITIAL_STATE.chord1Base || '';
-        if (b1.toLowerCase() === 'insert' || b1.toLowerCase() === 'ins') {
-            baseInput1.value = 'insert';
-        } else {
-            baseInput1.value = b1.toUpperCase();
+        if (baseInput1) {
+            if (b1.toLowerCase() === 'insert' || b1.toLowerCase() === 'ins') {
+                baseInput1.value = 'insert';
+            } else {
+                baseInput1.value = b1.toUpperCase();
+            }
         }
-        shortcodeInput1.value = window.CE_INITIAL_STATE.chord1Flags || '';
-        checkboxes1.w.checked = shortcodeInput1.value.includes('w');
-        checkboxes1.c.checked = shortcodeInput1.value.includes('c');
-        checkboxes1.a.checked = shortcodeInput1.value.includes('a');
-        checkboxes1.s.checked = shortcodeInput1.value.includes('s');
+        if (shortcodeInput1) {
+            shortcodeInput1.value = window.CE_INITIAL_STATE.chord1Flags || '';
+        }
+        if (checkboxes1.w) checkboxes1.w.checked = (window.CE_INITIAL_STATE.chord1Flags || '').includes('w');
+        if (checkboxes1.c) checkboxes1.c.checked = (window.CE_INITIAL_STATE.chord1Flags || '').includes('c');
+        if (checkboxes1.a) checkboxes1.a.checked = (window.CE_INITIAL_STATE.chord1Flags || '').includes('a');
+        if (checkboxes1.s) checkboxes1.s.checked = (window.CE_INITIAL_STATE.chord1Flags || '').includes('s');
 
         let b2 = window.CE_INITIAL_STATE.chord2Base || '';
-        if (b2.toLowerCase() === 'insert' || b2.toLowerCase() === 'ins') {
-            baseInput2.value = 'insert';
-        } else {
-            baseInput2.value = b2.toUpperCase();
+        if (baseInput2) {
+            if (b2.toLowerCase() === 'insert' || b2.toLowerCase() === 'ins') {
+                baseInput2.value = 'insert';
+            } else {
+                baseInput2.value = b2.toUpperCase();
+            }
         }
-        shortcodeInput2.value = window.CE_INITIAL_STATE.chord2Flags || '';
-        checkboxes2.w.checked = shortcodeInput2.value.includes('w');
-        checkboxes2.c.checked = shortcodeInput2.value.includes('c');
-        checkboxes2.a.checked = shortcodeInput2.value.includes('a');
-        checkboxes2.s.checked = shortcodeInput2.value.includes('s');
+        if (shortcodeInput2) {
+            shortcodeInput2.value = window.CE_INITIAL_STATE.chord2Flags || '';
+        }
+        if (checkboxes2.w) checkboxes2.w.checked = (window.CE_INITIAL_STATE.chord2Flags || '').includes('w');
+        if (checkboxes2.c) checkboxes2.c.checked = (window.CE_INITIAL_STATE.chord2Flags || '').includes('c');
+        if (checkboxes2.a) checkboxes2.a.checked = (window.CE_INITIAL_STATE.chord2Flags || '').includes('a');
+        if (checkboxes2.s) checkboxes2.s.checked = (window.CE_INITIAL_STATE.chord2Flags || '').includes('s');
 
-        whenInput.value = window.CE_INITIAL_STATE.whenClause !== undefined ? window.CE_INITIAL_STATE.whenClause : '';
+        const dynamicWhenInput = document.getElementById('whenClause');
+        if (dynamicWhenInput) {
+            dynamicWhenInput.value = window.CE_INITIAL_STATE.whenClause !== undefined ? window.CE_INITIAL_STATE.whenClause : '';
+        }
         isSynchronizing = false;
         triggerValidation(true);
 
@@ -1857,12 +1887,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         });
     }
 
-    // Wrap the existing updateCheckoffUI to also trigger renderQueueList
-    const originalUpdateCheckoffUI = updateCheckoffUI;
-    updateCheckoffUI = function() {
-        originalUpdateCheckoffUI();
-        renderQueueList();
-    };
+    // Render queue is triggered inside updateCheckoffUI and initially
 
     // Hotkeys setup
     window.addEventListener('keydown', (e) => {
@@ -1927,14 +1952,14 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
                 if (radioShortcode.checked) {
                     radioShortcode.checked = false;
                     radioNative.checked = true;
-                    btnToggleFormat.textContent = 'Native';
+                    btnToggleFormat.textContent = 'Native:';
                     const nativeVal = btnToggleFormat.getAttribute('data-native') || 'None';
                     if (formatValueLabel) formatValueLabel.textContent = nativeVal;
                     radioNative.dispatchEvent(new Event('change', { bubbles: true }));
                 } else {
                     radioNative.checked = false;
                     radioShortcode.checked = true;
-                    btnToggleFormat.textContent = 'ShortCode';
+                    btnToggleFormat.textContent = 'Short Code:';
                     const shorthandVal = btnToggleFormat.getAttribute('data-shorthand') || 'None';
                     if (formatValueLabel) formatValueLabel.textContent = shorthandVal;
                     radioShortcode.dispatchEvent(new Event('change', { bubbles: true }));
@@ -2152,14 +2177,15 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             <span id="changedIndicator" style="display: none; background: #f97316; color: #ffffff; padding: 2px 8px; border-radius: 3px; font-size: 0.85em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; align-items: center; gap: 4px;">⚠️ Changed</span>
         </div>
 
-        <!-- Copy Binding, Edit Instigator Row -->
-        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; margin-bottom: 8px; flex-wrap: wrap;">
-            <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1; min-width: 180px;">
-                <button type="button" class="custom-btn btn-cyan small" id="btnCopyCurrentBinding" title="Copy Current Binding JSON" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Copy Current Binding</button>
-                <button type="button" class="custom-btn btn-blue small" id="btnCopyNewBinding" title="Copy New Binding JSON" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Copy New Binding</button>
-                <button type="button" class="custom-btn btn-purple small" id="btnEditInstigator" title="Edit the keybinding for ce-command-picker.show (the command that instigated the Menu)" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Edit Picker Key</button>
-                <button type="button" class="custom-btn btn-cyan small" id="btnEditPickerJson" title="Find and edit the keybindings.json entry for ce-command-picker.show" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Edit Picker Json</button>
-            </div>
+        <!-- Copy Binding / Instigator Controls Row -->
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px; margin-bottom: 8px; flex-wrap: wrap;">
+            <!-- Condensed Current/New Controls -->
+            <button type="button" class="custom-btn btn-blue small" id="btnToggleCurrentNew" title="Toggle copy target between Current and New Proposed keybindings." style="font-weight: bold; padding: 4px 8px;">Current:|New: Current</button>
+            <button type="button" class="custom-btn btn-cyan small" id="btnCopyUnifiedBinding" title="Copy the selected keybinding configuration to your clipboard." style="font-weight: bold; padding: 4px 12px; min-width: 150px; text-align: center;">Copy Current Binding</button>
+            
+            <!-- Other utility buttons -->
+            <button type="button" class="custom-btn btn-purple small" id="btnEditInstigator" title="Edit the keybinding for ce-command-picker.show (the command that instigated the Menu)" style="font-weight: 500; padding: 4px 8px; text-align: center;">Edit Picker Key</button>
+            <button type="button" class="custom-btn btn-cyan small" id="btnEditPickerJson" title="Find and edit the keybindings.json entry for ce-command-picker.show" style="font-weight: 500; padding: 4px 8px; text-align: center;">Edit Picker Json</button>
         </div>
         <div id="currentKeysContainer">` + formatCurrentKeys(currentKeys) + `</div>
         <div><span style="opacity: 0.7;">Current When:</span> <strong id="currentWhenClauseLabel">` + (currentWhen || 'No context') + `</strong></div>
@@ -2168,14 +2194,15 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
                 <button type="button" class="secondary small" id="btnCopyKey" title="Copy Shorthand Key" style="padding: 2px 4px; font-size: 0.9em; display: inline-flex; align-items: center; justify-content: center;">📋</button>
                 <span style="opacity: 0.85; font-weight: bold;"><u style="text-decoration: underline;">K</u>ey:</span>
             </span>
-            <input type="text" id="fullShorthandInput" placeholder="e.g., INS.a E" title="Editable full binding in cas shorthand format (e.g., INS.a E). Modifying this field instantly parses and populates the individual key controls below, and vice versa." style="width: 10em;">
+            <input type="text" id="fullShorthandInput" placeholder="e.g., INS.a E" title="Editable full binding in cas shorthand format (e.g., INS.a E). Modifying this field instantly parses and populates the individual key controls below, and vice versa." style="width: 10em; box-sizing: border-box; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); padding: 4px 8px; border-radius: 4px; font-family: inherit;">
             <div id="statusBox" style="display: none; margin: 0 4px; padding: 4px 8px; font-size: 0.85em; font-weight: 500; flex-grow: 1;"></div>
             <button type="button" class="custom-btn btn-blue small" id="btnResetHeader" title="Discard current unsaved changes and reset the entire form and validation state back to the original values." style="padding: 4px 8px; font-size: 0.85em; font-weight: 500; margin-left: auto;">Reset</button>
+            <button type="button" class="custom-btn btn-red small" id="btnClear" title="Clear all input fields, checkboxes, modifier labels, and validation indicators to let you configure a clean, empty key combination." style="padding: 4px 8px; font-size: 0.85em; font-weight: 500; margin-left: 4px;">Clear</button>
         </div>
 
         <div class="form-group" style="margin-top: 8px;">
             <label for="whenClause" style="font-weight: 500;">When</label>
-            <input type="text" id="whenClause" placeholder="e.g., editorTextFocus" title="Specifies the context condition when the keybinding is active (e.g., editorTextFocus, terminalFocus).">
+            <input type="text" id="whenClause" placeholder="e.g., editorTextFocus" value="` + escapeJS(whenClause) + `" title="Specifies the context condition when the keybinding is active (e.g., editorTextFocus, terminalFocus).">
         </div>
     </div>
     
@@ -2186,69 +2213,73 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             <span id="keysToggleArrow">▼</span>
         </div>
         <div class="collapsible-content" id="keysContent">
-            <div class="chords-grid">
+            <div class="chords-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
                 <!-- Chord 1 Panel -->
-                <div class="chord-panel">
-                    <div class="chord-header">
-                        <span>Key 1 (Main Chord)</span>
-                        <span style="display: inline-flex; gap: 4px;">
-                            <button type="button" class="secondary small" id="btnResetKey1" title="Reset this key combination to its original assigned value.">Reset</button>
-                            <button type="button" class="custom-btn btn-red small" id="btnClear1" title="Clear the Base Key, modifier checkboxes, and shortcode box for the primary chord.">Clear</button>
-                        </span>
-                    </div>
-                    
-                    <div style="display: flex; gap: 12px; align-items: end; flex-wrap: wrap;">
-                        <div style="display: flex; gap: 6px; align-items: end;">
-                            <div class="form-group">
-                                <label for="baseKey" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Base Key</label>
-                                <input type="text" id="baseKey" placeholder="e.g., K, F11, ENTER" title="Specify the primary key identifier. Non-recognized keys will be highlighted with red border borders." style="width: 4em; padding: 6px 4px; text-align: center;">
-                            </div>
-                            <div class="form-group">
-                                <label for="shortcode" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Code</label>
-                                <input type="text" id="shortcode" placeholder="cas" title="Compact modifier flags: w (Windows), c (Control), a (Alt), s (Shift)" style="width: 2em; padding: 6px 4px; text-align: center;">
-                            </div>
+                <div class="chord-panel" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; background: rgba(0,0,0,0.05);">
+                    <div style="font-weight: bold; font-size: 0.95em; margin-bottom: 2px; color: var(--vscode-editor-foreground); opacity: 0.9;">Key 1 (Main Chord)</div>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <!-- Header Row -->
+                        <div style="display: flex; gap: 8px; font-size: 0.85em; opacity: 0.75; font-weight: 500; margin-bottom: 2px;">
+                            <div style="width: 5.5em; padding-left: 2px;">base key</div>
+                            <div style="width: 3.5em; padding-left: 2px;">code</div>
+                            <div></div>
                         </div>
-                        <div class="form-group">
-                            <label style="font-weight: 500; font-size: 0.9em; opacity: 0.85; margin-bottom: 6px;">Mods</label>
-                            <div class="checkbox-group" style="display: flex; gap: 4px; align-items: center; justify-content: flex-start; margin-bottom: 2px; flex-wrap: nowrap; white-space: nowrap;">
-                                <label class="checkbox-item" title="Windows modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modW" value="w">W</label>
-                                <label class="checkbox-item" title="Control modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modC" value="c">C</label>
-                                <label class="checkbox-item" title="Alt modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modA" value="a">A</label>
-                                <label class="checkbox-item" title="Shift modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modS" value="s">S</label>
+                        <!-- Input Controls Row -->
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <!-- [input] base key -->
+                            <input type="text" id="baseKey" placeholder="e.g., K" title="Specify the primary key identifier." style="width: 5.5em; padding: 4px 6px; text-align: center; height: 26px; box-sizing: border-box; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); border-radius: 4px;">
+                            
+                            <!-- [input] code -->
+                            <input type="text" id="shortcode" placeholder="cas" title="Compact modifier flags" style="width: 3.5em; padding: 4px 6px; text-align: center; height: 26px; box-sizing: border-box; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); border-radius: 4px;">
+                            
+                            <!-- []W []C []A []S -->
+                            <div style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.02); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: 26px; box-sizing: border-box;">
+                                <label class="checkbox-item" title="Windows modifier key flag" style="font-size: 0.85em; gap: 2px; cursor: pointer; display: inline-flex; align-items: center;"><input type="checkbox" id="modW" value="w" style="margin: 0;">W</label>
+                                <label class="checkbox-item" title="Control modifier key flag" style="font-size: 0.85em; gap: 2px; cursor: pointer; display: inline-flex; align-items: center;"><input type="checkbox" id="modC" value="c" style="margin: 0;">C</label>
+                                <label class="checkbox-item" title="Alt modifier key flag" style="font-size: 0.85em; gap: 2px; cursor: pointer; display: inline-flex; align-items: center;"><input type="checkbox" id="modA" value="a" style="margin: 0;">A</label>
+                                <label class="checkbox-item" title="Shift modifier key flag" style="font-size: 0.85em; gap: 2px; cursor: pointer; display: inline-flex; align-items: center;"><input type="checkbox" id="modS" value="s" style="margin: 0;">S</label>
                             </div>
+                            
+                            <!-- [Reset] -->
+                            <button type="button" class="custom-btn btn-blue small" id="btnResetKey1" title="Reset this key combination to its original assigned value." style="padding: 2px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px; height: 26px; box-sizing: border-box;">Reset</button>
+                            
+                            <!-- [Clear] -->
+                            <button type="button" class="custom-btn btn-red small" id="btnClear1" title="Clear this primary chord." style="padding: 2px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px; height: 26px; box-sizing: border-box;">Clear</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Chord 2 Panel -->
-                <div class="chord-panel">
-                    <div class="chord-header">
-                        <span>Key 2 (Optional Second Chord)</span>
-                        <span style="display: inline-flex; gap: 4px;">
-                            <button type="button" class="secondary small" id="btnResetKey2" title="Reset this key combination to its original assigned value.">Reset</button>
-                            <button type="button" class="custom-btn btn-red small" id="btnClear2" title="Clear the Base Key, modifier checkboxes, and shortcode box for the secondary optional chord.">Clear</button>
-                        </span>
-                    </div>
-                    
-                    <div style="display: flex; gap: 12px; align-items: end; flex-wrap: wrap;">
-                        <div style="display: flex; gap: 6px; align-items: end;">
-                            <div class="form-group">
-                                <label for="baseKey2" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Base Key</label>
-                                <input type="text" id="baseKey2" placeholder="e.g., W, ESC, DOWN" title="Specify the secondary key identifier for chord combinations. Non-recognized keys will be highlighted with red border borders." style="width: 4em; padding: 6px 4px; text-align: center;">
-                            </div>
-                            <div class="form-group">
-                                <label for="shortcode2" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Code</label>
-                                <input type="text" id="shortcode2" placeholder="cas" title="Compact modifier flags: w (Windows), c (Control), a (Alt), s (Shift)" style="width: 2em; padding: 6px 4px; text-align: center;">
-                            </div>
+                <div class="chord-panel" style="display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid rgba(255,255,255,0.06); border-radius: 6px; background: rgba(0,0,0,0.05);">
+                    <div style="font-weight: bold; font-size: 0.95em; margin-bottom: 2px; color: var(--vscode-editor-foreground); opacity: 0.9;">Key 2 (Optional Second Chord)</div>
+                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                        <!-- Header Row -->
+                        <div style="display: flex; gap: 8px; font-size: 0.85em; opacity: 0.75; font-weight: 500; margin-bottom: 2px;">
+                            <div style="width: 5.5em; padding-left: 2px;">base key</div>
+                            <div style="width: 3.5em; padding-left: 2px;">code</div>
+                            <div></div>
                         </div>
-                        <div class="form-group">
-                            <label style="font-weight: 500; font-size: 0.9em; opacity: 0.85; margin-bottom: 6px;">Mods</label>
-                            <div class="checkbox-group" style="display: flex; gap: 4px; align-items: center; justify-content: flex-start; margin-bottom: 2px; flex-wrap: nowrap; white-space: nowrap;">
-                                <label class="checkbox-item" title="Windows modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modW2" value="w">W</label>
-                                <label class="checkbox-item" title="Control modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modC2" value="c">C</label>
-                                <label class="checkbox-item" title="Alt modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modA2" value="a">A</label>
-                                <label class="checkbox-item" title="Shift modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modS2" value="s">S</label>
+                        <!-- Input Controls Row -->
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <!-- [input] base key -->
+                            <input type="text" id="baseKey2" placeholder="e.g., K" title="Specify the secondary key identifier." style="width: 5.5em; padding: 4px 6px; text-align: center; height: 26px; box-sizing: border-box; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); border-radius: 4px;">
+                            
+                            <!-- [input] code -->
+                            <input type="text" id="shortcode2" placeholder="cas" title="Compact modifier flags" style="width: 3.5em; padding: 4px 6px; text-align: center; height: 26px; box-sizing: border-box; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); border-radius: 4px;">
+                            
+                            <!-- []W []C []A []S -->
+                            <div style="display: flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.02); padding: 2px 6px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); height: 26px; box-sizing: border-box;">
+                                <label class="checkbox-item" title="Windows modifier key flag" style="font-size: 0.85em; gap: 2px; cursor: pointer; display: inline-flex; align-items: center;"><input type="checkbox" id="modW2" value="w" style="margin: 0;">W</label>
+                                <label class="checkbox-item" title="Control modifier key flag" style="font-size: 0.85em; gap: 2px; cursor: pointer; display: inline-flex; align-items: center;"><input type="checkbox" id="modC2" value="c" style="margin: 0;">C</label>
+                                <label class="checkbox-item" title="Alt modifier key flag" style="font-size: 0.85em; gap: 2px; cursor: pointer; display: inline-flex; align-items: center;"><input type="checkbox" id="modA2" value="a" style="margin: 0;">A</label>
+                                <label class="checkbox-item" title="Shift modifier key flag" style="font-size: 0.85em; gap: 2px; cursor: pointer; display: inline-flex; align-items: center;"><input type="checkbox" id="modS2" value="s" style="margin: 0;">S</label>
                             </div>
+                            
+                            <!-- [Reset] -->
+                            <button type="button" class="custom-btn btn-blue small" id="btnResetKey2" title="Reset this key combination to its original assigned value." style="padding: 2px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px; height: 26px; box-sizing: border-box;">Reset</button>
+                            
+                            <!-- [Clear] -->
+                            <button type="button" class="custom-btn btn-red small" id="btnClear2" title="Clear this secondary chord." style="padding: 2px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px; height: 26px; box-sizing: border-box;">Clear</button>
                         </div>
                     </div>
                 </div>
@@ -2430,9 +2461,9 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             currentWhen: "` + escapeJS(currentWhen) + `",
             initialNativeKey: "` + escapeJS(initialNativeKey) + `"
         };
-        window.CE_ORIGINAL_ARGS = ` + JSON.stringify(originalArgs) + `;
-        window.CE_CHECKED_OFF_COMMANDS = ` + JSON.stringify(checkedOff) + `;
-        window.CE_COMMAND_BINDINGS = ` + JSON.stringify(commandBindings) + `;
+        window.CE_ORIGINAL_ARGS = ` + JSON.stringify(originalArgs || []) + `;
+        window.CE_CHECKED_OFF_COMMANDS = ` + JSON.stringify(checkedOff || []) + `;
+        window.CE_COMMAND_BINDINGS = ` + JSON.stringify(commandBindings || {}) + `;
         ` + webviewJS + `
     </script>
 </body>

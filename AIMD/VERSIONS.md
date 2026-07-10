@@ -41,6 +41,12 @@ title: VERSIONS
 ## 🚀 Stable Releases & Milestones
 [[#^toc-stable|TOC]]
 
+### 🏷️ v1.2.65 (2026-07-10) - Queue List Rendering Fix and Safe init Message Value Merging
+- **Fixed / Patched:**
+  - **Fixed Queue List Population**: Removed the fragile dynamic function wrapping hack for `updateCheckoffUI` inside `webviewJS` that caused runtime reference/syntax execution crashes, preventing `queueList` rendering.
+  - **Native updateCheckoffUI and renderQueueList Integration**: Integrated the `renderQueueList` call natively inside `updateCheckoffUI` to dynamically rebuild the searchable, index-synchronized item queue list during checkoff modifications.
+  - **Safe init message whenClause assignment**: Prevented the `init` message event listener from overwriting configured/initial `whenClause` values with `editorTextFocus` default fallbacks unless specifically requested by incoming payload definitions.
+
 ### 🏷️ v1.2.61 (2026-07-10) - Shorthand Format Toggle, Color-Coded Helper Actions, and Layout Overhaul
 - **Added / Enhanced:**
   - **Inline Format Toggle Button**: Replaced "ShortCode:|Native" radio inputs with an inline blue toggle button (`ShortCode` vs `Native`) that instantly switches formats while preserving form state and complete backward compatibility with all validation layers.
