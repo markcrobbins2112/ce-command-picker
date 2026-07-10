@@ -5,7 +5,7 @@ const htmlTemplate = require('./extension-macros-html');
 
 /**
  * Presents a side-by-side adaptive form layout panel.
- * Extracts configuration segments synchronously to bypass webview message-passing locks.
+ * Uses dynamic view type rotation to forcefully break service worker caching loops.
  */
 async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
     const core = require('./extension-core');
@@ -41,7 +41,6 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         initialShorthand = core.formatToCustomShorthand(targetToEdit.key);
         initialWhen = targetToEdit.when || 'editorTextFocus';
         
-        // Greedy lookbehind matching pattern protects base keys containing literal periods (e.g. "..c")
         const match = initialShorthand.match(/(.*)\.([wcas]*)$/);
         if (match && match[1] !== undefined && match[2] !== undefined) {
             initialBaseKey = match[1];
@@ -53,8 +52,12 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
 
     const panelTitle = isEditMode ? `Edit Binding: ${derivedTitle}` : `Assign Key: ${derivedTitle}`;
 
+    // 🌟 THE FIX PART 1: Rotate the viewType string using a high-res timestamp.
+    // This forces Chromium to completely drop previous service worker routing states!
+    const uniqueViewType = `ceIdForm-${Date.now()}`;
+
     const panel = vscode.window.createWebviewPanel(
-        'ceCommandPickerForm',
+        uniqueViewType,
         panelTitle,
         vscode.ViewColumn.Beside,
         {
@@ -63,16 +66,20 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         }
     );
 
-    // Pass data synchronously as direct string interpolation arguments
-    panel.webview.html = htmlTemplate.getWebviewContent(
-        commandItem.commandId || derivedTitle,
-        initialBaseKey,
-        initialShorthand,
-        initialFlags,
-        initialWhen
-    );
+    // 🌟 THE FIX PART 2: Let the iframe initialize on a blank canvas, then pass the HTML content
+    // after a brief 50ms tick. This prevents the network thread race condition entirely.
+    setTimeout(() => {
+        if (panel && panel.webview) {
+            panel.webview.html = htmlTemplate.getWebviewContent(
+                commandItem.commandId || derivedTitle,
+                initialBaseKey,
+                initialShorthand,
+                initialFlags,
+                initialWhen
+            );
+        }
+    }, 50);
 
-    // Listen for runtime feedback events sent up by the Webview container form controls
     panel.webview.onDidReceiveMessage(
         async (message) => {
             switch (message.command) {

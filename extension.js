@@ -2168,8 +2168,9 @@ var require_extension_macros_form = __commonJS({
         }
       }
       const panelTitle = isEditMode ? `Edit Binding: ${derivedTitle}` : `Assign Key: ${derivedTitle}`;
+      const uniqueViewType = `ceIdForm-${Date.now()}`;
       const panel = vscode.window.createWebviewPanel(
-        "ceCommandPickerForm",
+        uniqueViewType,
         panelTitle,
         vscode.ViewColumn.Beside,
         {
@@ -2177,13 +2178,17 @@ var require_extension_macros_form = __commonJS({
           retainContextWhenHidden: true
         }
       );
-      panel.webview.html = htmlTemplate.getWebviewContent(
-        commandItem.commandId || derivedTitle,
-        initialBaseKey,
-        initialShorthand,
-        initialFlags,
-        initialWhen
-      );
+      setTimeout(() => {
+        if (panel && panel.webview) {
+          panel.webview.html = htmlTemplate.getWebviewContent(
+            commandItem.commandId || derivedTitle,
+            initialBaseKey,
+            initialShorthand,
+            initialFlags,
+            initialWhen
+          );
+        }
+      }, 50);
       panel.webview.onDidReceiveMessage(
         async (message) => {
           switch (message.command) {
