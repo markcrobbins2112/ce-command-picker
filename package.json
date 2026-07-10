@@ -2,24 +2,25 @@
   "name": "ce-command-picker",
   "displayName": "CE Command Picker",
   "description": "Isolated command pickers via keybinding arguments.",
-  "version": "1.0.3",
+  "version": "1.2.6",
+  "publisher": "markrobbins",
   "license": "MIT",
   "engines": {
-    "vscode": "^1.75.0"
+    "vscode": "^1.86.0"
   },
   "categories": [
     "Other"
   ],
   "main": "./extension.js",
-	"icon": "icon.jpg",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/markcrobbins2112/ce-command-picker.git"
-	},
-	"homepage": "https://github.com/markcrobbins2112/ce-command-picker",
-	"bugs": {
-		"url": "https://github.com/markcrobbins2112/ce-command-picker/issues"
-	},
+  "icon": "icon.jpg",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/markcrobbins2112/ce-command-picker.git"
+  },
+  "homepage": "https://github.com/markcrobbins2112/ce-command-picker",
+  "bugs": {
+    "url": "https://github.com/markcrobbins2112/ce-command-picker/issues"
+  },
   "files": [
     "extension.js",
     "README.md",
@@ -28,10 +29,15 @@
     "node_modules/jsonc-parser/**"
   ],
   "scripts": {
+    "build": "node build.js",
     "lint": "echo \"No lint configured yet\"",
     "test": "echo \"No tests configured yet\"",
-    "package": "vsce package"
+    "pkg": "vsce package",
+    "package": "node build.js && vsce package"
   },
+  "activationEvents": [
+    "onCommand:ce-command-picker.show"
+  ],
   "contributes": {
     "commands": [
       {
@@ -46,6 +52,7 @@
   "devDependencies": {
     "@types/node": "^22.15.3",
     "@types/vscode": "^1.70.0",
-    "@vscode/vsce": "^3.6.2"
+    "@vscode/vsce": "^3.6.2",
+    "esbuild": "^0.28.1"
   }
 }
