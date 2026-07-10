@@ -3496,11 +3496,247 @@ var require_extension_macros_html = __commonJS({
         if (currentWhenClauseLabel) currentWhenClauseLabel.textContent = window.CE_INITIAL_STATE.currentWhen || 'No context';
     }
 
+    // Execute Command Button click listener
+    const btnExecuteCommand = document.getElementById('btnExecuteCommand');
+    if (btnExecuteCommand) {
+        btnExecuteCommand.addEventListener('click', () => {
+            const cmd = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '';
+            if (!cmd) return;
+            vscode.postMessage({
+                command: 'executeCommand',
+                commandName: cmd
+            });
+        });
+    }
+
+    // Preferred direction checkbox management (mutually exclusive)
+    const prefDirCheckboxes = document.querySelectorAll('.pref-dir-chk');
+    prefDirCheckboxes.forEach(chk => {
+        chk.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                prefDirCheckboxes.forEach(other => {
+                    if (other !== e.target) other.checked = false;
+                });
+            } else {
+                const anyChecked = Array.from(prefDirCheckboxes).some(c => c.checked);
+                if (!anyChecked) {
+                    document.getElementById('prefDirRight').checked = true;
+                }
+            }
+        });
+    });
+
+    function getPreferredDirection() {
+        const checked = document.querySelector('.pref-dir-chk:checked');
+        return checked ? checked.value : 'right';
+    }
+
+    // Intercept postMessage to auto-inject preferredDirection for openKeybindings and editJson commands
+    const originalPostMessage = vscode.postMessage;
+    vscode.postMessage = function(msg) {
+        if (msg && (msg.command === 'openKeybindings' || msg.command === 'editJson')) {
+            msg.preferredDirection = getPreferredDirection();
+        }
+        originalPostMessage.call(vscode, msg);
+    };
+
+    // Command Queue list renderer
+    function renderQueueList() {
+        const queueList = document.getElementById('queueList');
+        const finder = document.getElementById('queueFinderInput');
+        const countLabel = document.getElementById('queueCountLabel');
+        if (!queueList) return;
+
+        const originalArgs = window.CE_ORIGINAL_ARGS || [];
+        const checkedOff = window.CE_CHECKED_OFF_COMMANDS || [];
+        const currentCmdId = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '';
+        const filterText = finder ? finder.value.toLowerCase().trim() : '';
+
+        queueList.innerHTML = '';
+        let matchCount = 0;
+
+        originalArgs.forEach((cmdId, idx) => {
+            if (filterText && !cmdId.toLowerCase().includes(filterText)) {
+                return;
+            }
+            matchCount++;
+
+            const isCurrent = (cmdId === currentCmdId);
+            const isChecked = checkedOff.includes(cmdId);
+
+            const itemEl = document.createElement('div');
+            itemEl.className = 'queue-item' + (isCurrent ? ' active' : '');
+            
+            // Apply queue-item styling programmatically
+            itemEl.style.display = 'flex';
+            itemEl.style.alignItems = 'center';
+            itemEl.style.justifyContent = 'space-between';
+            itemEl.style.padding = isCurrent ? '6px 12px 6px 9px' : '6px 12px';
+            itemEl.style.cursor = 'pointer';
+            itemEl.style.borderBottom = '1px solid rgba(255, 255, 255, 0.02)';
+            itemEl.style.fontFamily = 'var(--vscode-editor-font-family, monospace)';
+            itemEl.style.fontSize = '0.9em';
+            itemEl.style.userSelect = 'none';
+            if (isCurrent) {
+                itemEl.style.backgroundColor = 'rgba(255, 255, 255, 0.06)';
+                itemEl.style.borderLeft = '3px solid var(--vscode-focusBorder)';
+            }
+
+            // Hover effect
+            itemEl.addEventListener('mouseenter', () => {
+                if (!isCurrent) {
+                    itemEl.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
+                }
+            });
+            itemEl.addEventListener('mouseleave', () => {
+                if (!isCurrent) {
+                    itemEl.style.backgroundColor = 'transparent';
+                }
+            });
+
+            const leftDiv = document.createElement('div');
+            leftDiv.style.display = 'flex';
+            leftDiv.style.alignItems = 'center';
+            leftDiv.style.gap = '8px';
+            leftDiv.style.flexGrow = '1';
+            leftDiv.style.minWidth = '0';
+
+            const chk = document.createElement('input');
+            chk.type = 'checkbox';
+            chk.className = 'queue-item-check';
+            chk.checked = isChecked;
+            chk.style.cursor = 'pointer';
+            chk.style.margin = '0';
+            chk.style.flexShrink = '0';
+            chk.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+            chk.addEventListener('change', (e) => {
+                const checked = e.target.checked;
+                const targetCmd = cmdId;
+                const currentCheckedOff = window.CE_CHECKED_OFF_COMMANDS || [];
+
+                if (checked) {
+                    if (!currentCheckedOff.includes(targetCmd)) {
+                        currentCheckedOff.push(targetCmd);
+                    }
+                } else {
+                    const cIdx = currentCheckedOff.indexOf(targetCmd);
+                    if (cIdx !== -1) {
+                        currentCheckedOff.splice(cIdx, 1);
+                    }
+                }
+                window.CE_CHECKED_OFF_COMMANDS = currentCheckedOff;
+                
+                if (targetCmd === (window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '')) {
+                    const mainCheckoff = document.getElementById('chkCheckoff');
+                    if (mainCheckoff) mainCheckoff.checked = checked;
+                }
+                
+                updateCheckoffUI();
+                renderQueueList();
+
+                vscode.postMessage({
+                    command: 'toggleCheckoff',
+                    commandId: targetCmd,
+                    checked: checked
+                });
+            });
+
+            const txt = document.createElement('span');
+            txt.className = 'queue-item-text';
+            txt.textContent = cmdId;
+            txt.style.overflow = 'hidden';
+            txt.style.textOverflow = 'ellipsis';
+            txt.style.whiteSpace = 'nowrap';
+            if (isCurrent) {
+                txt.style.fontWeight = 'bold';
+                txt.style.color = 'var(--vscode-focusBorder)';
+            }
+
+            leftDiv.appendChild(chk);
+            leftDiv.appendChild(txt);
+            itemEl.appendChild(leftDiv);
+
+            if (isCurrent) {
+                const badge = document.createElement('span');
+                badge.style.fontSize = '0.8em';
+                badge.style.padding = '2px 6px';
+                badge.style.background = 'rgba(255, 255, 255, 0.1)';
+                badge.style.borderRadius = '3px';
+                badge.style.fontWeight = 'bold';
+                badge.style.marginLeft = '8px';
+                badge.style.flexShrink = '0';
+                badge.textContent = 'ACTIVE';
+                itemEl.appendChild(badge);
+            }
+
+            itemEl.addEventListener('click', () => {
+                if (!isCurrent) {
+                    pageTo(idx);
+                }
+            });
+
+            queueList.appendChild(itemEl);
+        });
+
+        if (countLabel) {
+            countLabel.textContent = matchCount + ' of ' + originalArgs.length + ' shown';
+        }
+    }
+
+    const queueFinderInput = document.getElementById('queueFinderInput');
+    if (queueFinderInput) {
+        queueFinderInput.addEventListener('input', () => {
+            renderQueueList();
+        });
+    }
+
+    // Wrap the existing updateCheckoffUI to also trigger renderQueueList
+    const originalUpdateCheckoffUI = updateCheckoffUI;
+    updateCheckoffUI = function() {
+        originalUpdateCheckoffUI();
+        renderQueueList();
+    };
+
+    // Hotkeys setup
+    window.addEventListener('keydown', (e) => {
+        if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+            const key = e.key.toLowerCase();
+            if (key === 'x') {
+                e.preventDefault();
+                e.stopPropagation();
+                const btnExec = document.getElementById('btnExecuteCommand');
+                if (btnExec) btnExec.click();
+            } else if (key === 'k') {
+                e.preventDefault();
+                e.stopPropagation();
+                if (fullShorthandInput) {
+                    fullShorthandInput.focus();
+                    fullShorthandInput.select();
+                }
+            } else if (e.key === '.' || key === '>') {
+                e.preventDefault();
+                e.stopPropagation();
+                const btnNext = document.getElementById('btnPageNext');
+                if (btnNext && !btnNext.disabled) btnNext.click();
+            } else if (e.key === ',' || key === '<') {
+                e.preventDefault();
+                e.stopPropagation();
+                const btnPrev = document.getElementById('btnPagePrev');
+                if (btnPrev && !btnPrev.disabled) btnPrev.click();
+            }
+        }
+    });
+
     // Set focus on first load
     setTimeout(focusShorthandIfNoActiveFocus, 100);
 
     // Also set focus when the window gets focus
     window.addEventListener('focus', focusShorthandIfNoActiveFocus);
+
+    // Render queue initially
+    setTimeout(renderQueueList, 200);
     `;
       return `<!DOCTYPE html>
 <html lang="en">
@@ -3600,6 +3836,7 @@ var require_extension_macros_html = __commonJS({
     <div class="current-info-container">
         <div style="font-weight: bold; font-size: 1.1em; margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
             <span style="display: flex; align-items: center; gap: 8px;">
+                <button type="button" class="secondary small" id="btnExecuteCommand" title="Execute Command in VS Code" style="padding: 2px 4px; font-size: 0.9em; display: inline-flex; align-items: center; justify-content: center; margin-right: 2px;">\u26A1</button>
                 <button type="button" class="secondary small" id="btnCopyCommand" title="Copy Command ID" style="padding: 2px 4px; font-size: 0.9em; display: inline-flex; align-items: center; justify-content: center;">\u{1F4CB}</button>
                 <span id="cmdTitleLabel">Command: ` + (title || "") + `</span>
             </span>
@@ -3721,6 +3958,25 @@ var require_extension_macros_html = __commonJS({
     </div>
 
     <div class="actions-group">
+        <!-- Preferred Direction Row -->
+        <div class="helper-row" style="margin-bottom: 12px; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 10px;">
+            <span class="helper-row-label" style="width: auto; margin-right: 12px; font-weight: bold; font-size: 0.9em; opacity: 0.85;">Preferred Direction:</span>
+            <div style="display: flex; gap: 12px; align-items: center;">
+                <label class="checkbox-item" style="font-size: 0.9em; gap: 4px; cursor: pointer; display: inline-flex; align-items: center;" title="Open split editor above (Up)">
+                    <input type="checkbox" id="prefDirUp" class="pref-dir-chk" value="up" style="margin: 0;"> Up
+                </label>
+                <label class="checkbox-item" style="font-size: 0.9em; gap: 4px; cursor: pointer; display: inline-flex; align-items: center;" title="Open split editor below (Down)">
+                    <input type="checkbox" id="prefDirDown" class="pref-dir-chk" value="down" style="margin: 0;"> Down
+                </label>
+                <label class="checkbox-item" style="font-size: 0.9em; gap: 4px; cursor: pointer; display: inline-flex; align-items: center;" title="Open split editor on the left (Left)">
+                    <input type="checkbox" id="prefDirLeft" class="pref-dir-chk" value="left" style="margin: 0;"> Left
+                </label>
+                <label class="checkbox-item" style="font-size: 0.9em; gap: 4px; cursor: pointer; display: inline-flex; align-items: center;" title="Open split editor on the right (Right)">
+                    <input type="checkbox" id="prefDirRight" class="pref-dir-chk" value="right" checked style="margin: 0;"> Right
+                </label>
+            </div>
+        </div>
+
         <!-- Row 1: Current Helpers -->
         <div class="helper-row">
             <span class="helper-row-label">Current:</span>
@@ -3809,6 +4065,20 @@ var require_extension_macros_html = __commonJS({
                 <button type="button" id="btnSubmit" disabled title="Save and apply the updated key combination assignment for this action (replacing any matched existing binding).">Save</button>
                 <button type="button" id="btnDone" title="Close this configuration view. Warns if there are unsaved changes.">Done</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Command Queue Section with Finder -->
+    <div class="queue-container" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-weight: bold; font-size: 1.05em; opacity: 0.95;">Command Queue Navigation</span>
+            <span id="queueCountLabel" style="font-size: 0.85em; opacity: 0.7;">0 items</span>
+        </div>
+        <div style="margin-bottom: 8px;">
+            <input type="text" id="queueFinderInput" placeholder="Filter command queue..." style="width: 100%; box-sizing: border-box; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); padding: 6px 10px; border-radius: 4px; font-family: inherit;" title="Type here to filter the command queue list below.">
+        </div>
+        <div id="queueList" style="max-height: 220px; overflow-y: auto; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 4px; background: rgba(0, 0, 0, 0.1); display: flex; flex-direction: column;">
+            <!-- Items dynamically populated -->
         </div>
     </div>
 
@@ -3961,11 +4231,14 @@ var require_extension_macros_form = __commonJS({
         await vscode.commands.executeCommand("workbench.action.focusFirstEditorGroup");
       }
     }
-    async function handleOpenHelper(targetType, configPath, panelViewCol, newInstance, openAction) {
+    async function handleOpenHelper(targetType, configPath, panelViewCol, newInstance, preferredDirection, openAction) {
       const allGroups = vscode.window.tabGroups && vscode.window.tabGroups.all || [];
-      const oppositeCol = panelViewCol === vscode.ViewColumn.One ? vscode.ViewColumn.Two : vscode.ViewColumn.One;
+      let newGroupCommand = "workbench.action.newGroupRight";
+      if (preferredDirection === "up") newGroupCommand = "workbench.action.newGroupAbove";
+      else if (preferredDirection === "down") newGroupCommand = "workbench.action.newGroupBelow";
+      else if (preferredDirection === "left") newGroupCommand = "workbench.action.newGroupLeft";
       if (newInstance) {
-        await vscode.commands.executeCommand("workbench.action.newGroupRight");
+        await vscode.commands.executeCommand(newGroupCommand);
         await new Promise((resolve) => setTimeout(resolve, 100));
         await openAction(vscode.ViewColumn.Active);
       } else {
@@ -3991,14 +4264,14 @@ var require_extension_macros_form = __commonJS({
           await focusViewColumn(foundGroupCol);
           await openAction(foundGroupCol);
         } else {
-          const oppositeExists = allGroups.some((g) => g.viewColumn === oppositeCol);
-          if (!oppositeExists) {
-            await vscode.commands.executeCommand("workbench.action.newGroupRight");
+          const otherGroup = allGroups.find((g) => g.viewColumn !== panelViewCol);
+          if (!otherGroup) {
+            await vscode.commands.executeCommand(newGroupCommand);
             await new Promise((resolve) => setTimeout(resolve, 100));
             await openAction(vscode.ViewColumn.Active);
           } else {
-            await focusViewColumn(oppositeCol);
-            await openAction(oppositeCol);
+            await focusViewColumn(otherGroup.viewColumn);
+            await openAction(otherGroup.viewColumn);
           }
         }
       }
@@ -4103,7 +4376,7 @@ var require_extension_macros_form = __commonJS({
               }
               break;
             case "openKeybindings":
-              await handleOpenHelper("keybindings", null, panel.viewColumn, message.newInstance, async (vCol) => {
+              await handleOpenHelper("keybindings", null, panel.viewColumn, message.newInstance, message.preferredDirection, async (vCol) => {
                 if (message.args) {
                   await vscode.commands.executeCommand(message.commandName, ...message.args);
                 } else {
@@ -4328,7 +4601,7 @@ var require_extension_macros_form = __commonJS({
                   }
                 }
                 const doc = await vscode.workspace.openTextDocument(configPath);
-                await handleOpenHelper("json", configPath, panel.viewColumn, message.newInstance, async (vCol) => {
+                await handleOpenHelper("json", configPath, panel.viewColumn, message.newInstance, message.preferredDirection, async (vCol) => {
                   const editor = await vscode.window.showTextDocument(doc, vCol);
                   if (bestMatchNode) {
                     const targetPos = doc.positionAt(bestMatchNode.offset);

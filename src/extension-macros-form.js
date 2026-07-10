@@ -21,12 +21,16 @@ async function focusViewColumn(column) {
     }
 }
 
-async function handleOpenHelper(targetType, configPath, panelViewCol, newInstance, openAction) {
+async function handleOpenHelper(targetType, configPath, panelViewCol, newInstance, preferredDirection, openAction) {
     const allGroups = (vscode.window.tabGroups && vscode.window.tabGroups.all) || [];
-    const oppositeCol = panelViewCol === vscode.ViewColumn.One ? vscode.ViewColumn.Two : vscode.ViewColumn.One;
+
+    let newGroupCommand = 'workbench.action.newGroupRight';
+    if (preferredDirection === 'up') newGroupCommand = 'workbench.action.newGroupAbove';
+    else if (preferredDirection === 'down') newGroupCommand = 'workbench.action.newGroupBelow';
+    else if (preferredDirection === 'left') newGroupCommand = 'workbench.action.newGroupLeft';
 
     if (newInstance) {
-        await vscode.commands.executeCommand('workbench.action.newGroupRight');
+        await vscode.commands.executeCommand(newGroupCommand);
         await new Promise(resolve => setTimeout(resolve, 100));
         await openAction(vscode.ViewColumn.Active);
     } else {
@@ -53,14 +57,14 @@ async function handleOpenHelper(targetType, configPath, panelViewCol, newInstanc
             await focusViewColumn(foundGroupCol);
             await openAction(foundGroupCol);
         } else {
-            const oppositeExists = allGroups.some(g => g.viewColumn === oppositeCol);
-            if (!oppositeExists) {
-                await vscode.commands.executeCommand('workbench.action.newGroupRight');
+            const otherGroup = allGroups.find(g => g.viewColumn !== panelViewCol);
+            if (!otherGroup) {
+                await vscode.commands.executeCommand(newGroupCommand);
                 await new Promise(resolve => setTimeout(resolve, 100));
                 await openAction(vscode.ViewColumn.Active);
             } else {
-                await focusViewColumn(oppositeCol);
-                await openAction(oppositeCol);
+                await focusViewColumn(otherGroup.viewColumn);
+                await openAction(otherGroup.viewColumn);
             }
         }
     }
@@ -185,7 +189,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                     break;
 
                 case 'openKeybindings':
-                    await handleOpenHelper('keybindings', null, panel.viewColumn, message.newInstance, async (vCol) => {
+                    await handleOpenHelper('keybindings', null, panel.viewColumn, message.newInstance, message.preferredDirection, async (vCol) => {
                         if (message.args) {
                             await vscode.commands.executeCommand(message.commandName, ...message.args);
                         } else {
@@ -428,7 +432,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                         }
 
                         const doc = await vscode.workspace.openTextDocument(configPath);
-                        await handleOpenHelper('json', configPath, panel.viewColumn, message.newInstance, async (vCol) => {
+                        await handleOpenHelper('json', configPath, panel.viewColumn, message.newInstance, message.preferredDirection, async (vCol) => {
                             const editor = await vscode.window.showTextDocument(doc, vCol);
                             if (bestMatchNode) {
                                 const targetPos = doc.positionAt(bestMatchNode.offset);

@@ -50,13 +50,12 @@ title: LOG
 ## 💾 Commit Message
 [[#^toc-commit|TOC]]
 ```text
-feat: v1.2.59 - Prefix Key Detection, Atomic Tab Group Close, and Instigator JSON Editor Link
+feat: v1.2.60 - Command Navigator Queue, Execute Command Trigger, Preferred Direction, and Alt Hotkeys
 
-- Configured cmdTitleLabel to display the actual command ID instead of human-readable labels.
-- Prevented '+' buttons for JSON and KB UI from creating blank, empty editor groups; open safely beside or focus existing.
-- Fixed "Close all KB UI" and "Close all KB JSON" to close all matching tabs in a single atomic call.
-- Added Prefix Key detection warning inside the statusBox status indicator.
-- Added 'Edit Picker Json' button after 'Edit Picker Key' to open keybindings.json at the instigating command entry.
+- Added a row of mutually exclusive "Preferred Direction" checkboxes (Up, Down, Left, Right) to open/seek split editors in that direction.
+- Placed an "Execute Command" icon button (⚡) directly before the "Copy Command ID" button in the title bar.
+- Implemented a complete searchable, interactive Command Queue Navigation panel at the bottom of the form.
+- Added global Webview Hotkeys: Alt+x (Execute command), Alt+k (Focus Key input), Alt+. (Next item), Alt+, (Prev item).
 ```
 
 ## 📝 Log Entries
@@ -68,6 +67,25 @@ feat: v1.2.59 - Prefix Key Detection, Atomic Tab Group Close, and Instigator JSO
   Use the template structure below:
   ...
 -->
+
+### 📅 [2026-07-10T13:35:00Z]
+#### 🎯 Primary Goals & Requirements
+- Add a "Preferred Direction" checkbox row (up, down, left, right) before the "Current" and "New" button rows to govern tab split editor creation directions.
+- Add an interactive searchable list of items governed by paging controls at the bottom of the webview, with a search filter input above it, indicating active and checked-off states.
+- Insert an "Execute Command" icon button (⚡) before the "Copy Command ID" button in the header.
+- Set up keyboard hotkeys inside the webview panel for streamlined keyboard-driven operations: Alt+x (execute), Alt+k (focus input), Alt+. (next item), Alt+, (previous item).
+
+#### 🛠️ Completed Changes in this Session
+- **Preferred Direction Checkboxes**: Added a row of mutually exclusive checkboxes (Up, Down, Left, Right) that dynamically configures the `workbench.action.newGroup` direction used by `handleOpenHelper` in the extension backend.
+- **Header Execute Action (⚡)**: Positioned a command execution button next to the copy ID button, which fires the `'executeCommand'` runner inside the extension host.
+- **Searchable Command Queue Navigation**: Appended a scrollable list view matching the paging index controls at the bottom of the page, complete with real-time text filtering, current/active badge highlights, and checkoff state triggers.
+- **Global Keydown Hotkeys**: Programmed a webview-wide keyboard event listener to map `Alt+x` to the execute trigger, `Alt+k` to focus and select the shorthand key input field, `Alt+.` to advance to the next item, and `Alt+,` to go back to the previous item.
+
+#### 🔸 Affected Files
+- `src/extension-macros-form.js`
+- `src/extension-macros-html.js`
+- `AIMD/TASKS.md`
+- `AIMD/LOG.md`
 
 ### 📅 [2026-07-10T13:25:00Z]
 #### 🎯 Primary Goals & Requirements

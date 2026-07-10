@@ -56,6 +56,10 @@ title: TASKS
 -->
 ## 💬 Incoming tasks from chat
 [[#^toc-chat|TOC]]
+- [x] Add "Preferred Direction" checkboxes (Up, Down, Left, Right) to dynamically open/seek split editor tabs in the requested direction
+- [x] Add an "Execute Command" icon button (⚡) before the "Copy Command ID" button in the title area
+- [x] Add Command Queue navigation list with filter search input below the bottom actions row
+- [x] Add interactive Alt hotkeys: Alt+x (Execute), Alt+k (Focus key input), Alt+. (Next item), Alt+, (Prev item)
 - [x] Configure `cmdTitleLabel` to display the actual command ID instead of human-readable label
 - [x] Prevent '+' buttons for JSON and KB UI from creating blank, empty editor groups; open safely beside or focus existing
 - [x] Fix "Close all KB UI" and "Close all KB JSON" to close all matching tabs in a single atomic call instead of closing only one

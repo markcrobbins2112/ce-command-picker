@@ -41,6 +41,13 @@ title: VERSIONS
 ## 🚀 Stable Releases & Milestones
 [[#^toc-stable|TOC]]
 
+### 🏷️ v1.2.60 (2026-07-10) - Command Navigator Queue, Execute Command Trigger, Preferred Direction, and Alt Hotkeys
+- **Added / Enhanced:**
+  - **Preferred Direction Chose**: Embedded a row of mutually exclusive checkboxes (Up, Down, Left, Right) that configures the split-screen tab creation direction (`workbench.action.newGroupAbove`, etc.) inside the extension workspace.
+  - **Execute Command Trigger (⚡)**: Installed an interactive icon button before the Copy ID button that instantly executes the current command inside VS Code.
+  - **Bottom Navigation List & Finder**: Added a live, searchable, index-synchronized item queue list that renders beneath standard action buttons, reflecting current active selection, list counts, and completed checkoff statuses.
+  - **Global Webview Hotkeys**: Supported instant keyboard operations: `Alt+x` to execute the active command, `Alt+k` to focus/select the shorthand keybinding input field, `Alt+.` to page next, and `Alt+,` to page prev.
+
 ### 🏷️ v1.2.59 (2026-07-10) - Prefix Key Detection, Atomic Tab Group Close, and Instigator JSON Editor Link
 - **Added / Enhanced:**
   - **Actual Command Headers:** Configured `cmdTitleLabel` to display the actual, literal VS Code command ID (e.g. `ce-command-picker.show`) instead of the generic label title.
