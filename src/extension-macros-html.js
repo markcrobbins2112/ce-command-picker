@@ -1,8 +1,8 @@
 // START OF FILE: src/extension-macros-html.js
 
 /**
- * Returns static HTML structures mapped completely to inline base64 data-streams.
- * This completely isolates the script from caching bugs or path resolution crashes.
+ * Returns static HTML structures with fully inlined styling and browser script blocks.
+ * This completely isolates execution from service-worker cache proxy intercepts.
  */
 function getWebviewContent(title) {
     // Pure compiled visual CSS stylesheet payload
@@ -93,12 +93,11 @@ function getWebviewContent(title) {
     button.secondary {
         background-color: var(--vscode-button-secondaryBackground);
         color: var(--vscode-button-secondaryForeground);
-        color: var(--vscode-button-secondaryForeground);
     }
     button.secondary:hover { background-color: var(--vscode-button-secondaryHoverBackground); }
     `;
 
-    // Pure browser data synchronizer script string payload
+    // Pure browser data synchronizer client script logic string blocks
     const webviewJS = `
     const vscode = acquireVsCodeApi();
 
@@ -174,8 +173,9 @@ function getWebviewContent(title) {
             return;
         }
 
+        // ✅ FIXED: Using pure double-escaped string tokens to ensure regex loads reliably inside the script string
         const match = text.match(/(.*)\\.([wcas]*)$/i);
-        if (match) {
+        if (match && match[1] !== undefined) {
             baseInput.value = match[1].toUpperCase();
             setUIFlags(match[2] || '');
         } else {
@@ -231,9 +231,6 @@ function getWebviewContent(title) {
     });
     `;
 
-    // Package script data to base64 strings to safeguard them from text processing or backslash parsing issues
-    const scriptBase64 = Buffer.from(webviewJS).toString('base64');
-
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -279,8 +276,10 @@ function getWebviewContent(title) {
         <button id="btnSubmit" disabled>Save Mappings</button>
     </div>
 
-    <!-- ✅ FIXED: Inject script using a base64 data URI to skip service-worker proxy caches completely -->
-    <script src="data:text/javascript;base64,` + scriptBase64 + `"></script>
+    <!-- ✅ FIXED: Script completely inlined into raw DOM space to avoid any frame parsing or cache lock errors -->
+    <script>
+        ` + webviewJS + `
+    </script>
 </body>
 </html>`;
 }

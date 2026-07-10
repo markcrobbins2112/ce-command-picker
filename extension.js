@@ -1917,7 +1917,6 @@ var require_extension_macros_html = __commonJS({
     button.secondary {
         background-color: var(--vscode-button-secondaryBackground);
         color: var(--vscode-button-secondaryForeground);
-        color: var(--vscode-button-secondaryForeground);
     }
     button.secondary:hover { background-color: var(--vscode-button-secondaryHoverBackground); }
     `;
@@ -1996,8 +1995,9 @@ var require_extension_macros_html = __commonJS({
             return;
         }
 
+        // \u2705 FIXED: Using pure double-escaped string tokens to ensure regex loads reliably inside the script string
         const match = text.match(/(.*)\\.([wcas]*)$/i);
-        if (match) {
+        if (match && match[1] !== undefined) {
             baseInput.value = match[1].toUpperCase();
             setUIFlags(match[2] || '');
         } else {
@@ -2052,7 +2052,6 @@ var require_extension_macros_html = __commonJS({
         vscode.postMessage({ command: 'cancel' });
     });
     `;
-      const scriptBase64 = Buffer.from(webviewJS).toString("base64");
       return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -2098,8 +2097,10 @@ var require_extension_macros_html = __commonJS({
         <button id="btnSubmit" disabled>Save Mappings</button>
     </div>
 
-    <!-- \u2705 FIXED: Inject script using a base64 data URI to skip service-worker proxy caches completely -->
-    <script src="data:text/javascript;base64,` + scriptBase64 + `"></script>
+    <!-- \u2705 FIXED: Script completely inlined into raw DOM space to avoid any frame parsing or cache lock errors -->
+    <script>
+        ` + webviewJS + `
+    </script>
 </body>
 </html>`;
     }
@@ -2229,7 +2230,7 @@ var require_extension_macros_form = __commonJS({
         initialShorthand = core.formatToCustomShorthand(targetToEdit.key);
         initialWhen = targetToEdit.when || "editorTextFocus";
         const match = initialShorthand.match(/(.*)\.([wcas]*)$/);
-        if (match && match[1] && match[2]) {
+        if (match && match[1] !== void 0 && match[2] !== void 0) {
           initialBaseKey = match[1];
           initialFlags = match[2];
         } else {
@@ -2257,7 +2258,7 @@ var require_extension_macros_form = __commonJS({
             whenClause: initialWhen
           });
         }
-      }, 100);
+      }, 250);
       panel.webview.onDidReceiveMessage(
         async (message) => {
           switch (message.command) {

@@ -38,7 +38,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         initialWhen = targetToEdit.when || 'editorTextFocus';
         
         const match = initialShorthand.match(/(.*)\.([wcas]*)$/);
-        if (match && match[1] && match[2]) {
+        if (match && match[1] !== undefined && match[2] !== undefined) {
             initialBaseKey = match[1];
             initialFlags = match[2];
         } else {
@@ -58,10 +58,10 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         }
     );
 
-    // Initialize layout injection 
+    // Mount structural DOM contents
     panel.webview.html = htmlTemplate.getWebviewContent(commandItem.commandId || derivedTitle);
 
-    // 🌟 THE CRITICAL FIX: Give the base64 browser script 100ms to register its window message hooks securely!
+    // ✅ FIXED: Extends synchronization execution time delay to 250ms to ensure client DOM loop mounts securely
     setTimeout(() => {
         if (panel && panel.webview) {
             panel.webview.postMessage({
@@ -72,7 +72,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                 whenClause: initialWhen
             });
         }
-    }, 100);
+    }, 250);
 
     panel.webview.onDidReceiveMessage(
         async (message) => {
