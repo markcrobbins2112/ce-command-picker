@@ -168,6 +168,12 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         checkedOff
     );
 
+    panel.onDidChangeViewState(e => {
+        if (panel.active) {
+            panel.webview.postMessage({ type: 'viewstateChanged', active: true });
+        }
+    });
+
     panel.webview.onDidReceiveMessage(
         async (message) => {
             switch (message.command) {
@@ -289,6 +295,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
 
                 case 'editJson':
                     try {
+                        const targetCmdId = message.commandId || commandItem.commandId;
                         const currentTarget = targetToEdit || (existingTargets.length > 0 ? existingTargets[0] : null);
                         const checkKey = message.nativeKey || (currentTarget ? currentTarget.key : '');
                         const checkWhen = message.when !== undefined ? message.when.trim() : (currentTarget ? (currentTarget.when || '') : '');
@@ -328,7 +335,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                                         }
                                     });
 
-                                    if (currentCmd === commandItem.commandId) {
+                                    if (currentCmd === targetCmdId) {
                                         const normCheck = currentKey.replace(/\s+/g, '').toLowerCase();
                                         const normTarget = checkKey.replace(/\s+/g, '').toLowerCase();
                                         if (normCheck === normTarget) {
@@ -361,7 +368,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                                             }
                                         });
 
-                                        if (currentCmd === commandItem.commandId) {
+                                        if (currentCmd === targetCmdId) {
                                             bestMatchNode = commandNode || itemNode;
                                         }
                                     }
@@ -444,9 +451,12 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                 case 'pasteBinding':
                     try {
                         const text = await vscode.env.clipboard.readText();
-                        const parsed = JSON.parse(text.trim());
+                        let parsed = jsonc.parse(text.trim());
                         if (parsed && typeof parsed === 'object') {
-                            if (parsed.key) {
+                            if (Array.isArray(parsed)) {
+                                parsed = parsed[0];
+                            }
+                            if (parsed && parsed.key) {
                                 const fullShorthand = core.formatToCustomShorthand(parsed.key);
                                 const chords = fullShorthand.trim().split(/\s+/);
                                 let c1Base = '';

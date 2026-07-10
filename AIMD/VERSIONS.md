@@ -41,6 +41,15 @@ title: VERSIONS
 ## 🚀 Stable Releases & Milestones
 [[#^toc-stable|TOC]]
 
+### 🏷️ v1.2.55 (2026-07-10) - Dual-Mode Search Navigation, Double-Escaped Regex Repair, and Defensive Focus
+- **Added / Enhanced:**
+  - Implemented search-based checkoff navigation for the `<<[]` (unchecked backward), `[]>>` (unchecked forward), `<<[x]` (checked backward), and `[x]>>` (checked forward) paging buttons.
+  - Added simple `<` (previous item) and `>` (next item) paging buttons to easily cycle through items one by one.
+  - Engineered an automated dynamic state controller that enables/disables each of the 8 paging buttons based on matching target availability in their search direction.
+  - Upgraded focus management to use a smart defensive algorithm that focuses `fullShorthandInput` on view state changes and window focus *only* when no other inputs or buttons are currently active.
+- **Fixed / Patched:**
+  - Repaired a critical base key extraction bug by correcting double-escaped backend regexes (`\\\\s` and `\\\\.`) in the frontend webview JavaScript code, returning full accuracy to chord parsing and population.
+
 ### 🏷️ v1.2.54 (2026-07-10) - Auto-Focus, Multi-Tab Close Fixes, Distinct Copy Actions, and Dual-Mode Paging
 - **Added / Enhanced:**
   - Implemented automatic, timing-isolated focus mechanism for the `fullShorthandInput` keybinding input field when the webview is first drawn or focused.

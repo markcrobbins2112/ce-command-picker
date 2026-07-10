@@ -182,9 +182,9 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     function cleanBaseKeyInput(val) {
         if (!val) return '';
         let cleaned = val.toLowerCase()
-            .replace(/(ctrl|alt|shift|win|cmd|meta)\\\\+/g, '')
-            .replace(/\\\\.[casw]+/g, '')
-            .replace(/\\\\+/g, '')
+            .replace(/(ctrl|alt|shift|win|cmd|meta)\\+/g, '')
+            .replace(/\\.[casw]+/g, '')
+            .replace(/\\+/g, '')
             .trim();
         if (baseKeyShortcodeMap[cleaned]) {
             return baseKeyShortcodeMap[cleaned];
@@ -380,11 +380,11 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     }
 
     function parseAndPopulateShorthand(shorthandStr) {
-        const chords = (shorthandStr || '').trim().split(/\\\\s+/);
+        const chords = (shorthandStr || '').trim().split(/\\s+/);
         let b1 = '', f1 = '', b2 = '', f2 = '';
 
         if (chords.length >= 1 && chords[0]) {
-            const match = chords[0].match(/(.*)\\\\.([wcas]*)$/i);
+            const match = chords[0].match(/(.*)\\.([wcas]*)$/i);
             if (match) {
                 b1 = match[1];
                 f1 = match[2];
@@ -394,7 +394,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             }
         }
         if (chords.length >= 2 && chords[1]) {
-            const match = chords[1].match(/(.*)\\\\.([wcas]*)$/i);
+            const match = chords[1].match(/(.*)\\.([wcas]*)$/i);
             if (match) {
                 b2 = match[1];
                 f2 = match[2];
@@ -670,6 +670,73 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     const chkCheckoff = document.getElementById('chkCheckoff');
     const lblCheckoffCount = document.getElementById('lblCheckoffCount');
 
+    function findNextUnchecked(startIdx, dir) {
+        const originalArgs = window.CE_ORIGINAL_ARGS || [];
+        const checkedOff = window.CE_CHECKED_OFF_COMMANDS || [];
+        const total = originalArgs.length;
+        if (total <= 1) return -1;
+        
+        let idx = startIdx;
+        for (let i = 0; i < total - 1; i++) {
+            idx = (idx + dir + total) % total;
+            if (!checkedOff.includes(originalArgs[idx])) {
+                return idx;
+            }
+        }
+        return -1;
+    }
+
+    function findNextChecked(startIdx, dir) {
+        const originalArgs = window.CE_ORIGINAL_ARGS || [];
+        const checkedOff = window.CE_CHECKED_OFF_COMMANDS || [];
+        const total = originalArgs.length;
+        if (total <= 1) return -1;
+        
+        let idx = startIdx;
+        for (let i = 0; i < total - 1; i++) {
+            idx = (idx + dir + total) % total;
+            if (checkedOff.includes(originalArgs[idx])) {
+                return idx;
+            }
+        }
+        return -1;
+    }
+
+    function updatePagingButtonDisabledStates() {
+        const originalArgs = window.CE_ORIGINAL_ARGS || [];
+        const total = originalArgs.length;
+        const currentCmdId = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '';
+        const currentIdx = originalArgs.indexOf(currentCmdId);
+
+        if (total <= 1 || currentIdx === -1) {
+            [
+                btnPageFirst, btnPagePrevWithCheckoff, btnPagePrevNoCheckoff, btnPagePrev,
+                btnPageNext, btnPageNextNoCheckoff, btnPageNextWithCheckoff, btnPageLast
+            ].forEach(btn => {
+                if (btn) btn.disabled = true;
+            });
+            return;
+        }
+
+        if (btnPageFirst) btnPageFirst.disabled = (currentIdx === 0);
+        if (btnPageLast) btnPageLast.disabled = (currentIdx === total - 1);
+
+        if (btnPagePrev) btnPagePrev.disabled = false;
+        if (btnPageNext) btnPageNext.disabled = false;
+
+        const nextUncheckedForward = findNextUnchecked(currentIdx, 1);
+        if (btnPageNextNoCheckoff) btnPageNextNoCheckoff.disabled = (nextUncheckedForward === -1);
+
+        const nextUncheckedBackward = findNextUnchecked(currentIdx, -1);
+        if (btnPagePrevNoCheckoff) btnPagePrevNoCheckoff.disabled = (nextUncheckedBackward === -1);
+
+        const nextCheckedForward = findNextChecked(currentIdx, 1);
+        if (btnPageNextWithCheckoff) btnPageNextWithCheckoff.disabled = (nextCheckedForward === -1);
+
+        const nextCheckedBackward = findNextChecked(currentIdx, -1);
+        if (btnPagePrevWithCheckoff) btnPagePrevWithCheckoff.disabled = (nextCheckedBackward === -1);
+    }
+
     function updateCheckoffUI() {
         const originalArgs = window.CE_ORIGINAL_ARGS || [];
         const checkedOff = window.CE_CHECKED_OFF_COMMANDS || [];
@@ -682,6 +749,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         if (lblCheckoffCount) {
             lblCheckoffCount.textContent = matchedCount + ' of ' + originalArgs.length;
         }
+        updatePagingButtonDisabledStates();
     }
 
     if (chkCheckoff) {
@@ -715,6 +783,8 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     const btnPageFirst = document.getElementById('btnPageFirst');
     const btnPagePrevWithCheckoff = document.getElementById('btnPagePrevWithCheckoff');
     const btnPagePrevNoCheckoff = document.getElementById('btnPagePrevNoCheckoff');
+    const btnPagePrev = document.getElementById('btnPagePrev');
+    const btnPageNext = document.getElementById('btnPageNext');
     const btnPageNextNoCheckoff = document.getElementById('btnPageNextNoCheckoff');
     const btnPageNextWithCheckoff = document.getElementById('btnPageNextWithCheckoff');
     const btnPageLast = document.getElementById('btnPageLast');
@@ -753,27 +823,45 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
 
     if (total > 0 && currentIdx !== -1) {
         if (btnPageFirst) btnPageFirst.addEventListener('click', () => pageTo(0));
+        
         if (btnPagePrevWithCheckoff) btnPagePrevWithCheckoff.addEventListener('click', () => {
-            checkoffCurrent();
-            pageTo(currentIdx - 1 < 0 ? total - 1 : currentIdx - 1);
+            const idx = findNextChecked(currentIdx, -1);
+            if (idx !== -1) pageTo(idx);
         });
+        
         if (btnPagePrevNoCheckoff) btnPagePrevNoCheckoff.addEventListener('click', () => {
-            pageTo(currentIdx - 1 < 0 ? total - 1 : currentIdx - 1);
+            const idx = findNextUnchecked(currentIdx, -1);
+            if (idx !== -1) pageTo(idx);
         });
+        
+        if (btnPagePrev) btnPagePrev.addEventListener('click', () => {
+            pageTo((currentIdx - 1 + total) % total);
+        });
+
+        if (btnPageNext) btnPageNext.addEventListener('click', () => {
+            pageTo((currentIdx + 1) % total);
+        });
+
         if (btnPageNextNoCheckoff) btnPageNextNoCheckoff.addEventListener('click', () => {
-            pageTo(currentIdx + 1 >= total ? 0 : currentIdx + 1);
+            const idx = findNextUnchecked(currentIdx, 1);
+            if (idx !== -1) pageTo(idx);
         });
+        
         if (btnPageNextWithCheckoff) btnPageNextWithCheckoff.addEventListener('click', () => {
-            checkoffCurrent();
-            pageTo(currentIdx + 1 >= total ? 0 : currentIdx + 1);
+            const idx = findNextChecked(currentIdx, 1);
+            if (idx !== -1) pageTo(idx);
         });
+        
         if (btnPageLast) btnPageLast.addEventListener('click', () => pageTo(total - 1));
         
         if (lblPageNum) {
             lblPageNum.textContent = (currentIdx + 1) + ' of ' + total;
         }
     } else {
-        [btnPageFirst, btnPagePrevWithCheckoff, btnPagePrevNoCheckoff, btnPageNextNoCheckoff, btnPageNextWithCheckoff, btnPageLast].forEach(btn => {
+        [
+            btnPageFirst, btnPagePrevWithCheckoff, btnPagePrevNoCheckoff, btnPagePrev,
+            btnPageNext, btnPageNextNoCheckoff, btnPageNextWithCheckoff, btnPageLast
+        ].forEach(btn => {
             if (btn) btn.disabled = true;
         });
         if (lblPageNum) lblPageNum.textContent = '1 of 1';
@@ -885,9 +973,9 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             const flags2Str = message.flags2 || '';
 
             if (shorthandStr) {
-                const chords = shorthandStr.trim().split(/\\\\s+/);
+                const chords = shorthandStr.trim().split(/\\s+/);
                 if (chords.length >= 1 && chords[0]) {
-                    const match = chords[0].match(/(.*)\\\\.([wcas]*)$/);
+                    const match = chords[0].match(/(.*)\\.([wcas]*)$/);
                     if (match) {
                         b1 = match[1];
                         f1 = match[2];
@@ -897,7 +985,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
                     }
                 }
                 if (chords.length >= 2 && chords[1]) {
-                    const match = chords[1].match(/(.*)\\\\.([wcas]*)$/);
+                    const match = chords[1].match(/(.*)\\.([wcas]*)$/);
                     if (match) {
                         b2 = match[1];
                         f2 = match[2];
@@ -1032,6 +1120,10 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             whenInput.value = message.when || '';
             isSynchronizing = false;
             triggerValidation(true);
+        } else if (message.type === 'viewstateChanged') {
+            if (message.active) {
+                focusShorthandIfNoActiveFocus();
+            }
         }
     });
 
@@ -1428,6 +1520,15 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         }
     });
 
+    function focusShorthandIfNoActiveFocus() {
+        if (!fullShorthandInput) return;
+        const active = document.activeElement;
+        if (!active || active === document.body || active.tagName === 'BODY' || (active.tagName !== 'INPUT' && active.tagName !== 'SELECT' && active.tagName !== 'TEXTAREA' && active.tagName !== 'BUTTON')) {
+            fullShorthandInput.focus();
+            fullShorthandInput.select();
+        }
+    }
+
     if (window.CE_INITIAL_STATE) {
         resetToInitial();
         const container = document.getElementById('currentKeysContainer');
@@ -1437,20 +1538,11 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         if (currentWhenClauseLabel) currentWhenClauseLabel.textContent = window.CE_INITIAL_STATE.currentWhen || 'No context';
     }
 
-    // Set focus to fullShorthandInput on first load
-    setTimeout(() => {
-        if (fullShorthandInput) {
-            fullShorthandInput.focus();
-            fullShorthandInput.select();
-        }
-    }, 50);
+    // Set focus on first load
+    setTimeout(focusShorthandIfNoActiveFocus, 100);
 
     // Also set focus when the window gets focus
-    window.addEventListener('focus', () => {
-        if (fullShorthandInput) {
-            fullShorthandInput.focus();
-        }
-    });
+    window.addEventListener('focus', focusShorthandIfNoActiveFocus);
     `;
 
     return `<!DOCTYPE html>
@@ -1574,11 +1666,13 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             <!-- Paging Row (right-aligned!) -->
             <div style="display: flex; justify-content: flex-end; align-items: center; gap: 4px;">
                 <button type="button" class="secondary small" id="btnPageFirst" title="First item">&lt;&lt;&lt;</button>
-                <button type="button" class="secondary small" id="btnPagePrevWithCheckoff" title="Check off current command and page to previous item">&lt;&lt;[x]</button>
-                <button type="button" class="secondary small" id="btnPagePrevNoCheckoff" title="Page to previous item without checkoff">&lt;&lt;[]</button>
+                <button type="button" class="secondary small" id="btnPagePrevWithCheckoff" title="Page backward until a checkoff is true (checked)">&lt;&lt;[x]</button>
+                <button type="button" class="secondary small" id="btnPagePrevNoCheckoff" title="Page backward until a checkoff is false (unchecked)">&lt;&lt;[]</button>
+                <button type="button" class="secondary small" id="btnPagePrev" title="Previous item">&lt;</button>
                 <span id="lblPageNum" style="font-size: 0.9em; font-weight: bold; margin: 0 4px; opacity: 0.85; min-width: 3.5em; text-align: center;">1 of 1</span>
-                <button type="button" class="secondary small" id="btnPageNextNoCheckoff" title="Page to next item without checkoff">[]&gt;&gt;</button>
-                <button type="button" class="secondary small" id="btnPageNextWithCheckoff" title="Check off current command and page to next item">[x]&gt;&gt;</button>
+                <button type="button" class="secondary small" id="btnPageNext" title="Next item">&gt;</button>
+                <button type="button" class="secondary small" id="btnPageNextNoCheckoff" title="Page forward until a checkoff is false (unchecked)">[]&gt;&gt;</button>
+                <button type="button" class="secondary small" id="btnPageNextWithCheckoff" title="Page forward until a checkoff is true (checked)">[x]&gt;&gt;</button>
                 <button type="button" class="secondary small" id="btnPageLast" title="Last item">&gt;&gt;&gt;</button>
             </div>
         </div>

@@ -50,13 +50,13 @@ title: LOG
 ## 💾 Commit Message
 [[#^toc-commit|TOC]]
 ```text
-build: v1.2.54 - Auto-Focus, Multi-Tab Close Fixes, Distinct Copy Actions, and Dual-Mode Paging
+build: v1.2.55 - Dual-Mode Search Navigation, Double-Escaped Regex Repair, and Defensive Focus
 
-- Implemented automatic fullShorthandInput focus on webview load and focus event triggers.
-- Resolved Close All KB Json and Close All KB UI multi-tab closure bugs by collecting non-mutating tab targets.
-- Created distinct Copy Current Binding and Copy New Binding actions.
-- Added dual-mode navigation paging buttons (with and without automatic checkoff) with customized tooltips.
-- Refactored Add button (btnSaveClone) to always append new mappings, and prevented Save (btnSubmit) from reopening the menu.
+- Implemented search-based checkoff navigation for <<[], []>>, <<[x], and [x]>> paging buttons.
+- Added simple < and > previous/next item buttons.
+- Fully automated dynamic paging button enable/disable states based on unchecked/checked item availability.
+- Repaired chord parsing base key extraction by correcting double-escaped backend regexes in front-end.
+- Added smart defensive fullShorthandInput focus listener that ignores other active input elements.
 ```
 
 ## 📝 Log Entries
@@ -68,6 +68,26 @@ build: v1.2.54 - Auto-Focus, Multi-Tab Close Fixes, Distinct Copy Actions, and D
   Use the template structure below:
   ...
 -->
+
+### 📅 [2026-07-10T12:00:00Z]
+#### 🎯 Primary Goals & Requirements
+- Implement search-based navigation for `<<[]`, `[]>>`, `<<[x]`, and `[x]>>` buttons.
+- Add simple `<` and `>` previous and next buttons.
+- Disable paging buttons if no matching target exists in the respective search direction.
+- Repair base key extraction failure caused by double-escaping regexes (`\\\\s` and `\\\\.`) in the webview template string.
+- Secure focus management with a smart defensive check so it does not hijack focus from active input fields.
+
+#### 🛠️ Completed Changes in this Session
+- **Paging Search Algorithms**: Wrote `findNextUnchecked` and `findNextChecked` helper functions to search forward/backward through the command list.
+- **Unified Disabled State Manager**: Added `updatePagingButtonDisabledStates()` to instantly check checked/unchecked command counts in both directions and apply disabled states dynamically to all 8 paging buttons.
+- **Double Escaping Repair**: Replaced `\\\\s` with `\\s` and `\\\\.` with `\\.` across all frontend string parsing functions to resolve the base key extraction bug.
+- **Non-Invasive Autofocus**: Upgraded webview focus handling with a defensive `focusShorthandIfNoActiveFocus()` helper that skips refocusing if other interactive inputs like Base Key, Code, or When are active.
+
+#### 🔸 Affected Files
+- `src/extension-macros-html.js`
+- `AIMD/TASKS.md`
+- `AIMD/LOG.md`
+- `AIMD/VERSIONS.md`
 
 ### 📅 [2026-07-10T11:20:00Z]
 #### 🎯 Primary Goals & Requirements
