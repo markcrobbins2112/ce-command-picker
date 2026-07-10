@@ -50,12 +50,14 @@ title: LOG
 ## 💾 Commit Message
 [[#^toc-commit|TOC]]
 ```text
-feat: v1.2.60 - Command Navigator Queue, Execute Command Trigger, Preferred Direction, and Alt Hotkeys
+feat: v1.2.61 - Format Toggle Button, Color-Coded Helper Actions, and Layout Overhaul
 
-- Added a row of mutually exclusive "Preferred Direction" checkboxes (Up, Down, Left, Right) to open/seek split editors in that direction.
-- Placed an "Execute Command" icon button (⚡) directly before the "Copy Command ID" button in the title bar.
-- Implemented a complete searchable, interactive Command Queue Navigation panel at the bottom of the form.
-- Added global Webview Hotkeys: Alt+x (Execute command), Alt+k (Focus Key input), Alt+. (Next item), Alt+, (Prev item).
+- Replaced "ShortCode:|Native" radio inputs with an inline blue toggle button that switches formats dynamically.
+- Reordered and colored helper button groups (borders with black backgrounds): KB UI Cmd (Red), KB UI User (Purple), KB UI Key (Blue), KB UI Ext (Green), KB UI Default (Yellow), and KB UI Extension (Orange).
+- Styled key actions with borders and black backgrounds: Copy Current Binding (Cyan), Copy New Binding (Blue), Edit Picker Key (Purple), Edit Picker Json (Cyan), Reset (Blue), Done (Yellow).
+- Moved "Checkoff" row to the Command Queue Navigation Title Bar.
+- Moved "When" (whenClause) form-group below the Shorthand Key input enclosing div.
+- Relocated "statusBox" directly after the Shorthand Key input, and limited shorthand input width to 10em.
 ```
 
 ## 📝 Log Entries
@@ -67,6 +69,25 @@ feat: v1.2.60 - Command Navigator Queue, Execute Command Trigger, Preferred Dire
   Use the template structure below:
   ...
 -->
+
+### 📅 [2026-07-10T15:00:00Z]
+#### 🎯 Primary Goals & Requirements
+- Replace "ShortCode:|Native" format display options with an inline blue toggle button matching other form buttons.
+- Apply specific color coding, borders, and black backgrounds to helper groups and primary action buttons.
+- Reorder helper button rows according to a revised UX hierarchy.
+- Relocate layout elements (Checkoff, When clause, statusBox, and Shorthand Key input) to match target spacing specifications.
+
+#### 🛠️ Completed Changes in this Session
+- **Inline Format Toggle**: Developed a state-aware format toggle button that updates a hidden radio selector to trigger full validation, dynamic re-rendering, and field value switches with 100% backward compatibility.
+- **Accented Helper Button Row Reordering**: Re-engineered current and new helpers rows, reordering them with borders and black backgrounds: KB UI Cmd (Red), KB UI User (Purple - including '+' buttons), KB UI Key (Blue), KB UI Ext (Green), KB UI Default (Yellow), and KB UI Extension (Orange).
+- **Primary Action Button Themes**: Restyled primary copy and configuration utility actions to have solid borders and black backgrounds (Copy Current Binding: Cyan, Copy New Binding: Blue, Edit Picker Key: Purple, Edit Picker Json: Cyan, Reset: Blue, Done: Yellow).
+- **Anatomy Layout Spacing Overhaul**: Moved the Checkoff row to the Command Queue Navigation title bar, placed the "When" form-group underneath the key input row, resized fullShorthandInput to 10em, and placed the status warning box inline after it.
+
+#### 🔸 Affected Files
+- `src/extension-macros-html.js`
+- `package.json`
+- `AIMD/VERSIONS.md`
+- `AIMD/LOG.md`
 
 ### 📅 [2026-07-10T13:35:00Z]
 #### 🎯 Primary Goals & Requirements

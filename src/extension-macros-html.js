@@ -17,19 +17,11 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     const formatCurrentKeys = (keys) => {
         if (!keys || keys === 'None') {
             return `
-            <div>
-                <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                    <input type="radio" name="preferredFormat" id="radioShortcode" value="shortcode" style="margin: 0; cursor: pointer;" checked>
-                    <span style="opacity: 0.7;">ShortCode:</span>
-                    <strong>None</strong>
-                </label>
-            </div>
-            <div>
-                <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                    <input type="radio" name="preferredFormat" id="radioNative" value="native" style="margin: 0; cursor: pointer;">
-                    <span style="opacity: 0.7;">Native:</span>
-                    <strong>None</strong>
-                </label>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <input type="radio" name="preferredFormat" id="radioShortcode" value="shortcode" style="display: none;" checked>
+                <input type="radio" name="preferredFormat" id="radioNative" value="native" style="display: none;">
+                <button type="button" class="custom-btn btn-blue small" id="btnToggleFormat" title="Toggle between ShortCode and Native format" style="padding: 4px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px;">ShortCode</button>
+                <span id="formatValueLabel" style="font-weight: bold; font-family: monospace;">None</span>
             </div>`;
         }
         const parts = keys.split('  |  ');
@@ -47,19 +39,11 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             }
         }
         return `
-        <div>
-            <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                <input type="radio" name="preferredFormat" id="radioShortcode" value="shortcode" style="margin: 0; cursor: pointer;" checked>
-                <span style="opacity: 0.7;">ShortCode:</span>
-                <strong>${shorthand}</strong>
-            </label>
-        </div>
-        <div>
-            <label style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
-                <input type="radio" name="preferredFormat" id="radioNative" value="native" style="margin: 0; cursor: pointer;">
-                <span style="opacity: 0.7;">Native:</span>
-                <strong>${nativeKey}</strong>
-            </label>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <input type="radio" name="preferredFormat" id="radioShortcode" value="shortcode" style="display: none;" checked>
+            <input type="radio" name="preferredFormat" id="radioNative" value="native" style="display: none;">
+            <button type="button" class="custom-btn btn-blue small" id="btnToggleFormat" data-shorthand="${escapeJS(shorthand)}" data-native="${escapeJS(nativeKey)}" title="Toggle between ShortCode and Native format" style="padding: 4px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px;">ShortCode</button>
+            <span id="formatValueLabel" style="font-weight: bold; font-family: monospace;">${shorthand}</span>
         </div>`;
     };
 
@@ -219,19 +203,15 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
 
     function formatCurrentKeysJS(keys) {
         const radioNativeChecked = document.getElementById('radioNative') ? document.getElementById('radioNative').checked : false;
+        const activeLabel = radioNativeChecked ? 'Native' : 'ShortCode';
         
         if (!keys || keys === 'None') {
-            return '<div>' +
-                '<label style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">' +
-                    '<input type="radio" name="preferredFormat" id="radioShortcode" value="shortcode" style="margin: 0; cursor: pointer;"' + (!radioNativeChecked ? ' checked' : '') + '> ' +
-                    '<span style="opacity: 0.7;">ShortCode:</span> <strong>None</strong>' +
-                '</label>' +
-            '</div>' +
-            '<div>' +
-                '<label style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">' +
-                    '<input type="radio" name="preferredFormat" id="radioNative" value="native" style="margin: 0; cursor: pointer;"' + (radioNativeChecked ? ' checked' : '') + '> ' +
-                    '<span style="opacity: 0.7;">Native:</span> <strong>None</strong>' +
-                '</label>' +
+            const val = 'None';
+            return '<div style="display: flex; align-items: center; gap: 8px;">' +
+                '<input type="radio" name="preferredFormat" id="radioShortcode" value="shortcode" style="display: none;"' + (!radioNativeChecked ? ' checked' : '') + '>' +
+                '<input type="radio" name="preferredFormat" id="radioNative" value="native" style="display: none;"' + (radioNativeChecked ? ' checked' : '') + '>' +
+                '<button type="button" class="custom-btn btn-blue small" id="btnToggleFormat" title="Toggle between ShortCode and Native format" style="padding: 4px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px;">' + activeLabel + '</button>' +
+                '<span id="formatValueLabel" style="font-weight: bold; font-family: monospace;">' + val + '</span>' +
             '</div>';
         }
         const parts = keys.split('  |  ');
@@ -248,17 +228,12 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
                 nativeKey = part;
             }
         }
-        return '<div>' +
-            '<label style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">' +
-                '<input type="radio" name="preferredFormat" id="radioShortcode" value="shortcode" style="margin: 0; cursor: pointer;"' + (!radioNativeChecked ? ' checked' : '') + '> ' +
-                '<span style="opacity: 0.7;">ShortCode:</span> <strong>' + shorthand + '</strong>' +
-            '</label>' +
-        '</div>' +
-        '<div>' +
-            '<label style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">' +
-                '<input type="radio" name="preferredFormat" id="radioNative" value="native" style="margin: 0; cursor: pointer;"' + (radioNativeChecked ? ' checked' : '') + '> ' +
-                '<span style="opacity: 0.7;">Native:</span> <strong>' + nativeKey + '</strong>' +
-            '</label>' +
+        const activeVal = radioNativeChecked ? nativeKey : shorthand;
+        return '<div style="display: flex; align-items: center; gap: 8px;">' +
+            '<input type="radio" name="preferredFormat" id="radioShortcode" value="shortcode" style="display: none;"' + (!radioNativeChecked ? ' checked' : '') + '>' +
+            '<input type="radio" name="preferredFormat" id="radioNative" value="native" style="display: none;"' + (radioNativeChecked ? ' checked' : '') + '>' +
+            '<button type="button" class="custom-btn btn-blue small" id="btnToggleFormat" data-shorthand="' + escapeJS(shorthand) + '" data-native="' + escapeJS(nativeKey) + '" title="Toggle between ShortCode and Native format" style="padding: 4px 8px; font-size: 0.85em; font-weight: bold; border-radius: 3px;">' + activeLabel + '</button>' +
+            '<span id="formatValueLabel" style="font-weight: bold; font-family: monospace;">' + activeVal + '</span>' +
         '</div>';
     }
 
@@ -1940,6 +1915,34 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         });
     }
 
+    // Format Selection Toggle Button
+    document.addEventListener('click', (e) => {
+        const btnToggleFormat = e.target.closest('#btnToggleFormat');
+        if (btnToggleFormat) {
+            const radioShortcode = document.getElementById('radioShortcode');
+            const radioNative = document.getElementById('radioNative');
+            const formatValueLabel = document.getElementById('formatValueLabel');
+            
+            if (radioShortcode && radioNative) {
+                if (radioShortcode.checked) {
+                    radioShortcode.checked = false;
+                    radioNative.checked = true;
+                    btnToggleFormat.textContent = 'Native';
+                    const nativeVal = btnToggleFormat.getAttribute('data-native') || 'None';
+                    if (formatValueLabel) formatValueLabel.textContent = nativeVal;
+                    radioNative.dispatchEvent(new Event('change', { bubbles: true }));
+                } else {
+                    radioNative.checked = false;
+                    radioShortcode.checked = true;
+                    btnToggleFormat.textContent = 'ShortCode';
+                    const shorthandVal = btnToggleFormat.getAttribute('data-shorthand') || 'None';
+                    if (formatValueLabel) formatValueLabel.textContent = shorthandVal;
+                    radioShortcode.dispatchEvent(new Event('change', { bubbles: true }));
+                }
+            }
+        }
+    });
+
     // Render queue initially
     setTimeout(renderQueueList, 200);
     `;
@@ -2148,34 +2151,32 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             </span>
             <span id="changedIndicator" style="display: none; background: #f97316; color: #ffffff; padding: 2px 8px; border-radius: 3px; font-size: 0.85em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; align-items: center; gap: 4px;">⚠️ Changed</span>
         </div>
-        <!-- Checkoff Row -->
-        <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
-            <label style="display: inline-flex; align-items: center; gap: 6px; font-weight: 500; cursor: pointer; font-size: 0.95em;">
-                <input type="checkbox" id="chkCheckoff" style="cursor: pointer; margin: 0;"> Checkoff
-            </label>
-            <span id="lblCheckoffCount" style="opacity: 0.85; font-size: 0.9em; font-weight: 500; margin-left: 4px;">0 of 0</span>
-        </div>
 
         <!-- Copy Binding, Edit Instigator Row -->
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; margin-bottom: 8px; flex-wrap: wrap;">
             <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1; min-width: 180px;">
-                <button type="button" class="secondary small" id="btnCopyCurrentBinding" title="Copy Current Binding JSON" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Copy Current Binding</button>
-                <button type="button" class="secondary small" id="btnCopyNewBinding" title="Copy New Binding JSON" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Copy New Binding</button>
-                <button type="button" class="secondary small" id="btnEditInstigator" title="Edit the keybinding for ce-command-picker.show (the command that instigated the Menu)" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Edit Picker Key</button>
-                <button type="button" class="secondary small" id="btnEditPickerJson" title="Find and edit the keybindings.json entry for ce-command-picker.show" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Edit Picker Json</button>
+                <button type="button" class="custom-btn btn-cyan small" id="btnCopyCurrentBinding" title="Copy Current Binding JSON" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Copy Current Binding</button>
+                <button type="button" class="custom-btn btn-blue small" id="btnCopyNewBinding" title="Copy New Binding JSON" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Copy New Binding</button>
+                <button type="button" class="custom-btn btn-purple small" id="btnEditInstigator" title="Edit the keybinding for ce-command-picker.show (the command that instigated the Menu)" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Edit Picker Key</button>
+                <button type="button" class="custom-btn btn-cyan small" id="btnEditPickerJson" title="Find and edit the keybindings.json entry for ce-command-picker.show" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Edit Picker Json</button>
             </div>
         </div>
         <div id="currentKeysContainer">` + formatCurrentKeys(currentKeys) + `</div>
         <div><span style="opacity: 0.7;">Current When:</span> <strong id="currentWhenClauseLabel">` + (currentWhen || 'No context') + `</strong></div>
-        <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+        <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <span style="display: inline-flex; align-items: center; gap: 6px;">
                 <button type="button" class="secondary small" id="btnCopyKey" title="Copy Shorthand Key" style="padding: 2px 4px; font-size: 0.9em; display: inline-flex; align-items: center; justify-content: center;">📋</button>
                 <span style="opacity: 0.85; font-weight: bold;"><u style="text-decoration: underline;">K</u>ey:</span>
             </span>
-            <input type="text" id="fullShorthandInput" placeholder="e.g., INS.a E" title="Editable full binding in cas shorthand format (e.g., INS.a E). Modifying this field instantly parses and populates the individual key controls below, and vice versa." style="flex-grow: 1;">
-            <button type="button" class="secondary small" id="btnResetHeader" title="Discard current unsaved changes and reset the entire form and validation state back to the original values." style="padding: 4px 8px; font-size: 0.85em; font-weight: 500;">Reset</button>
+            <input type="text" id="fullShorthandInput" placeholder="e.g., INS.a E" title="Editable full binding in cas shorthand format (e.g., INS.a E). Modifying this field instantly parses and populates the individual key controls below, and vice versa." style="width: 10em;">
+            <div id="statusBox" style="display: none; margin: 0 4px; padding: 4px 8px; font-size: 0.85em; font-weight: 500; flex-grow: 1;"></div>
+            <button type="button" class="custom-btn btn-blue small" id="btnResetHeader" title="Discard current unsaved changes and reset the entire form and validation state back to the original values." style="padding: 4px 8px; font-size: 0.85em; font-weight: 500; margin-left: auto;">Reset</button>
         </div>
-        <div id="statusBox" style="display: none; margin-top: 8px;"></div>
+
+        <div class="form-group" style="margin-top: 8px;">
+            <label for="whenClause" style="font-weight: 500;">When</label>
+            <input type="text" id="whenClause" placeholder="e.g., editorTextFocus" title="Specifies the context condition when the keybinding is active (e.g., editorTextFocus, terminalFocus).">
+        </div>
     </div>
     
     <!-- Collapsible Keys Panel Container -->
@@ -2255,11 +2256,6 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         </div>
     </div>
 
-    <div class="form-group" style="margin-top: 8px;">
-        <label for="whenClause" style="font-weight: 500;">When</label>
-        <input type="text" id="whenClause" placeholder="e.g., editorTextFocus" title="Specifies the context condition when the keybinding is active (e.g., editorTextFocus, terminalFocus).">
-    </div>
-
     <div class="actions-group">
         <!-- Preferred Direction Row -->
         <div class="helper-row" style="margin-bottom: 12px; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 10px;">
@@ -2294,6 +2290,11 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
                     <button type="button" class="custom-btn btn-red small" id="btnKbUiCmdNewInst" title="Open Keyboard Shortcuts for command as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">➕</button>
                     <button type="button" class="custom-btn btn-red small" id="btnKbUiCmd" title="Open the native VS Code Keyboard Shortcuts panel with a search filter focused specifically on the command ID of this action in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Cmd</button>
                 </span>
+                <!-- KB UI User (purple) -->
+                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
+                    <button type="button" class="custom-btn btn-purple small" id="btnKbUiUserNewInst" title="Open custom User keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">➕</button>
+                    <button type="button" class="custom-btn btn-purple small" id="btnKbUiUser" title="Open the native VS Code Keyboard Shortcuts panel displaying only your custom user-configured keybindings in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI User</button>
+                </span>
                 <!-- KB UI Key (blue) -->
                 <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
                     <button type="button" class="custom-btn btn-blue small" id="btnKbUiKeyNewInst" title="Open Keyboard Shortcuts for key as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">➕</button>
@@ -2314,11 +2315,6 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
                     <button type="button" class="custom-btn btn-orange small" id="btnKbUiExtensionNewInst" title="Open extension keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">➕</button>
                     <button type="button" class="custom-btn btn-orange small" id="btnKbUiExtension" title="Open the native VS Code Keyboard Shortcuts panel filtering to show keybindings contributed by extensions in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Extension</button>
                 </span>
-                <!-- KB UI User (secondary) -->
-                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="secondary small" id="btnKbUiUserNewInst" title="Open custom User keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">➕</button>
-                    <button type="button" class="secondary small" id="btnKbUiUser" title="Open the native VS Code Keyboard Shortcuts panel displaying only your custom user-configured keybindings in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI User</button>
-                </span>
             </div>
         </div>
 
@@ -2335,6 +2331,11 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
                 <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
                     <button type="button" class="custom-btn btn-red small" id="btnKbUiCmdNewNewInst" title="Open Keyboard Shortcuts for command as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">➕</button>
                     <button type="button" class="custom-btn btn-red small" id="btnKbUiCmdNew" title="Open the native VS Code Keyboard Shortcuts panel filtering specifically for this action's command in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Cmd</button>
+                </span>
+                <!-- KB UI User (purple) -->
+                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
+                    <button type="button" class="custom-btn btn-purple small" id="btnKbUiUserNewNewInst" title="Open custom User keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">➕</button>
+                    <button type="button" class="custom-btn btn-purple small" id="btnKbUiUserNew" title="Open the native VS Code Keyboard Shortcuts panel displaying custom user keybinding modifications in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI User</button>
                 </span>
                 <!-- KB UI Key (blue) -->
                 <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
@@ -2356,11 +2357,6 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
                     <button type="button" class="custom-btn btn-orange small" id="btnKbUiExtensionNewNewInst" title="Open extension keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">➕</button>
                     <button type="button" class="custom-btn btn-orange small" id="btnKbUiExtensionNew" title="Open the native VS Code Keyboard Shortcuts panel showing extension-supplied default bindings in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Extension</button>
                 </span>
-                <!-- KB UI User (secondary) -->
-                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="secondary small" id="btnKbUiUserNewNewInst" title="Open custom User keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">➕</button>
-                    <button type="button" class="secondary small" id="btnKbUiUserNew" title="Open the native VS Code Keyboard Shortcuts panel displaying custom user keybinding modifications in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI User</button>
-                </span>
             </div>
         </div>
 
@@ -2380,7 +2376,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
                 <button type="button" class="custom-btn btn-red" id="btnClone" disabled title="Unbind and remove this keyboard shortcut mapping.">Unbind</button>
                 <button type="button" class="custom-btn btn-green" id="btnSaveClone" disabled title="Add the newly configured key combination as an additional secondary shortcut for this action, preserving existing bindings.">Add</button>
                 <button type="button" class="custom-btn btn-green" id="btnSubmit" disabled title="Save and apply the updated key combination assignment for this action (replacing any matched existing binding).">Save</button>
-                <button type="button" class="secondary" id="btnDone" title="Close this configuration view. Warns if there are unsaved changes.">Done</button>
+                <button type="button" class="custom-btn btn-yellow" id="btnDone" title="Close this configuration view. Warns if there are unsaved changes.">Done</button>
             </div>
         </div>
     </div>
@@ -2392,17 +2388,26 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
                 Command Queue Navigation
                 <span id="queueCountLabel" style="font-size: 0.8em; opacity: 0.7; font-weight: normal;">0 items</span>
             </span>
-            <!-- Paging Row (moved to Command Queue Navigation Title Bar) -->
-            <div style="display: flex; align-items: center; gap: 4px;">
-                <button type="button" class="secondary small" id="btnPageFirst" title="First item">&lt;&lt;&lt;</button>
-                <button type="button" class="secondary small" id="btnPagePrevWithCheckoff" title="Page backward until a checkoff is true (checked)">&lt;&lt;[x]</button>
-                <button type="button" class="secondary small" id="btnPagePrevNoCheckoff" title="Page backward until a checkoff is false (unchecked)">&lt;&lt;[]</button>
-                <button type="button" class="secondary small" id="btnPagePrev" title="Previous item">&lt;</button>
-                <span id="lblPageNum" style="font-size: 0.9em; font-weight: bold; margin: 0 4px; opacity: 0.85; min-width: 3.5em; text-align: center;">1 of 1</span>
-                <button type="button" class="secondary small" id="btnPageNext" title="Next item">&gt;</button>
-                <button type="button" class="secondary small" id="btnPageNextNoCheckoff" title="Page forward until a checkoff is false (unchecked)">[]&gt;&gt;</button>
-                <button type="button" class="secondary small" id="btnPageNextWithCheckoff" title="Page forward until a checkoff is true (checked)">[x]&gt;&gt;</button>
-                <button type="button" class="secondary small" id="btnPageLast" title="Last item">&gt;&gt;&gt;</button>
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-left: auto;">
+                <!-- Checkoff Row -->
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label style="display: inline-flex; align-items: center; gap: 6px; font-weight: 500; cursor: pointer; font-size: 0.95em;">
+                        <input type="checkbox" id="chkCheckoff" style="cursor: pointer; margin: 0;"> Checkoff
+                    </label>
+                    <span id="lblCheckoffCount" style="opacity: 0.85; font-size: 0.9em; font-weight: 500; margin-left: 4px;">0 of 0</span>
+                </div>
+                <!-- Paging Row (moved to Command Queue Navigation Title Bar) -->
+                <div style="display: flex; align-items: center; gap: 4px;">
+                    <button type="button" class="secondary small" id="btnPageFirst" title="First item">&lt;&lt;&lt;</button>
+                    <button type="button" class="secondary small" id="btnPagePrevWithCheckoff" title="Page backward until a checkoff is true (checked)">&lt;&lt;[x]</button>
+                    <button type="button" class="secondary small" id="btnPagePrevNoCheckoff" title="Page backward until a checkoff is false (unchecked)">&lt;&lt;[]</button>
+                    <button type="button" class="secondary small" id="btnPagePrev" title="Previous item">&lt;</button>
+                    <span id="lblPageNum" style="font-size: 0.9em; font-weight: bold; margin: 0 4px; opacity: 0.85; min-width: 3.5em; text-align: center;">1 of 1</span>
+                    <button type="button" class="secondary small" id="btnPageNext" title="Next item">&gt;</button>
+                    <button type="button" class="secondary small" id="btnPageNextNoCheckoff" title="Page forward until a checkoff is false (unchecked)">[]&gt;&gt;</button>
+                    <button type="button" class="secondary small" id="btnPageNextWithCheckoff" title="Page forward until a checkoff is true (checked)">[x]&gt;&gt;</button>
+                    <button type="button" class="secondary small" id="btnPageLast" title="Last item">&gt;&gt;&gt;</button>
+                </div>
             </div>
         </div>
         <div style="margin-bottom: 8px;">

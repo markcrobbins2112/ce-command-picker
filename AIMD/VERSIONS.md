@@ -41,6 +41,13 @@ title: VERSIONS
 ## 🚀 Stable Releases & Milestones
 [[#^toc-stable|TOC]]
 
+### 🏷️ v1.2.61 (2026-07-10) - Shorthand Format Toggle, Color-Coded Helper Actions, and Layout Overhaul
+- **Added / Enhanced:**
+  - **Inline Format Toggle Button**: Replaced "ShortCode:|Native" radio inputs with an inline blue toggle button (`ShortCode` vs `Native`) that instantly switches formats while preserving form state and complete backward compatibility with all validation layers.
+  - **Color-Coded and Reordered Helper Row Groupings**: Reordered helper button groups with black backgrounds and specific accent borders: KB UI Cmd (Red), KB UI User (Purple - including '+' buttons), KB UI Key (Blue), KB UI Ext (Green), KB UI Default (Yellow), and KB UI Extension (Orange).
+  - **Enhanced Action Button Styling**: Placed distinctive colored borders and black backgrounds for specific action triggers: Copy Current Binding (Cyan), Copy New Binding (Blue), Edit Picker Key (Purple), Edit Picker Json (Cyan), Reset (Blue), and Done (Yellow).
+  - **Anatomy Layout Refinements**: Moved "Checkoff" row to the Command Queue Navigation Title Bar (before Pager buttons), relocated "When" (whenClause) form-group below the Shorthand Key input div, shifted the "statusBox" directly after the Shorthand Key input, and limited the input width to a clean 10em.
+
 ### 🏷️ v1.2.60 (2026-07-10) - Command Navigator Queue, Execute Command Trigger, Preferred Direction, and Alt Hotkeys
 - **Added / Enhanced:**
   - **Preferred Direction Chose**: Embedded a row of mutually exclusive checkboxes (Up, Down, Left, Right) that configures the split-screen tab creation direction (`workbench.action.newGroupAbove`, etc.) inside the extension workspace.
