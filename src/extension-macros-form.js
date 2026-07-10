@@ -11,7 +11,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
     const core = require('./extension-core');
     const ui = require('./extension-ui');
 
-    const fullBindings = core.loadFullKeybindingsArray();
+    let fullBindings = core.loadFullKeybindingsArray();
     const existingTargets = fullBindings.filter(b => b.command === commandItem.commandId);
 
     let targetToEdit = null;
@@ -32,23 +32,39 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
 
     let derivedTitle = commandItem.label || commandItem.commandId || 'Unknown Command';
 
-    let initialBaseKey = '';
-    let initialShorthand = '';
-    let initialFlags = '';
+    let chord1Base = '';
+    let chord1Flags = '';
+    let chord2Base = '';
+    let chord2Flags = '';
     let initialWhen = 'editorTextFocus';
 
     if (targetToEdit) {
-        initialShorthand = core.formatToCustomShorthand(targetToEdit.key);
+        const fullShorthand = core.formatToCustomShorthand(targetToEdit.key);
         initialWhen = targetToEdit.when || 'editorTextFocus';
         
-        const match = initialShorthand.match(/(.*)\.([wcas]*)$/);
-        if (match && match[1] !== undefined && match[2] !== undefined) {
-            initialBaseKey = match[1];
-            initialFlags = match[2];
-        } else {
-            initialBaseKey = initialShorthand;
+        const chords = fullShorthand.trim().split(/\s+/);
+        if (chords.length >= 1 && chords[0]) {
+            const match = chords[0].match(/(.*)\.([wcas]*)$/);
+            if (match) {
+                chord1Base = match[1];
+                chord1Flags = match[2].replace(/[^cas]/g, '');
+            } else {
+                chord1Base = chords[0];
+            }
+        }
+        if (chords.length >= 2 && chords[1]) {
+            const match = chords[1].match(/(.*)\.([wcas]*)$/);
+            if (match) {
+                chord2Base = match[1];
+                chord2Flags = match[2].replace(/[^cas]/g, '');
+            } else {
+                chord2Base = chords[1];
+            }
         }
     }
+
+    const currentKeysLabel = existingTargets.map(t => core.formatToCustomShorthand(t.key)).join(' ') || 'None';
+    const currentWhenLabel = (targetToEdit ? targetToEdit.when : (existingTargets[0] ? existingTargets[0].when : 'editorTextFocus')) || 'editorTextFocus';
 
     const panelTitle = isEditMode ? `Edit Binding: ${derivedTitle}` : `Assign Key: ${derivedTitle}`;
 
@@ -68,10 +84,13 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
     // Initialize HTML synchronously to establish the service worker scope cleanly in a single tick.
     panel.webview.html = htmlTemplate.getWebviewContent(
         commandItem.commandId || derivedTitle,
-        initialBaseKey,
-        initialShorthand,
-        initialFlags,
-        initialWhen
+        chord1Base,
+        chord1Flags,
+        chord2Base,
+        chord2Flags,
+        initialWhen,
+        currentKeysLabel,
+        currentWhenLabel
     );
 
     panel.webview.onDidReceiveMessage(
@@ -98,8 +117,14 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                     let currentBindings = core.loadFullKeybindingsArray();
                     const nativeKey = message.nativeKey;
                     const finalWhen = message.when.trim();
+                    const actionType = message.actionType || 'save'; // 'save', 'clone', 'saveAndClone'
 
-                    if (isEditMode && targetToEdit) {
+                    if (actionType === 'clone') {
+                        // Clone mode: ALWAYS appends as a new binding, keeping the original intact
+                        const freshMapping = { key: nativeKey, command: commandItem.commandId };
+                        if (finalWhen) freshMapping.when = finalWhen;
+                        currentBindings.push(freshMapping);
+                    } else if (isEditMode && targetToEdit) {
                         currentBindings = currentBindings.map(b => {
                             if (b.key === targetToEdit.key && b.command === targetToEdit.command && b.when === targetToEdit.when) {
                                 const freshObj = { key: nativeKey, command: commandItem.commandId };
@@ -115,11 +140,24 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                     }
 
                     if (core.saveKeybindingsArray(currentBindings)) {
-                        vscode.window.showInformationMessage('Successfully saved key updates matching web form values.');
+                        vscode.window.showInformationMessage(`Successfully saved key updates matching web form values (${actionType}).`);
                     }
 
-                    panel.dispose();
-                    ui.renderPrimaryMenu(context, originalArgs);
+                    if (actionType === 'saveAndClone') {
+                        // Update fullBindings variable so that subsequent validations reflect the newly added bindings
+                        fullBindings = core.loadFullKeybindingsArray();
+                        const updatedExistingTargets = fullBindings.filter(b => b.command === commandItem.commandId);
+                        const updatedKeysLabel = updatedExistingTargets.map(t => core.formatToCustomShorthand(t.key)).join(' ') || 'None';
+                        const updatedWhenLabel = (targetToEdit ? targetToEdit.when : (updatedExistingTargets[0] ? updatedExistingTargets[0].when : 'editorTextFocus')) || 'editorTextFocus';
+                        panel.webview.postMessage({
+                            type: 'updateLabels',
+                            currentKeys: updatedKeysLabel,
+                            currentWhen: updatedWhenLabel
+                        });
+                    } else {
+                        panel.dispose();
+                        ui.renderPrimaryMenu(context, originalArgs);
+                    }
                     break;
 
                 case 'cancel':
