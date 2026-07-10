@@ -2,7 +2,7 @@
   "name": "ce-command-picker",
   "displayName": "CE Command Picker",
   "description": "Isolated command pickers via keybinding arguments.",
-  "version": "1.2.18",
+  "version": "1.2.20",
   "publisher": "markrobbins",
   "license": "MIT",
   "engines": {
@@ -26,6 +26,8 @@
     "README.md",
     "LICENSE",
     "icon.jpg",
+    "src/webview/form-styles.css",
+    "src/webview/form-client.js",
     "node_modules/jsonc-parser/**"
   ],
   "scripts": {

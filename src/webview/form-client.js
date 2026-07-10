@@ -1,5 +1,4 @@
 // START OF FILE: src/webview/form-client.js
-
 const vscode = acquireVsCodeApi();
 
 const baseInput = document.getElementById('baseKey');
@@ -75,8 +74,7 @@ function syncFromShortcode() {
     }
 
     const match = text.match(/(.*)\.([wcas]*)$/i);
-    if (match && match[1]) {
-        // ✅ FIXED: Safely map extraction array capture slices 1 and 2 to form properties
+    if (match && match[1] && match[2]) {
         baseInput.value = match[1].toUpperCase();
         setUIFlags(match[2] || '');
     } else {
@@ -94,9 +92,18 @@ baseInput.addEventListener('input', syncFromUIForm);
 Object.values(checkboxes).forEach(cb => cb.addEventListener('change', syncFromUIForm));
 shortcodeInput.addEventListener('input', syncFromShortcode);
 
+// Universal event listener to safely capture data passed down by parent process on bootstrap
 window.addEventListener('message', event => {
     const message = event.data;
-    if (message.type === 'status') {
+    if (message.type === 'init') {
+        isSynchronizing = true;
+        baseInput.value = message.baseKey || '';
+        shortcodeInput.value = message.shorthand || '';
+        whenInput.value = message.whenClause || 'editorTextFocus';
+        setUIFlags(message.flags || '');
+        isSynchronizing = false;
+        triggerValidation(shortcodeInput.value);
+    } else if (message.type === 'status') {
         statusBox.textContent = message.text;
         statusBox.className = 'status-box ' + message.status;
         
@@ -122,7 +129,4 @@ btnSubmit.addEventListener('click', () => {
 btnCancel.addEventListener('click', () => {
     vscode.postMessage({ command: 'cancel' });
 });
-
-triggerValidation(shortcodeInput.value);
-
 // END OF FILE: src/webview/form-client.js

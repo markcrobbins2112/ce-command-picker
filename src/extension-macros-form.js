@@ -1,12 +1,7 @@
 // START OF FILE: src/extension-macros-form.js
-
 const vscode = require('vscode');
 const htmlTemplate = require('./extension-macros-html');
 
-/**
- * Presents a side-by-side adaptive form layout panel.
- * Extracts string segments safely using regular expressions to support literal period keys.
- */
 async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
     const core = require('./extension-core');
     const ui = require('./extension-ui');
@@ -30,20 +25,11 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         }
     }
 
-    let derivedTitle = commandItem.label;
-    if (!derivedTitle && commandItem.commandId) {
-        derivedTitle = commandItem.commandId
-            .replace(/^[\w-]+\./, '')
-            .replace(/([A-Z])/g, ' $1')
-            .replace(/[_-]/g, ' ');
-        derivedTitle = derivedTitle.charAt(0).toUpperCase() + derivedTitle.slice(1);
-    }
-    if (!derivedTitle) {
-        derivedTitle = 'Unknown Command';
-    }
+    let derivedTitle = commandItem.label || commandItem.commandId || 'Unknown Command';
 
     let initialBaseKey = '';
     let initialShorthand = '';
+    let initialFlags = '';
     let initialWhen = 'editorTextFocus';
 
     if (targetToEdit) {
@@ -51,9 +37,9 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         initialWhen = targetToEdit.when || 'editorTextFocus';
         
         const match = initialShorthand.match(/(.*)\.([wcas]*)$/);
-        if (match && match[1]) {
-            // ✅ FIXED: Explicitly extract capture group index 1 (the string literal key name)
+        if (match && match[1] && match[2]) {
             initialBaseKey = match[1];
+            initialFlags = match[2];
         } else {
             initialBaseKey = initialShorthand;
         }
@@ -67,12 +53,23 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         vscode.ViewColumn.Beside,
         {
             enableScripts: true,
-            retainContextWhenHidden: true
+            retainContextWhenHidden: true,
+            // Allow access to local workspace directory structures
+            localResourceRoots: [vscode.Uri.file(context.extensionPath)]
         }
     );
 
-    // ✅ FIXED: Pass commandItem.commandId directly into parameter position 1 for full command rendering
-    panel.webview.html = htmlTemplate.getWebviewContent(commandItem.commandId, initialBaseKey, initialShorthand, initialWhen);
+    // Pass the webview manager reference directly down into your layout engine helper
+    panel.webview.html = htmlTemplate.getWebviewContent(panel.webview, commandItem.commandId || derivedTitle);
+
+    // 🌟 THE FIX: Pass data down safely via postMessage right after the DOM thread mounts!
+    panel.webview.postMessage({
+        type: 'init',
+        baseKey: initialBaseKey,
+        shorthand: initialShorthand,
+        flags: initialFlags,
+        whenClause: initialWhen
+    });
 
     panel.webview.onDidReceiveMessage(
         async (message) => {
@@ -134,5 +131,4 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
 }
 
 module.exports = { promptAssignKey };
-
 // END OF FILE: src/extension-macros-form.js
