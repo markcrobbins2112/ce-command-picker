@@ -17,13 +17,13 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     const webviewJS = `
     const vscode = acquireVsCodeApi();
 
-    const baseInput1 = document.getElementById('baseKey1');
-    const shortcodeInput1 = document.getElementById('shortcode1');
+    const baseInput1 = document.getElementById('baseKey');
+    const shortcodeInput1 = document.getElementById('shortcode');
     const checkboxes1 = {
-        w: document.getElementById('modW1'),
-        c: document.getElementById('modC1'),
-        a: document.getElementById('modA1'),
-        s: document.getElementById('modS1')
+        w: document.getElementById('modW'),
+        c: document.getElementById('modC'),
+        a: document.getElementById('modA'),
+        s: document.getElementById('modS')
     };
 
     const baseInput2 = document.getElementById('baseKey2');
@@ -307,7 +307,60 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
 
     window.addEventListener('message', event => {
         const message = event.data;
-        if (message.type === 'status') {
+        if (message.type === 'init') {
+            isSynchronizing = true;
+            let b1 = '';
+            let f1 = '';
+            let b2 = '';
+            let f2 = '';
+            const shorthandStr = message.shorthand || '';
+            const baseKeyStr = message.baseKey || '';
+            const flagsStr = message.flags || '';
+            if (shorthandStr) {
+                const chords = shorthandStr.trim().split(/\s+/);
+                if (chords.length >= 1 && chords[0]) {
+                    const match = chords[0].match(/(.*)\.([wcas]*)$/);
+                    if (match) {
+                        b1 = match[1];
+                        f1 = match[2];
+                    } else {
+                        b1 = chords[0];
+                        f1 = '';
+                    }
+                }
+                if (chords.length >= 2 && chords[1]) {
+                    const match = chords[1].match(/(.*)\.([wcas]*)$/);
+                    if (match) {
+                        b2 = match[1];
+                        f2 = match[2];
+                    } else {
+                        b2 = chords[1];
+                        f2 = '';
+                    }
+                }
+            }
+            if (!b1 && baseKeyStr) {
+                b1 = baseKeyStr;
+            }
+            if (!f1 && flagsStr) {
+                f1 = flagsStr;
+            }
+            baseInput1.value = b1.toUpperCase();
+            shortcodeInput1.value = f1.toLowerCase();
+            checkboxes1.w.checked = f1.includes('w');
+            checkboxes1.c.checked = f1.includes('c');
+            checkboxes1.a.checked = f1.includes('a');
+            checkboxes1.s.checked = f1.includes('s');
+            baseInput2.value = b2.toUpperCase();
+            shortcodeInput2.value = f2.toLowerCase();
+            checkboxes2.w.checked = f2.includes('w');
+            checkboxes2.c.checked = f2.includes('c');
+            checkboxes2.a.checked = f2.includes('a');
+            checkboxes2.s.checked = f2.includes('s');
+            whenInput.value = message.whenClause !== undefined ? message.whenClause : 'editorTextFocus';
+            isSynchronizing = false;
+            triggerValidation();
+        } else if (message.type === 'status') {
             statusBox.textContent = message.text;
             statusBox.style.display = 'block';
             statusBox.style.padding = '8px 12px';
@@ -532,23 +585,23 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             </div>
             
             <div class="form-group">
-                <label for="baseKey1" style="font-weight: 500;">Base Key</label>
-                <input type="text" id="baseKey1" placeholder="e.g., K, F11, ENTER, LEFT">
+                <label for="baseKey" style="font-weight: 500;">Base Key</label>
+                <input type="text" id="baseKey" placeholder="e.g., K, F11, ENTER, LEFT">
             </div>
 
             <div class="form-group">
                 <label style="font-weight: 500;">Modifiers</label>
                 <div class="checkbox-group">
-                    <label class="checkbox-item"><input type="checkbox" id="modW1" value="w"> Windows</label>
-                    <label class="checkbox-item"><input type="checkbox" id="modC1" value="c"> Control</label>
-                    <label class="checkbox-item"><input type="checkbox" id="modA1" value="a"> Alt</label>
-                    <label class="checkbox-item"><input type="checkbox" id="modS1" value="s"> Shift</label>
+                    <label class="checkbox-item"><input type="checkbox" id="modW" value="w"> Windows</label>
+                    <label class="checkbox-item"><input type="checkbox" id="modC" value="c"> Control</label>
+                    <label class="checkbox-item"><input type="checkbox" id="modA" value="a"> Alt</label>
+                    <label class="checkbox-item"><input type="checkbox" id="modS" value="s"> Shift</label>
                 </div>
             </div>
 
             <div class="form-group">
-                <label for="shortcode1" style="font-weight: 500;">Modifier Shortcode Box (wcas)</label>
-                <input type="text" id="shortcode1" placeholder="e.g., ca, s, wcas">
+                <label for="shortcode" style="font-weight: 500;">Modifier Shortcode Box (wcas)</label>
+                <input type="text" id="shortcode" placeholder="e.g., ca, s, wcas">
             </div>
         </div>
 

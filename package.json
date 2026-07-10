@@ -2,7 +2,7 @@
   "name": "ce-command-picker",
   "displayName": "CE Command Picker",
   "description": "Isolated command pickers via keybinding arguments.",
-  "version": "1.2.26",
+  "version": "1.2.27",
   "publisher": "markrobbins",
   "license": "MIT",
   "engines": {
