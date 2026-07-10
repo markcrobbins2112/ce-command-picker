@@ -41,6 +41,17 @@ title: VERSIONS
 ## 🚀 Stable Releases & Milestones
 [[#^toc-stable|TOC]]
 
+### 🏷️ v1.2.35 (2026-07-10) - Advanced Form Controls & Keyboard Shortcut Integrations
+- **Added / Enhanced:**
+  - Redesigned visual Current Key(s) displays to list active mappings cleanly as separate "Binding: shorthand" and "Binding: native" entries.
+  - Added "Reset" action button positioned before "Clear" button, enabling synchronous state recoveries.
+  - Integrated red validation alerts on Base Key inputs, visually emphasizing incorrect syntax while embedding detailed tooltips.
+  - Added 8 dedicated, customizable Keyboard Shortcut UI helper buttons for immediate search filters.
+  - Formulated comprehensive, descriptive tooltip titles for all available form actions.
+- **Fixed / Patched:**
+  - Renamed "Save Mappings" to "Save" and "Save and Clone" to "Add", configuring both to be disabled unless actual changes occur.
+  - Refactored unbind actions: removed the redundant standalone Unbind button and mapped "Unbind" behavior cleanly into the Clone button.
+
 ### 🏷️ v1.2.34 (2026-07-10) - Form & Webview Logic Integration Patch
 - **Added / Enhanced:**
   - Double-escaped regular expression structures (`\\+`, `\\.`, `\\s`) inside the template-enclosed webview JavaScript to guarantee safe client-side execution without parsing syntax errors.

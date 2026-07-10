@@ -13,6 +13,27 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             .replace(/\r/g, '\\r')
             .replace(/\n/g, '\\n');
     };
+
+    const formatCurrentKeys = (keys) => {
+        if (!keys || keys === 'None') {
+            return `<div><span style="opacity: 0.7;">Binding:</span> <strong>None</strong></div>`;
+        }
+        const parts = keys.split('  |  ');
+        let html = '';
+        for (const part of parts) {
+            const lastOpenParen = part.lastIndexOf(' (');
+            if (lastOpenParen !== -1 && part.endsWith(')')) {
+                const shorthand = part.substring(0, lastOpenParen).trim();
+                const nativeKey = part.substring(lastOpenParen + 2, part.length - 1).trim();
+                html += `<div><span style="opacity: 0.7;">Binding:</span> <strong>${shorthand}</strong></div>`;
+                html += `<div><span style="opacity: 0.7;">Binding:</span> <strong>${nativeKey}</strong></div>`;
+            } else {
+                html += `<div><span style="opacity: 0.7;">Binding:</span> <strong>${part}</strong></div>`;
+            }
+        }
+        return html;
+    };
+
     // Isolated client browser synchronization controller logic string block
     const webviewJS = `
     const vscode = acquireVsCodeApi();
@@ -39,19 +60,27 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     const statusBox = document.getElementById('statusBox');
     
     const btnCancel = document.getElementById('btnCancel');
-    const btnClone = document.getElementById('btnClone');
-    const btnSaveClone = document.getElementById('btnSaveClone');
-    const btnSubmit = document.getElementById('btnSubmit');
+    const btnClone = document.getElementById('btnClone'); // Now Unbind
+    const btnSaveClone = document.getElementById('btnSaveClone'); // Now Add
+    const btnSubmit = document.getElementById('btnSubmit'); // Now Save
 
     const btnClear1 = document.getElementById('btnClear1');
     const btnClear2 = document.getElementById('btnClear2');
     const btnClear = document.getElementById('btnClear');
     const btnEditJson = document.getElementById('btnEditJson');
-    const btnUnbind = document.getElementById('btnUnbind');
+    const btnReset = document.getElementById('btnReset');
     const btnCopyBinding = document.getElementById('btnCopyBinding');
     const btnPasteBinding = document.getElementById('btnPasteBinding');
 
-    const currentKeysLabel = document.getElementById('currentKeysLabel');
+    const btnKbUi = document.getElementById('btnKbUi');
+    const btnKbUiCmd = document.getElementById('btnKbUiCmd');
+    const btnKbUiKey = document.getElementById('btnKbUiKey');
+    const btnKbUiUser = document.getElementById('btnKbUiUser');
+    const btnKbUiDefault = document.getElementById('btnKbUiDefault');
+    const btnKbUiExtension = document.getElementById('btnKbUiExtension');
+    const btnKbUiExt = document.getElementById('btnKbUiExt');
+    const btnKbUiClear = document.getElementById('btnKbUiClear');
+
     const currentWhenClauseLabel = document.getElementById('currentWhenClauseLabel');
 
     let lastValidatedNativeKey = '';
@@ -60,9 +89,9 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     function cleanBaseKeyInput(val) {
         if (!val) return '';
         let cleaned = val.toLowerCase()
-            .replace(/(ctrl|alt|shift|win|cmd|meta)\\+/g, '')
-            .replace(/\\.[casw]+/g, '')
-            .replace(/\\+/g, '')
+            .replace(/(ctrl|alt|shift|win|cmd|meta)\\\\+/g, '')
+            .replace(/\\\\.[casw]+/g, '')
+            .replace(/\\\\+/g, '')
             .trim();
         if (cleaned === 'insert' || cleaned === 'ins') {
             return 'insert';
@@ -94,7 +123,100 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         return part2 ? part1 + ' ' + part2 : part1;
     }
 
+    function formatCurrentKeysJS(keys) {
+        if (!keys || keys === 'None') {
+            return '<div><span style="opacity: 0.7;">Binding:</span> <strong>None</strong></div>';
+        }
+        const parts = keys.split('  |  ');
+        let html = '';
+        for (const part of parts) {
+            const lastOpenParen = part.lastIndexOf(' (');
+            if (lastOpenParen !== -1 && part.endsWith(')')) {
+                const shorthand = part.substring(0, lastOpenParen).trim();
+                const nativeKey = part.substring(lastOpenParen + 2, part.length - 1).trim();
+                html += '<div><span style="opacity: 0.7;">Binding:</span> <strong>' + shorthand + '</strong></div>';
+                html += '<div><span style="opacity: 0.7;">Binding:</span> <strong>' + nativeKey + '</strong></div>';
+            } else {
+                html += '<div><span style="opacity: 0.7;">Binding:</span> <strong>' + part + '</strong></div>';
+            }
+        }
+        return html;
+    }
+
+    function hasBindingChanged() {
+        if (!window.CE_INITIAL_STATE) return false;
+        const initialB1 = (window.CE_INITIAL_STATE.chord1Base || '').toLowerCase().trim();
+        const initialF1 = (window.CE_INITIAL_STATE.chord1Flags || '').toLowerCase().trim();
+        const initialB2 = (window.CE_INITIAL_STATE.chord2Base || '').toLowerCase().trim();
+        const initialF2 = (window.CE_INITIAL_STATE.chord2Flags || '').toLowerCase().trim();
+        const initialWhen = (window.CE_INITIAL_STATE.whenClause || '').trim();
+
+        const currentB1 = baseInput1.value.toLowerCase().trim();
+        const currentF1 = shortcodeInput1.value.toLowerCase().trim();
+        const currentB2 = baseInput2.value.toLowerCase().trim();
+        const currentF2 = shortcodeInput2.value.toLowerCase().trim();
+        const currentWhen = whenInput.value.trim();
+
+        return (
+            initialB1 !== currentB1 ||
+            initialF1 !== currentF1 ||
+            initialB2 !== currentB2 ||
+            initialF2 !== currentF2 ||
+            initialWhen !== currentWhen
+        );
+    }
+
+    function updateButtonStates(isValid) {
+        if (!isValid) {
+            btnSubmit.disabled = true;
+            btnSaveClone.disabled = true;
+            btnClone.disabled = true;
+        } else {
+            const changed = hasBindingChanged();
+            btnSubmit.disabled = !changed;
+            btnSaveClone.disabled = !changed;
+            btnClone.disabled = false;
+        }
+    }
+
+    function validateBaseKeys() {
+        const knownKeys = [
+            'up', 'down', 'left', 'right', 'escape', 'esc', 'enter', 'tab', 'space',
+            'backspace', 'delete', 'del', 'insert', 'ins', 'pageup', 'pgup', 'pagedown', 'pgdn',
+            'home', 'end', 'capslock', 'caps'
+        ];
+
+        const isValidBaseKey = (k) => {
+            const lower = k.toLowerCase().trim();
+            if (!lower) return false;
+            return /^[a-z0-9]$/.test(lower) || /^f\\\\d+$/.test(lower) || knownKeys.includes(lower);
+        };
+
+        const val1 = baseInput1.value.trim();
+        if (val1 && !isValidBaseKey(val1)) {
+            baseInput1.style.borderColor = '#f14c4c';
+            baseInput1.style.outline = '1px solid #f14c4c';
+            baseInput1.title = 'Syntax Error: Base Key is not recognized. (e.g. A-Z, 0-9, F1-F24, ENTER, LEFT)';
+        } else {
+            baseInput1.style.borderColor = '';
+            baseInput1.style.outline = '';
+            baseInput1.title = '';
+        }
+
+        const val2 = baseInput2.value.trim();
+        if (val2 && !isValidBaseKey(val2)) {
+            baseInput2.style.borderColor = '#f14c4c';
+            baseInput2.style.outline = '1px solid #f14c4c';
+            baseInput2.title = 'Syntax Error: Base Key is not recognized. (e.g. A-Z, 0-9, F1-F24, ENTER, LEFT)';
+        } else {
+            baseInput2.style.borderColor = '';
+            baseInput2.style.outline = '';
+            baseInput2.title = '';
+        }
+    }
+
     function triggerValidation() {
+        validateBaseKeys();
         const textValue = getFullShorthand();
         if (!textValue) {
             statusBox.style.display = 'none';
@@ -327,9 +449,9 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             const flags2Str = message.flags2 || '';
 
             if (shorthandStr) {
-                const chords = shorthandStr.trim().split(/\\s+/);
+                const chords = shorthandStr.trim().split(/\\\\s+/);
                 if (chords.length >= 1 && chords[0]) {
-                    const match = chords[0].match(/(.*)\\.([wcas]*)$/);
+                    const match = chords[0].match(/(.*)\\\\.([wcas]*)$/);
                     if (match) {
                         b1 = match[1];
                         f1 = match[2];
@@ -339,7 +461,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
                     }
                 }
                 if (chords.length >= 2 && chords[1]) {
-                    const match = chords[1].match(/(.*)\\.([wcas]*)$/);
+                    const match = chords[1].match(/(.*)\\\\.([wcas]*)$/);
                     if (match) {
                         b2 = match[1];
                         f2 = match[2];
@@ -398,20 +520,19 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             if (message.status === 'error') {
                 statusBox.style.background = 'rgba(241, 76, 76, 0.15)';
                 statusBox.style.color = '#f14c4c';
-                btnSubmit.disabled = true;
-                btnClone.disabled = true;
-                btnSaveClone.disabled = true;
                 lastValidatedNativeKey = '';
+                updateButtonStates(false);
             } else {
                 statusBox.style.background = 'rgba(137, 209, 137, 0.15)';
                 statusBox.style.color = '#88d188';
-                btnSubmit.disabled = false;
-                btnClone.disabled = false;
-                btnSaveClone.disabled = false;
                 lastValidatedNativeKey = message.nativeKey || '';
+                updateButtonStates(true);
             }
         } else if (message.type === 'updateLabels') {
-            if (currentKeysLabel) currentKeysLabel.textContent = message.currentKeys;
+            const container = document.getElementById('currentKeysContainer');
+            if (container) {
+                container.innerHTML = formatCurrentKeysJS(message.currentKeys || 'None');
+            }
             if (currentWhenClauseLabel) currentWhenClauseLabel.textContent = message.currentWhen;
         } else if (message.type === 'pasteBindingData') {
             isSynchronizing = true;
@@ -435,6 +556,19 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         }
     });
 
+    // Handle form change/keyup events to check if changed or valid
+    const formInputs = [baseInput1, baseInput2, shortcodeInput1, shortcodeInput2, whenInput];
+    formInputs.forEach(inp => {
+        inp.addEventListener('input', () => {
+            const textValue = getFullShorthand();
+            updateButtonStates(!!textValue);
+        });
+        inp.addEventListener('keyup', () => {
+            const textValue = getFullShorthand();
+            updateButtonStates(!!textValue);
+        });
+    });
+
     btnSubmit.addEventListener('click', () => {
         if (!lastValidatedNativeKey) return;
         vscode.postMessage({
@@ -446,10 +580,9 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     });
 
     btnClone.addEventListener('click', () => {
-        if (!lastValidatedNativeKey) return;
+        // Change Clone Button to Unbind
         vscode.postMessage({
-            command: 'submit',
-            actionType: 'clone',
+            command: 'unbind',
             nativeKey: lastValidatedNativeKey,
             when: whenInput.value
         });
@@ -477,14 +610,6 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         });
     });
 
-    btnUnbind.addEventListener('click', () => {
-        vscode.postMessage({
-            command: 'unbind',
-            nativeKey: lastValidatedNativeKey,
-            when: whenInput.value
-        });
-    });
-
     btnCopyBinding.addEventListener('click', () => {
         const textValue = getFullShorthand();
         if (!textValue) return;
@@ -502,8 +627,10 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         vscode.postMessage({ command: 'pasteBinding' });
     });
 
-    if (window.CE_INITIAL_STATE) {
+    function resetToInitial() {
+        if (!window.CE_INITIAL_STATE) return;
         isSynchronizing = true;
+
         let b1 = window.CE_INITIAL_STATE.chord1Base || '';
         if (b1.toLowerCase() === 'insert' || b1.toLowerCase() === 'ins') {
             baseInput1.value = 'insert';
@@ -529,13 +656,63 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         checkboxes2.s.checked = shortcodeInput2.value.includes('s');
 
         whenInput.value = window.CE_INITIAL_STATE.whenClause !== undefined ? window.CE_INITIAL_STATE.whenClause : '';
-        
-        if (currentKeysLabel) currentKeysLabel.textContent = window.CE_INITIAL_STATE.currentKeys || 'None';
-        if (currentWhenClauseLabel) currentWhenClauseLabel.textContent = window.CE_INITIAL_STATE.currentWhen || 'No context';
-        
-        lastValidatedNativeKey = window.CE_INITIAL_STATE.initialNativeKey || '';
         isSynchronizing = false;
         triggerValidation();
+    }
+
+    if (btnReset) {
+        btnReset.addEventListener('click', resetToInitial);
+    }
+
+    // Connect Keyboard Shortcuts Helper Buttons
+    if (btnKbUi) {
+        btnKbUi.addEventListener('click', () => {
+            vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings' });
+        });
+    }
+    if (btnKbUiCmd) {
+        btnKbUiCmd.addEventListener('click', () => {
+            vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['todo-tree.filter'] });
+        });
+    }
+    if (btnKbUiKey) {
+        btnKbUiKey.addEventListener('click', () => {
+            vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@key:"alt+. f1"'] });
+        });
+    }
+    if (btnKbUiUser) {
+        btnKbUiUser.addEventListener('click', () => {
+            vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@source:user'] });
+        });
+    }
+    if (btnKbUiDefault) {
+        btnKbUiDefault.addEventListener('click', () => {
+            vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@source:default'] });
+        });
+    }
+    if (btnKbUiExtension) {
+        btnKbUiExtension.addEventListener('click', () => {
+            vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@source:extension'] });
+        });
+    }
+    if (btnKbUiExt) {
+        btnKbUiExt.addEventListener('click', () => {
+            vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['@ext:gruntfuggly.todo-tree'] });
+        });
+    }
+    if (btnKbUiClear) {
+        btnKbUiClear.addEventListener('click', () => {
+            vscode.postMessage({ command: 'executeCommand', commandName: 'workbench.action.openGlobalKeybindings', args: ['todo-tree clear'] });
+        });
+    }
+
+    if (window.CE_INITIAL_STATE) {
+        resetToInitial();
+        const container = document.getElementById('currentKeysContainer');
+        if (container) {
+            container.innerHTML = formatCurrentKeysJS(window.CE_INITIAL_STATE.currentKeys || 'None');
+        }
+        if (currentWhenClauseLabel) currentWhenClauseLabel.textContent = window.CE_INITIAL_STATE.currentWhen || 'No context';
     }
     `;
 
@@ -611,7 +788,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
 <body>
     <div class="current-info-container">
         <div style="font-weight: bold; font-size: 1.1em; margin-bottom: 2px;">Action: ` + (title || '') + `</div>
-        <div><span style="opacity: 0.7;">Current Key(s):</span> <strong id="currentKeysLabel">` + (currentKeys || 'None') + `</strong></div>
+        <div id="currentKeysContainer">` + formatCurrentKeys(currentKeys) + `</div>
         <div><span style="opacity: 0.7;">Current When:</span> <strong id="currentWhenClauseLabel">` + (currentWhen || 'No context') + `</strong></div>
     </div>
     
@@ -620,7 +797,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         <div class="chord-panel">
             <div class="chord-header">
                 <span>Key 1 (Main Chord)</span>
-                <button type="button" class="secondary small" id="btnClear1">Clear</button>
+                <button type="button" class="secondary small" id="btnClear1" title="Clear the Base Key, modifier checkboxes, and shortcode box for the primary chord.">Clear</button>
             </div>
             
             <div class="form-group">
@@ -648,7 +825,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         <div class="chord-panel">
             <div class="chord-header">
                 <span>Key 2 (Optional Second Chord)</span>
-                <button type="button" class="secondary small" id="btnClear2">Clear</button>
+                <button type="button" class="secondary small" id="btnClear2" title="Clear the Base Key, modifier checkboxes, and shortcode box for the secondary optional chord.">Clear</button>
             </div>
             
             <div class="form-group">
@@ -681,16 +858,25 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     <div id="statusBox" style="display: none;"></div>
 
     <div class="actions">
-        <button class="secondary" id="btnEditJson">Edit Json</button>
-        <button class="secondary" id="btnUnbind">Unbind</button>
-        <button class="secondary" id="btnClear">Clear</button>
-        <button class="secondary" id="btnCopyBinding">Copy Binding</button>
-        <button class="secondary" id="btnPasteBinding">Paste Binding</button>
+        <button class="secondary small" id="btnEditJson" title="Open keybindings.json file to manually view or edit raw JSON records.">Edit Json</button>
+        <button class="secondary small" id="btnKbUi" title="Open the native VS Code Keybindings Keyboard Shortcuts configuration panel.">KB UI</button>
+        <button class="secondary small" id="btnKbUiCmd" title="Search and filter the VS Code Keyboard Shortcuts panel specifically for the 'todo-tree.filter' command.">KB UI Cmd</button>
+        <button class="secondary small" id="btnKbUiKey" title="Search the VS Code Keyboard Shortcuts panel specifically for the 'alt+. f1' key combination.">KB UI Key</button>
+        <button class="secondary small" id="btnKbUiUser" title="Filter the Keyboard Shortcuts panel to show only custom user-configured keybindings.">KB UI User</button>
+        <button class="secondary small" id="btnKbUiDefault" title="Filter the Keyboard Shortcuts panel to show only built-in default VS Code system keybindings.">KB UI Default</button>
+        <button class="secondary small" id="btnKbUiExtension" title="Filter the Keyboard Shortcuts panel to show only keybindings contributed by extensions.">KB UI Extension</button>
+        <button class="secondary small" id="btnKbUiExt" title="Filter the Keyboard Shortcuts panel to display only keybindings contributed specifically by the 'gruntfuggly.todo-tree' extension.">KB UI Ext</button>
+        <button class="secondary small" id="btnKbUiClear" title="Search the Keyboard Shortcuts panel for unassigned keybindings related to 'todo-tree' to assist in resolving conflicts.">KB UI Clear</button>
+        
+        <button class="secondary" id="btnReset" title="Reset and restore all input fields, checkboxes, and modifier settings to their initial values when the form opened.">Reset</button>
+        <button class="secondary" id="btnClear" title="Clear all fields, checkboxes, and validation states across the entire form.">Clear</button>
+        <button class="secondary" id="btnCopyBinding" title="Copy the current keybinding, command, and when-clause properties to the clipboard as a standard VS Code JSON block.">Copy Binding</button>
+        <button class="secondary" id="btnPasteBinding" title="Read a keybinding JSON object from the clipboard and automatically populate the form fields with its values.">Paste Binding</button>
         <div style="flex-grow: 1;"></div>
-        <button class="secondary" id="btnCancel">Cancel</button>
-        <button class="secondary" id="btnClone" disabled>Clone</button>
-        <button class="secondary" id="btnSaveClone" disabled>Save and Clone</button>
-        <button id="btnSubmit" disabled>Save Mappings</button>
+        <button class="secondary" id="btnCancel" title="Discard any pending changes and return back to the main command picker menu.">Cancel</button>
+        <button class="secondary" id="btnClone" disabled title="Remove the active keybinding assignment for this command.">Unbind</button>
+        <button class="secondary" id="btnSaveClone" disabled title="Add the newly configured keybinding as an additional shortcut for this command without deleting any existing mappings.">Add</button>
+        <button id="btnSubmit" disabled title="Save and apply the updated keybinding assignment for this command.">Save</button>
     </div>
 
     <script>

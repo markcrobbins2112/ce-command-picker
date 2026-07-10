@@ -66,6 +66,15 @@ title: TASKS
   - [x] Ensure Clear Button fully resets the form, validation status, and button states
   - [x] Fix Unbind Button to remove the exact current form key and when-clause combination from keybindings.json
   - [x] Redirect Goto Binding UI action to open the native shortcuts UI searching for the current command
+- [x] Enhance Form Layout and Action Controls:
+  - [x] Convert Current Key(s) displays to clean individual "Binding: shorthand" and "Binding: native" lines
+  - [x] Add Reset button before Clear button to copy original settings back to inputs
+  - [x] Rename "Save Mappings" to "Save" and enable only upon changes
+  - [x] Rename "Save and Clone" to "Add" and enable only upon changes
+  - [x] Remove old Unbind button, change Clone button to "Unbind"
+  - [x] Implement robust client-side validation for base keys, highlighting invalid fields in red
+  - [x] Convert "Edit Json" to a small button, and add 8 customizable keyboard shortcut UI helper buttons afterwards
+  - [x] Provide descriptive HTML tooltips for all action buttons
 
 <!-- 
   INSTRUCTION: Checklists of ongoing file structural, layout, or backend changes.

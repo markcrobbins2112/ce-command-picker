@@ -102,6 +102,14 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
     panel.webview.onDidReceiveMessage(
         async (message) => {
             switch (message.command) {
+                case 'executeCommand':
+                    if (message.args) {
+                        vscode.commands.executeCommand(message.commandName, ...message.args);
+                    } else {
+                        vscode.commands.executeCommand(message.commandName);
+                    }
+                    break;
+
                 case 'validate':
                     const checkText = message.value.trim();
                     const validator = require('./extension-macros-validator');
