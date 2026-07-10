@@ -34,11 +34,11 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
     let initialShorthand = '';
     let initialWhen = 'editorTextFocus';
 
+    // ✅ FIXED: Safely resolve current values from the active object references
     if (targetToEdit) {
         initialShorthand = core.formatToCustomShorthand(targetToEdit.key);
         initialWhen = targetToEdit.when || '';
         
-        // ✅ FIXED: Use a greedy lookbehind regex instead of .split('.') to safeguard literal period base keys
         const match = initialShorthand.match(/(.*)\.([wcas]*)$/);
         if (match) {
             initialBaseKey = match[1];
@@ -47,9 +47,11 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         }
     }
 
+    const panelTitle = isEditMode ? `Edit Binding: ${commandItem.label}` : `Assign Key: ${commandItem.label}`;
+
     const panel = vscode.window.createWebviewPanel(
         'ceCommandPickerForm',
-        isEditMode ? `Edit Binding: ${commandItem.label}` : `Assign Key: ${commandItem.label}`,
+        panelTitle, // ✅ FIXED: Passed clean evaluation string token straight into webview creation
         vscode.ViewColumn.Beside,
         {
             enableScripts: true,

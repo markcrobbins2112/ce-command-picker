@@ -10,7 +10,6 @@ const path = require('path');
 function getWebviewContent(title, baseKey, shorthand, whenClause) {
     let flags = '';
     
-    // ✅ FIXED: Safely process string initialization bounds for a literal period key
     if (shorthand) {
         const match = shorthand.match(/(.*)\.([wcas]*)$/);
         if (match) {
@@ -26,6 +25,7 @@ function getWebviewContent(title, baseKey, shorthand, whenClause) {
         clientScriptContent = `console.error("Critical: Form client controller missing", e);`;
     }
 
+    // ✅ FIXED: Stripped all backslashes from the variable interpolation tags
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -124,31 +124,31 @@ function getWebviewContent(title, baseKey, shorthand, whenClause) {
     </style>
 </head>
 <body>
-    <h2>Action Target: \${title}</h2>
+    <h2>Action Target: ${title}</h2>
     
     <div class="form-group">
         <label for="baseKey">1. Character Base Key</label>
-        <input type="text" id="baseKey" value="\${baseKey}" placeholder="e.g., X, F11, DOWN, ENTER">
+        <input type="text" id="baseKey" value="${baseKey}" placeholder="e.g., X, F11, DOWN, ENTER">
     </div>
 
     <div class="form-group">
         <label>2. Modifiers Checkbox Form</label>
         <div class="checkbox-group">
-            <div class="checkbox-item"><input type="checkbox" id="modW" \${flags.includes('w') ? 'checked' : ''} value="w"> Windows</div>
-            <div class="checkbox-item"><input type="checkbox" id="modC" \${flags.includes('c') ? 'checked' : ''} value="c"> Control</div>
-            <div class="checkbox-item"><input type="checkbox" id="modA" \${flags.includes('a') ? 'checked' : ''} value="a"> Alt</div>
-            <div class="checkbox-item"><input type="checkbox" id="modS" \${flags.includes('s') ? 'checked' : ''} value="s"> Shift</div>
+            <div class="checkbox-item"><input type="checkbox" id="modW" ${flags.includes('w') ? 'checked' : ''} value="w"> Windows</div>
+            <div class="checkbox-item"><input type="checkbox" id="modC" ${flags.includes('c') ? 'checked' : ''} value="c"> Control</div>
+            <div class="checkbox-item"><input type="checkbox" id="modA" ${flags.includes('a') ? 'checked' : ''} value="a"> Alt</div>
+            <div class="checkbox-item"><input type="checkbox" id="modS" ${flags.includes('s') ? 'checked' : ''} value="s"> Shift</div>
         </div>
     </div>
 
     <div class="form-group">
         <label for="shortcode">3. Synchronized Shortcode Box</label>
-        <input type="text" id="shortcode" value="\${shorthand}" placeholder="Watching form matrices...">
+        <input type="text" id="shortcode" value="${shorthand}" placeholder="Watching form matrices...">
     </div>
 
     <div class="form-group">
         <label for="whenClause">4. Context Clause Constraint (When)</label>
-        <input type="text" id="whenClause" value="\${whenClause}" placeholder="e.g., editorTextFocus">
+        <input type="text" id="whenClause" value="${whenClause}" placeholder="e.g., editorTextFocus">
     </div>
 
     <div id="statusBox" class="status-box"></div>
@@ -159,7 +159,7 @@ function getWebviewContent(title, baseKey, shorthand, whenClause) {
     </div>
 
     <script>
-        \${clientScriptContent}
+        ${clientScriptContent}
     </script>
 </body>
 </html>`;
