@@ -41,6 +41,12 @@ title: VERSIONS
 ## 🚀 Stable Releases & Milestones
 [[#^toc-stable|TOC]]
 
+### 🏷️ v1.2.58 (2026-07-10) - State-Aware Paging Click Listeners and Dynamic Index Resolution
+- **Fixed:**
+  - Resolved a closure bug in the webview's click listeners where `currentIdx` was statically bound to the initial command's index upon loading.
+  - Added a dynamic `getCurrentIndex()` helper that inspects the latest value of `window.CE_INITIAL_STATE.commandId` in real-time inside every paging event listener.
+  - Enabled flawless, infinite multi-item pagination through the command-list queue without freezing after a single item advance.
+
 ### 🏷️ v1.2.57 (2026-07-10) - In-Place Webview Paging and DOM Update Optimization
 - **Added / Enhanced:**
   - Implemented real-time in-place webview update message handler (`updateItem`) to eliminate the heavy dispose/re-create webview cycles during pagination.

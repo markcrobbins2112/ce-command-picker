@@ -50,12 +50,11 @@ title: LOG
 ## 💾 Commit Message
 [[#^toc-commit|TOC]]
 ```text
-perf: v1.2.57 - In-Place Webview Paging and DOM Update Optimization
+fix: v1.2.58 - State-Aware Paging Click Listeners and Dynamic Index Resolution
 
-- Restructured the backend message router to intercept item-switching pagination requests.
-- Replaced panel destruction and recreation with direct event-driven DOM transitions.
-- Synchronized initial state benchmarks and metadata on-the-fly inside the active panel.
-- Eliminated full webview reloading, iframe flicker, and visual redraw cycles.
+- Fixed a paging bug where event listeners captured stale initial index closures.
+- Implemented a dynamic index lookup utility inside the client-side event handlers.
+- Enabled continuous multi-item navigation without sticking or freezing after one advance.
 ```
 
 ## 📝 Log Entries
@@ -67,6 +66,19 @@ perf: v1.2.57 - In-Place Webview Paging and DOM Update Optimization
   Use the template structure below:
   ...
 -->
+
+### 📅 [2026-07-10T13:20:00Z]
+#### 🎯 Primary Goals & Requirements
+- Fix the pagination freezing bug where items can only be advanced once before locking up.
+
+#### 🛠️ Completed Changes in this Session
+- **Dynamic Index Lookups**: Resolved a closure issue where client-side paging click handlers were locked to the first item's cached `currentIdx`. Replaced with a dynamic `getCurrentIndex()` helper evaluated in real-time inside every click handler.
+- **Continuous Navigation**: Enabled seamless, infinite, fast paging through command lists without reloading or sticking.
+
+#### 🔸 Affected Files
+- `src/extension-macros-html.js`
+- `AIMD/LOG.md`
+- `AIMD/VERSIONS.md`
 
 ### 📅 [2026-07-10T13:10:00Z]
 #### 🎯 Primary Goals & Requirements

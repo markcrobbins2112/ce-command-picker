@@ -818,41 +818,53 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     }
 
     const originalArgs = window.CE_ORIGINAL_ARGS || [];
-    const currentCmdId = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '';
-    const currentIdx = originalArgs.indexOf(currentCmdId);
+    const initialCmdId = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '';
+    const initialIdx = originalArgs.indexOf(initialCmdId);
     const total = originalArgs.length;
 
-    if (total > 0 && currentIdx !== -1) {
+    function getCurrentIndex() {
+        const args = window.CE_ORIGINAL_ARGS || [];
+        const currentCmdId = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '';
+        return args.indexOf(currentCmdId);
+    }
+
+    if (total > 0 && initialIdx !== -1) {
         if (btnPageFirst) btnPageFirst.addEventListener('click', () => pageTo(0));
         
         if (btnPagePrevWithCheckoff) btnPagePrevWithCheckoff.addEventListener('click', () => {
+            const currentIdx = getCurrentIndex();
             const idx = findNextChecked(currentIdx, -1);
             if (idx !== -1) pageTo(idx);
         });
         
         if (btnPagePrevNoCheckoff) btnPagePrevNoCheckoff.addEventListener('click', () => {
+            const currentIdx = getCurrentIndex();
             const idx = findNextUnchecked(currentIdx, -1);
             if (idx !== -1) pageTo(idx);
         });
         
         if (btnPagePrev) btnPagePrev.addEventListener('click', () => {
+            const currentIdx = getCurrentIndex();
             if (currentIdx > 0) {
                 pageTo(currentIdx - 1);
             }
         });
 
         if (btnPageNext) btnPageNext.addEventListener('click', () => {
+            const currentIdx = getCurrentIndex();
             if (currentIdx < total - 1) {
                 pageTo(currentIdx + 1);
             }
         });
 
         if (btnPageNextNoCheckoff) btnPageNextNoCheckoff.addEventListener('click', () => {
+            const currentIdx = getCurrentIndex();
             const idx = findNextUnchecked(currentIdx, 1);
             if (idx !== -1) pageTo(idx);
         });
         
         if (btnPageNextWithCheckoff) btnPageNextWithCheckoff.addEventListener('click', () => {
+            const currentIdx = getCurrentIndex();
             const idx = findNextChecked(currentIdx, 1);
             if (idx !== -1) pageTo(idx);
         });
@@ -860,7 +872,7 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
         if (btnPageLast) btnPageLast.addEventListener('click', () => pageTo(total - 1));
         
         if (lblPageNum) {
-            lblPageNum.textContent = (currentIdx + 1) + ' of ' + total;
+            lblPageNum.textContent = (initialIdx + 1) + ' of ' + total;
         }
     } else {
         [
