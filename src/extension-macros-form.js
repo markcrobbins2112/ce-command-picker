@@ -30,7 +30,6 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         }
     }
 
-    // Dynamic fallback computation to derive title if commandItem.label is empty/missing
     let derivedTitle = commandItem.label;
     if (!derivedTitle && commandItem.commandId) {
         derivedTitle = commandItem.commandId
@@ -53,7 +52,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         
         const match = initialShorthand.match(/(.*)\.([wcas]*)$/);
         if (match && match[1]) {
-            // ✅ FIXED: Explicitly extract capture group index 1 (the string literal key) instead of passing the match array object!
+            // ✅ FIXED: Explicitly extract capture group index 1 (the string literal key name)
             initialBaseKey = match[1];
         } else {
             initialBaseKey = initialShorthand;
@@ -72,7 +71,8 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         }
     );
 
-    panel.webview.html = htmlTemplate.getWebviewContent(derivedTitle, initialBaseKey, initialShorthand, initialWhen);
+    // ✅ FIXED: Pass commandItem.commandId directly into parameter position 1 for full command rendering
+    panel.webview.html = htmlTemplate.getWebviewContent(commandItem.commandId, initialBaseKey, initialShorthand, initialWhen);
 
     panel.webview.onDidReceiveMessage(
         async (message) => {

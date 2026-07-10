@@ -1835,8 +1835,8 @@ var require_extension_macros_html = __commonJS({
       let flags = "";
       if (shorthand) {
         const match = shorthand.match(/(.*)\.([wcas]*)$/);
-        if (match) {
-          flags = match[2] || "";
+        if (match && match[2]) {
+          flags = match[2];
         }
       }
       const clientScriptPath = path.join(__dirname, "webview", "form-client.js");
@@ -2116,7 +2116,7 @@ var require_extension_macros_form = __commonJS({
         initialShorthand = core.formatToCustomShorthand(targetToEdit.key);
         initialWhen = targetToEdit.when || "editorTextFocus";
         const match = initialShorthand.match(/(.*)\.([wcas]*)$/);
-        if (match) {
+        if (match && match[1]) {
           initialBaseKey = match[1];
         } else {
           initialBaseKey = initialShorthand;

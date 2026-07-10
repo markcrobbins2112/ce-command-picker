@@ -76,7 +76,7 @@ function syncFromShortcode() {
 
     const match = text.match(/(.*)\.([wcas]*)$/i);
     if (match && match[1]) {
-        // ✅ FIXED: Extract array capturing groups 1 and 2 explicitly instead of casting the array object to uppercase strings!
+        // ✅ FIXED: Safely map extraction array capture slices 1 and 2 to form properties
         baseInput.value = match[1].toUpperCase();
         setUIFlags(match[2] || '');
     } else {
