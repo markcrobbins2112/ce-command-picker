@@ -64,6 +64,9 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             .replace(/\.[casw]+/g, '')
             .replace(/\+/g, '')
             .trim();
+        if (cleaned === 'insert' || cleaned === 'ins') {
+            return 'insert';
+        }
         return cleaned.toUpperCase();
     }
 
@@ -79,11 +82,11 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     }
 
     function getFullShorthand() {
-        const base1 = baseInput1.value.trim().toUpperCase();
+        const base1 = baseInput1.value.trim();
         const flags1 = shortcodeInput1.value.trim().toLowerCase();
         const part1 = flags1 ? base1 + '.' + flags1 : base1;
 
-        const base2 = baseInput2.value.trim().toUpperCase();
+        const base2 = baseInput2.value.trim();
         const flags2 = shortcodeInput2.value.trim().toLowerCase();
         const part2 = base2 ? (flags2 ? base2 + '.' + flags2 : base2) : '';
 
@@ -255,29 +258,33 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
     shortcodeInput2.addEventListener('change', syncFromShortcode2);
     shortcodeInput2.addEventListener('keyup', syncFromShortcode2);
 
-    btnClear1.addEventListener('click', () => {
-        isSynchronizing = true;
-        baseInput1.value = '';
-        checkboxes1.w.checked = false;
-        checkboxes1.c.checked = false;
-        checkboxes1.a.checked = false;
-        checkboxes1.s.checked = false;
-        shortcodeInput1.value = '';
-        isSynchronizing = false;
-        triggerValidation();
-    });
+    if (btnClear1) {
+        btnClear1.addEventListener('click', () => {
+            isSynchronizing = true;
+            baseInput1.value = '';
+            checkboxes1.w.checked = false;
+            checkboxes1.c.checked = false;
+            checkboxes1.a.checked = false;
+            checkboxes1.s.checked = false;
+            shortcodeInput1.value = '';
+            isSynchronizing = false;
+            triggerValidation();
+        });
+    }
 
-    btnClear2.addEventListener('click', () => {
-        isSynchronizing = true;
-        baseInput2.value = '';
-        checkboxes2.w.checked = false;
-        checkboxes2.c.checked = false;
-        checkboxes2.a.checked = false;
-        checkboxes2.s.checked = false;
-        shortcodeInput2.value = '';
-        isSynchronizing = false;
-        triggerValidation();
-    });
+    if (btnClear2) {
+        btnClear2.addEventListener('click', () => {
+            isSynchronizing = true;
+            baseInput2.value = '';
+            checkboxes2.w.checked = false;
+            checkboxes2.c.checked = false;
+            checkboxes2.a.checked = false;
+            checkboxes2.s.checked = false;
+            shortcodeInput2.value = '';
+            isSynchronizing = false;
+            triggerValidation();
+        });
+    }
 
     if (btnClear) {
         btnClear.addEventListener('click', () => {
@@ -316,6 +323,9 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             const shorthandStr = message.shorthand || '';
             const baseKeyStr = message.baseKey || '';
             const flagsStr = message.flags || '';
+            const baseKey2Str = message.baseKey2 || '';
+            const flags2Str = message.flags2 || '';
+
             if (shorthandStr) {
                 const chords = shorthandStr.trim().split(/\s+/);
                 if (chords.length >= 1 && chords[0]) {
@@ -345,19 +355,38 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
             if (!f1 && flagsStr) {
                 f1 = flagsStr;
             }
-            baseInput1.value = b1.toUpperCase();
+            if (!b2 && baseKey2Str) {
+                b2 = baseKey2Str;
+            }
+            if (!f2 && flags2Str) {
+                f2 = flags2Str;
+            }
+
+            if (b1.toLowerCase() === 'insert' || b1.toLowerCase() === 'ins') {
+                baseInput1.value = 'insert';
+            } else {
+                baseInput1.value = b1.toUpperCase();
+            }
             shortcodeInput1.value = f1.toLowerCase();
             checkboxes1.w.checked = f1.includes('w');
             checkboxes1.c.checked = f1.includes('c');
             checkboxes1.a.checked = f1.includes('a');
             checkboxes1.s.checked = f1.includes('s');
-            baseInput2.value = b2.toUpperCase();
+
+            if (b2.toLowerCase() === 'insert' || b2.toLowerCase() === 'ins') {
+                baseInput2.value = 'insert';
+            } else {
+                baseInput2.value = b2.toUpperCase();
+            }
             shortcodeInput2.value = f2.toLowerCase();
             checkboxes2.w.checked = f2.includes('w');
             checkboxes2.c.checked = f2.includes('c');
             checkboxes2.a.checked = f2.includes('a');
             checkboxes2.s.checked = f2.includes('s');
-            whenInput.value = message.whenClause !== undefined ? message.whenClause : 'editorTextFocus';
+
+            const incomingWhen = message.whenClause !== undefined ? message.whenClause : (message.when !== undefined ? message.when : undefined);
+            whenInput.value = incomingWhen !== undefined ? incomingWhen : 'editorTextFocus';
+
             isSynchronizing = false;
             triggerValidation();
         } else if (message.type === 'status') {
@@ -475,14 +504,24 @@ function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base
 
     if (window.CE_INITIAL_STATE) {
         isSynchronizing = true;
-        baseInput1.value = window.CE_INITIAL_STATE.chord1Base || '';
+        let b1 = window.CE_INITIAL_STATE.chord1Base || '';
+        if (b1.toLowerCase() === 'insert' || b1.toLowerCase() === 'ins') {
+            baseInput1.value = 'insert';
+        } else {
+            baseInput1.value = b1.toUpperCase();
+        }
         shortcodeInput1.value = window.CE_INITIAL_STATE.chord1Flags || '';
         checkboxes1.w.checked = shortcodeInput1.value.includes('w');
         checkboxes1.c.checked = shortcodeInput1.value.includes('c');
         checkboxes1.a.checked = shortcodeInput1.value.includes('a');
         checkboxes1.s.checked = shortcodeInput1.value.includes('s');
 
-        baseInput2.value = window.CE_INITIAL_STATE.chord2Base || '';
+        let b2 = window.CE_INITIAL_STATE.chord2Base || '';
+        if (b2.toLowerCase() === 'insert' || b2.toLowerCase() === 'ins') {
+            baseInput2.value = 'insert';
+        } else {
+            baseInput2.value = b2.toUpperCase();
+        }
         shortcodeInput2.value = window.CE_INITIAL_STATE.chord2Flags || '';
         checkboxes2.w.checked = shortcodeInput2.value.includes('w');
         checkboxes2.c.checked = shortcodeInput2.value.includes('c');
