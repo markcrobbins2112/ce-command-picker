@@ -6,14 +6,62 @@ const jsonc = require('jsonc-parser');
 
 let editModeActive = false;
 
+const shortcodeToNativeMap = {
+    'pu': 'pageup',
+    'pd': 'pagedown',
+    'ho': 'home',
+    'en': 'end',
+    'in': 'insert',
+    'bl': '[',
+    'br': ']',
+    'sq': "'",
+    'sc': ';',
+    'co': ',',
+    'pe': '.',
+    'sf': '/',
+    'sb': '\\',
+    'bq': '`',
+    'esc': 'escape',
+    'lf': 'left',
+    'rt': 'right',
+    'dn': 'down',
+    'up': 'up',
+    'del': 'delete',
+    'pause': 'pausebreak',
+    'bs': 'backspace'
+};
+
+const nativeToShortcodeMap = {
+    'pageup': 'pu', 'pgup': 'pu',
+    'pagedown': 'pd', 'pgdn': 'pd',
+    'home': 'ho',
+    'end': 'en',
+    'insert': 'in', 'ins': 'in',
+    '[': 'bl',
+    ']': 'br',
+    "'": 'sq',
+    ';': 'sc',
+    ',': 'co',
+    '.': 'pe',
+    '/': 'sf',
+    '\\': 'sb',
+    '`': 'bq',
+    'escape': 'esc', 'esc': 'esc',
+    'arrowleft': 'lf', 'left': 'lf',
+    'arrowright': 'rt', 'right': 'rt',
+    'arrowdown': 'dn', 'down': 'dn',
+    'arrowup': 'up', 'up': 'up',
+    'delete': 'del',
+    'pausebreak': 'pause', 'pause': 'pause',
+    'backspace': 'bs',
+    'enter': 'enter',
+    'tab': 'tab',
+    'space': 'space',
+    'capslock': 'capslock'
+};
+
 function formatToCustomShorthand(nativeKeybinding) {
     if (!nativeKeybinding) return '';
-    const specialKeysMap = {
-        'arrowup': 'UP', 'arrowdown': 'DOWN', 'arrowleft': 'LEFT', 'arrowright': 'RIGHT',
-        'escape': 'ESC', 'enter': 'ENTER', 'tab': 'TAB', 'space': 'SPACE',
-        'backspace': 'BACKSPACE', 'delete': 'DEL', 'insert': 'INS',
-        'pageup': 'PGUP', 'pagedown': 'PGDN', 'home': 'HOME', 'end': 'END', 'capslock': 'CAPS'
-    };
 
     const chords = nativeKeybinding.trim().split(/\s+/);
     const formattedChords = chords.map(chord => {
@@ -22,7 +70,7 @@ function formatToCustomShorthand(nativeKeybinding) {
         const baseKey = elements.find(el => !['ctrl', 'alt', 'shift', 'cmd', 'meta', 'win'].includes(el));
         if (!baseKey) return chord; 
 
-        let formattedBase = specialKeysMap[baseKey] || baseKey.toUpperCase();
+        let formattedBase = nativeToShortcodeMap[baseKey] || baseKey.toUpperCase();
         let flags = '';
         if (lower.includes('win')) flags += 'w';
         if (lower.includes('ctrl') || lower.includes('cmd') || lower.includes('meta')) flags += 'c';
@@ -36,17 +84,12 @@ function formatToCustomShorthand(nativeKeybinding) {
 
 function parseShorthandToNative(shorthand) {
     if (!shorthand) return '';
-    const reversedSpecialKeys = {
-        'UP': 'arrowup', 'DOWN': 'arrowdown', 'LEFT': 'arrowleft', 'RIGHT': 'arrowright',
-        'ESC': 'escape', 'ENTER': 'enter', 'TAB': 'tab', 'SPACE': 'space',
-        'BACKSPACE': 'backspace', 'DEL': 'delete', 'INS': 'insert',
-        'PGUP': 'pageup', 'PGDN': 'pagedown', 'HOME': 'home', 'END': 'end', 'CAPS': 'capslock'
-    };
 
     const chords = shorthand.trim().split(/\s+/);
     const nativeChords = chords.map(chord => {
         if (!chord.includes('.')) {
-            return reversedSpecialKeys[chord] || chord.toLowerCase();
+            const lowerChord = chord.toLowerCase();
+            return shortcodeToNativeMap[lowerChord] || lowerChord;
         }
         const [baseKey, flags] = chord.split('.');
         const parts = [];
@@ -55,7 +98,8 @@ function parseShorthandToNative(shorthand) {
         if (flags.includes('a')) parts.push('alt');
         if (flags.includes('s')) parts.push('shift');
         
-        parts.push(reversedSpecialKeys[baseKey] || baseKey.toLowerCase());
+        const lowerBase = baseKey.toLowerCase();
+        parts.push(shortcodeToNativeMap[lowerBase] || lowerBase);
         return parts.join('+');
     });
     return nativeChords.join(' ');

@@ -5,33 +5,24 @@ const fs = require('fs');
 const jsonc = require('jsonc-parser');
 const htmlTemplate = require('./extension-macros-html');
 
-function findGroupForNewInstance(targetType, configPath) {
+function findGroupForNewInstance(targetType, configPath, panelViewColumn) {
     const allGroups = (vscode.window.tabGroups && vscode.window.tabGroups.all) || [];
-    for (let i = 0; i < allGroups.length; i++) {
-        const group = allGroups[i];
-        let hasTarget = false;
-        for (const tab of group.tabs) {
-            if (targetType === 'json') {
-                if (tab.input instanceof vscode.TabInputText && tab.input.uri.fsPath === configPath) {
-                    hasTarget = true;
-                    break;
-                }
-            } else {
-                if (tab.label === 'Keyboard Shortcuts' || tab.label === 'keybindings' || (tab.input && tab.input.viewType === 'keybindings')) {
-                    hasTarget = true;
-                    break;
-                }
-            }
-        }
-        if (!hasTarget) {
-            return group.viewColumn;
+    let maxCol = 1;
+    for (const group of allGroups) {
+        if (typeof group.viewColumn === 'number' && group.viewColumn > maxCol) {
+            maxCol = group.viewColumn;
         }
     }
-    return vscode.ViewColumn.Beside;
+    let targetCol = maxCol + 1;
+    if (targetCol === panelViewColumn) {
+        targetCol++;
+    }
+    return targetCol;
 }
 
 function findGroupForReusing(targetType, configPath, panelViewColumn) {
     const allGroups = (vscode.window.tabGroups && vscode.window.tabGroups.all) || [];
+    // 1. Try to find an existing instance in any group that is NOT the webview group.
     for (const group of allGroups) {
         if (group.viewColumn === panelViewColumn) continue;
         for (const tab of group.tabs) {
@@ -46,6 +37,13 @@ function findGroupForReusing(targetType, configPath, panelViewColumn) {
             }
         }
     }
+    // 2. If no existing instance, try to find any existing group that is NOT the webview group.
+    for (const group of allGroups) {
+        if (group.viewColumn !== panelViewColumn) {
+            return group.viewColumn;
+        }
+    }
+    // 3. Fallback: create a new group beside the webview.
     if (panelViewColumn === vscode.ViewColumn.One) {
         return vscode.ViewColumn.Two;
     } else {
@@ -76,6 +74,11 @@ async function focusViewColumn(column) {
 async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
     const core = require('./extension-core');
     const ui = require('./extension-ui');
+
+    let checkedOff = context.globalState.get('ce-command-picker.checkedOffCommands', []);
+    if (!Array.isArray(checkedOff)) {
+        checkedOff = [];
+    }
 
     let fullBindings = core.loadFullKeybindingsArray();
     const existingTargets = fullBindings.filter(b => b.command === commandItem.commandId);
@@ -160,7 +163,9 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         initialWhen,
         currentKeysLabel,
         currentWhenLabel,
-        sourceToFill ? sourceToFill.key : ''
+        sourceToFill ? sourceToFill.key : '',
+        originalArgs,
+        checkedOff
     );
 
     panel.webview.onDidReceiveMessage(
@@ -178,7 +183,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                     const panelViewCol = panel.viewColumn;
                     let targetCol;
                     if (message.newInstance) {
-                        targetCol = findGroupForNewInstance('keybindings', null);
+                        targetCol = findGroupForNewInstance('keybindings', null, panelViewCol);
                     } else {
                         targetCol = findGroupForReusing('keybindings', null, panelViewCol);
                     }
@@ -354,7 +359,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                         const pViewCol = panel.viewColumn;
                         let targetC;
                         if (message.newInstance) {
-                            targetC = findGroupForNewInstance('json', configPath);
+                            targetC = findGroupForNewInstance('json', configPath, pViewCol);
                         } else {
                             targetC = findGroupForReusing('json', configPath, pViewCol);
                         }
@@ -468,6 +473,86 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                         }
                     } catch (e) {
                         vscode.window.showErrorMessage('Failed to parse clipboard text as JSON.');
+                    }
+                    break;
+
+                case 'toggleCheckoff':
+                    try {
+                        let checkedList = context.globalState.get('ce-command-picker.checkedOffCommands', []);
+                        if (!Array.isArray(checkedList)) {
+                            checkedList = [];
+                        }
+                        const targetId = message.commandId;
+                        if (message.checked) {
+                            if (!checkedList.includes(targetId)) {
+                                checkedList.push(targetId);
+                            }
+                        } else {
+                            checkedList = checkedList.filter(id => id !== targetId);
+                        }
+                        await context.globalState.update('ce-command-picker.checkedOffCommands', checkedList);
+                    } catch (e) {
+                        vscode.window.showErrorMessage(`Failed to persist checkoff: ${e.message}`);
+                    }
+                    break;
+
+                case 'pageToCommand':
+                    try {
+                        panel.dispose();
+                        const targetCmdId = message.commandId;
+                        const targetItem = {
+                            commandId: targetCmdId,
+                            label: targetCmdId.replace(/^[\w-]+\./, '').replace(/([A-Z])/g, ' $1').replace(/[_-]/g, ' '),
+                        };
+                        targetItem.label = targetItem.label.charAt(0).toUpperCase() + targetItem.label.slice(1);
+                        promptAssignKey(context, targetItem, originalArgs, isEditMode);
+                    } catch (e) {
+                        vscode.window.showErrorMessage(`Failed to page to command: ${e.message}`);
+                    }
+                    break;
+
+                case 'closeAllKbJson':
+                    try {
+                        const configPath = core.getKeybindingsFilePath();
+                        const allGroups = (vscode.window.tabGroups && vscode.window.tabGroups.all) || [];
+                        let closedCount = 0;
+                        for (const group of allGroups) {
+                            for (const tab of group.tabs) {
+                                if (tab.input instanceof vscode.TabInputText && tab.input.uri.fsPath === configPath) {
+                                    await vscode.window.tabGroups.close(tab);
+                                    closedCount++;
+                                }
+                            }
+                        }
+                        if (closedCount > 0) {
+                            vscode.window.showInformationMessage(`Closed ${closedCount} keybindings.json file tab(s).`);
+                        } else {
+                            vscode.window.showInformationMessage('No keybindings.json file tabs open.');
+                        }
+                    } catch (e) {
+                        vscode.window.showErrorMessage(`Error closing keybindings.json tabs: ${e.message}`);
+                    }
+                    break;
+
+                case 'closeAllKbUi':
+                    try {
+                        const allGroups = (vscode.window.tabGroups && vscode.window.tabGroups.all) || [];
+                        let closedCount = 0;
+                        for (const group of allGroups) {
+                            for (const tab of group.tabs) {
+                                if (tab.label === 'Keyboard Shortcuts' || tab.label === 'keybindings' || (tab.input && tab.input.viewType === 'keybindings')) {
+                                    await vscode.window.tabGroups.close(tab);
+                                    closedCount++;
+                                }
+                            }
+                        }
+                        if (closedCount > 0) {
+                            vscode.window.showInformationMessage(`Closed ${closedCount} Keyboard Shortcuts tab(s).`);
+                        } else {
+                            vscode.window.showInformationMessage('No Keyboard Shortcuts tabs open.');
+                        }
+                    } catch (e) {
+                        vscode.window.showErrorMessage(`Error closing Keyboard Shortcuts tabs: ${e.message}`);
                     }
                     break;
             }

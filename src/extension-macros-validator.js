@@ -10,7 +10,8 @@ function validateAndParseInput(inputString) {
     const knownKeys = [
         'up', 'down', 'left', 'right', 'escape', 'esc', 'enter', 'tab', 'space',
         'backspace', 'delete', 'del', 'insert', 'ins', 'pageup', 'pgup', 'pagedown', 'pgdn',
-        'home', 'end', 'capslock', 'caps'
+        'home', 'end', 'capslock', 'caps',
+        'pu', 'pd', 'ho', 'en', 'in', 'bl', 'br', 'sq', 'sc', 'co', 'pe', 'sf', 'sb', 'bq', 'lf', 'rt', 'dn', 'pause', 'bs'
     ];
 
     const isValidBaseKey = (k) => {

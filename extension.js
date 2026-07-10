@@ -1706,33 +1706,76 @@ var require_extension_core = __commonJS({
     var path = require("path");
     var jsonc = (init_main(), __toCommonJS(main_exports));
     var editModeActive = false;
+    var shortcodeToNativeMap = {
+      "pu": "pageup",
+      "pd": "pagedown",
+      "ho": "home",
+      "en": "end",
+      "in": "insert",
+      "bl": "[",
+      "br": "]",
+      "sq": "'",
+      "sc": ";",
+      "co": ",",
+      "pe": ".",
+      "sf": "/",
+      "sb": "\\",
+      "bq": "`",
+      "esc": "escape",
+      "lf": "left",
+      "rt": "right",
+      "dn": "down",
+      "up": "up",
+      "del": "delete",
+      "pause": "pausebreak",
+      "bs": "backspace"
+    };
+    var nativeToShortcodeMap = {
+      "pageup": "pu",
+      "pgup": "pu",
+      "pagedown": "pd",
+      "pgdn": "pd",
+      "home": "ho",
+      "end": "en",
+      "insert": "in",
+      "ins": "in",
+      "[": "bl",
+      "]": "br",
+      "'": "sq",
+      ";": "sc",
+      ",": "co",
+      ".": "pe",
+      "/": "sf",
+      "\\": "sb",
+      "`": "bq",
+      "escape": "esc",
+      "esc": "esc",
+      "arrowleft": "lf",
+      "left": "lf",
+      "arrowright": "rt",
+      "right": "rt",
+      "arrowdown": "dn",
+      "down": "dn",
+      "arrowup": "up",
+      "up": "up",
+      "delete": "del",
+      "pausebreak": "pause",
+      "pause": "pause",
+      "backspace": "bs",
+      "enter": "enter",
+      "tab": "tab",
+      "space": "space",
+      "capslock": "capslock"
+    };
     function formatToCustomShorthand(nativeKeybinding) {
       if (!nativeKeybinding) return "";
-      const specialKeysMap = {
-        "arrowup": "UP",
-        "arrowdown": "DOWN",
-        "arrowleft": "LEFT",
-        "arrowright": "RIGHT",
-        "escape": "ESC",
-        "enter": "ENTER",
-        "tab": "TAB",
-        "space": "SPACE",
-        "backspace": "BACKSPACE",
-        "delete": "DEL",
-        "insert": "INS",
-        "pageup": "PGUP",
-        "pagedown": "PGDN",
-        "home": "HOME",
-        "end": "END",
-        "capslock": "CAPS"
-      };
       const chords = nativeKeybinding.trim().split(/\s+/);
       const formattedChords = chords.map((chord) => {
         const lower = chord.toLowerCase();
         const elements = lower.split("+");
         const baseKey = elements.find((el) => !["ctrl", "alt", "shift", "cmd", "meta", "win"].includes(el));
         if (!baseKey) return chord;
-        let formattedBase = specialKeysMap[baseKey] || baseKey.toUpperCase();
+        let formattedBase = nativeToShortcodeMap[baseKey] || baseKey.toUpperCase();
         let flags = "";
         if (lower.includes("win")) flags += "w";
         if (lower.includes("ctrl") || lower.includes("cmd") || lower.includes("meta")) flags += "c";
@@ -1744,28 +1787,11 @@ var require_extension_core = __commonJS({
     }
     function parseShorthandToNative(shorthand) {
       if (!shorthand) return "";
-      const reversedSpecialKeys = {
-        "UP": "arrowup",
-        "DOWN": "arrowdown",
-        "LEFT": "arrowleft",
-        "RIGHT": "arrowright",
-        "ESC": "escape",
-        "ENTER": "enter",
-        "TAB": "tab",
-        "SPACE": "space",
-        "BACKSPACE": "backspace",
-        "DEL": "delete",
-        "INS": "insert",
-        "PGUP": "pageup",
-        "PGDN": "pagedown",
-        "HOME": "home",
-        "END": "end",
-        "CAPS": "capslock"
-      };
       const chords = shorthand.trim().split(/\s+/);
       const nativeChords = chords.map((chord) => {
         if (!chord.includes(".")) {
-          return reversedSpecialKeys[chord] || chord.toLowerCase();
+          const lowerChord = chord.toLowerCase();
+          return shortcodeToNativeMap[lowerChord] || lowerChord;
         }
         const [baseKey, flags] = chord.split(".");
         const parts = [];
@@ -1773,7 +1799,8 @@ var require_extension_core = __commonJS({
         if (flags.includes("c")) parts.push(process.platform === "darwin" ? "cmd" : "ctrl");
         if (flags.includes("a")) parts.push("alt");
         if (flags.includes("s")) parts.push("shift");
-        parts.push(reversedSpecialKeys[baseKey] || baseKey.toLowerCase());
+        const lowerBase = baseKey.toLowerCase();
+        parts.push(shortcodeToNativeMap[lowerBase] || lowerBase);
         return parts.join("+");
       });
       return nativeChords.join(" ");
@@ -1829,7 +1856,7 @@ var require_extension_core = __commonJS({
 // src/extension-macros-html.js
 var require_extension_macros_html = __commonJS({
   "src/extension-macros-html.js"(exports2, module2) {
-    function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base, chord2Flags, whenClause, currentKeys, currentWhen, initialNativeKey) {
+    function getWebviewContent(commandId, title, chord1Base, chord1Flags, chord2Base, chord2Flags, whenClause, currentKeys, currentWhen, initialNativeKey, originalArgs = [], checkedOff = []) {
       const escapeJS = (str) => {
         if (str === null || str === void 0) return "";
         return String(str).replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\r/g, "\\r").replace(/\n/g, "\\n");
@@ -1966,6 +1993,35 @@ var require_extension_macros_html = __commonJS({
     let isSynchronizing = false;
     let isInitialLoad = true;
 
+    const baseKeyShortcodeMap = {
+        'pageup': 'pu', 'pgup': 'pu',
+        'pagedown': 'pd', 'pgdn': 'pd',
+        'home': 'ho',
+        'end': 'en',
+        'insert': 'in', 'ins': 'in',
+        '[': 'bl',
+        ']': 'br',
+        "'": 'sq',
+        ';': 'sc',
+        ',': 'co',
+        '.': 'pe',
+        '/': 'sf',
+        '\\\\': 'sb',
+        '\`': 'bq',
+        'escape': 'esc', 'esc': 'esc',
+        'arrowleft': 'lf', 'left': 'lf',
+        'arrowright': 'rt', 'right': 'rt',
+        'arrowdown': 'dn', 'down': 'dn',
+        'arrowup': 'up', 'up': 'up',
+        'delete': 'del', 'del': 'del',
+        'pausebreak': 'pause', 'pause': 'pause',
+        'backspace': 'bs',
+        'pu': 'pu', 'pd': 'pd', 'ho': 'ho', 'en': 'en', 'in': 'in',
+        'bl': 'bl', 'br': 'br', 'sq': 'sq', 'sc': 'sc', 'co': 'co',
+        'pe': 'pe', 'sf': 'sf', 'sb': 'sb', 'bq': 'bq', 'lf': 'lf',
+        'rt': 'rt', 'dn': 'dn', 'up': 'up', 'pause': 'pause', 'bs': 'bs'
+    };
+
     function cleanBaseKeyInput(val) {
         if (!val) return '';
         let cleaned = val.toLowerCase()
@@ -1973,8 +2029,8 @@ var require_extension_macros_html = __commonJS({
             .replace(/\\\\.[casw]+/g, '')
             .replace(/\\\\+/g, '')
             .trim();
-        if (cleaned === 'insert' || cleaned === 'ins') {
-            return 'insert';
+        if (baseKeyShortcodeMap[cleaned]) {
+            return baseKeyShortcodeMap[cleaned];
         }
         return cleaned.toUpperCase();
     }
@@ -2109,7 +2165,8 @@ var require_extension_macros_html = __commonJS({
         const knownKeys = [
             'up', 'down', 'left', 'right', 'escape', 'esc', 'enter', 'tab', 'space',
             'backspace', 'delete', 'del', 'insert', 'ins', 'pageup', 'pgup', 'pagedown', 'pgdn',
-            'home', 'end', 'capslock', 'caps'
+            'home', 'end', 'capslock', 'caps',
+            'pu', 'pd', 'ho', 'en', 'in', 'bl', 'br', 'sq', 'sc', 'co', 'pe', 'sf', 'sb', 'bq', 'lf', 'rt', 'dn', 'pause', 'bs'
         ];
 
         const isValidBaseKey = (k) => {
@@ -2348,6 +2405,173 @@ var require_extension_macros_html = __commonJS({
     }
 
     fullShorthandInput.addEventListener('input', syncFromFullShorthand);
+
+    function getModifierColor(c, a, s) {
+        if (c && a && s) return '#56b6c2';
+        if (c && s) return '#d19a66';
+        if (a && s) return '#98c379';
+        if (c && a) return '#c678dd';
+        if (c) return '#e06c75';
+        if (a) return '#61afef';
+        if (s) return '#e5c07b';
+        return '#abb2bf';
+    }
+
+    function updateModifierColors() {
+        const c1 = checkboxes1.c.checked;
+        const a1 = checkboxes1.a.checked;
+        const s1 = checkboxes1.s.checked;
+        const color1 = getModifierColor(c1, a1, s1);
+
+        shortcodeInput1.style.color = color1;
+        shortcodeInput1.style.borderColor = color1;
+        ['modW', 'modC', 'modA', 'modS'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el && el.parentNode) {
+                el.parentNode.style.color = color1;
+            }
+        });
+
+        const c2 = checkboxes2.c.checked;
+        const a2 = checkboxes2.a.checked;
+        const s2 = checkboxes2.s.checked;
+        const color2 = getModifierColor(c2, a2, s2);
+
+        shortcodeInput2.style.color = color2;
+        shortcodeInput2.style.borderColor = color2;
+        ['modW2', 'modC2', 'modA2', 'modS2'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el && el.parentNode) {
+                el.parentNode.style.color = color2;
+            }
+        });
+    }
+
+    // Hook modifier colors update to triggerValidation so it runs on every form change
+    const originalTriggerValidation = triggerValidation;
+    triggerValidation = function(updateShorthandText) {
+        originalTriggerValidation(updateShorthandText);
+        updateModifierColors();
+    };
+
+    fullShorthandInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const preferredEl = document.querySelector('input[name="preferredFormat"]:checked');
+            const preferred = preferredEl ? preferredEl.value : 'shortcode';
+            if (preferred === 'shortcode' && lastValidatedShortCode) {
+                fullShorthandInput.value = lastValidatedShortCode;
+            } else if (preferred === 'native' && lastValidatedNativeKey) {
+                fullShorthandInput.value = lastValidatedNativeKey;
+            }
+        }
+    });
+
+    // Checkoff functionality
+    const chkCheckoff = document.getElementById('chkCheckoff');
+    const lblCheckoffCount = document.getElementById('lblCheckoffCount');
+
+    function updateCheckoffUI() {
+        const originalArgs = window.CE_ORIGINAL_ARGS || [];
+        const checkedOff = window.CE_CHECKED_OFF_COMMANDS || [];
+        const currentCmdId = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '';
+
+        if (chkCheckoff) {
+            chkCheckoff.checked = checkedOff.includes(currentCmdId);
+        }
+        const matchedCount = originalArgs.filter(id => checkedOff.includes(id)).length;
+        if (lblCheckoffCount) {
+            lblCheckoffCount.textContent = matchedCount + ' of ' + originalArgs.length;
+        }
+    }
+
+    if (chkCheckoff) {
+        chkCheckoff.addEventListener('change', () => {
+            const checked = chkCheckoff.checked;
+            const currentCmdId = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '';
+            const checkedOff = window.CE_CHECKED_OFF_COMMANDS || [];
+
+            if (checked) {
+                if (!checkedOff.includes(currentCmdId)) {
+                    checkedOff.push(currentCmdId);
+                }
+            } else {
+                const idx = checkedOff.indexOf(currentCmdId);
+                if (idx !== -1) {
+                    checkedOff.splice(idx, 1);
+                }
+            }
+            window.CE_CHECKED_OFF_COMMANDS = checkedOff;
+            updateCheckoffUI();
+
+            vscode.postMessage({
+                command: 'toggleCheckoff',
+                commandId: currentCmdId,
+                checked: checked
+            });
+        });
+    }
+
+    // Paging functionality
+    const btnPageFirst = document.getElementById('btnPageFirst');
+    const btnPagePrev5 = document.getElementById('btnPagePrev5');
+    const btnPagePrev = document.getElementById('btnPagePrev');
+    const btnPageNext = document.getElementById('btnPageNext');
+    const btnPageNext5 = document.getElementById('btnPageNext5');
+    const btnPageLast = document.getElementById('btnPageLast');
+    const lblPageNum = document.getElementById('lblPageNum');
+
+    function pageTo(targetIdx) {
+        const originalArgs = window.CE_ORIGINAL_ARGS || [];
+        if (targetIdx >= 0 && targetIdx < originalArgs.length) {
+            const nextCmdId = originalArgs[targetIdx];
+            vscode.postMessage({
+                command: 'pageToCommand',
+                commandId: nextCmdId
+            });
+        }
+    }
+
+    const originalArgs = window.CE_ORIGINAL_ARGS || [];
+    const currentCmdId = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '';
+    const currentIdx = originalArgs.indexOf(currentCmdId);
+    const total = originalArgs.length;
+
+    if (total > 0 && currentIdx !== -1) {
+        if (btnPageFirst) btnPageFirst.addEventListener('click', () => pageTo(0));
+        if (btnPagePrev5) btnPagePrev5.addEventListener('click', () => pageTo(currentIdx - 1 < 0 ? total - 1 : currentIdx - 1));
+        if (btnPagePrev) btnPagePrev.addEventListener('click', () => pageTo(currentIdx - 1 < 0 ? total - 1 : currentIdx - 1));
+        if (btnPageNext) btnPageNext.addEventListener('click', () => pageTo(currentIdx + 1 >= total ? 0 : currentIdx + 1));
+        if (btnPageNext5) btnPageNext5.addEventListener('click', () => pageTo(currentIdx + 1 >= total ? 0 : currentIdx + 1));
+        if (btnPageLast) btnPageLast.addEventListener('click', () => pageTo(total - 1));
+        
+        if (lblPageNum) {
+            lblPageNum.textContent = (currentIdx + 1) + ' of ' + total;
+        }
+    } else {
+        [btnPageFirst, btnPagePrev5, btnPagePrev, btnPageNext, btnPageNext5, btnPageLast].forEach(btn => {
+            if (btn) btn.disabled = true;
+        });
+        if (lblPageNum) lblPageNum.textContent = '1 of 1';
+    }
+
+    // Close All Buttons
+    const btnCloseAllKbJson = document.getElementById('btnCloseAllKbJson');
+    if (btnCloseAllKbJson) {
+        btnCloseAllKbJson.addEventListener('click', () => {
+            vscode.postMessage({ command: 'closeAllKbJson' });
+        });
+    }
+
+    const btnCloseAllKbUi = document.getElementById('btnCloseAllKbUi');
+    if (btnCloseAllKbUi) {
+        btnCloseAllKbUi.addEventListener('click', () => {
+            vscode.postMessage({ command: 'closeAllKbUi' });
+        });
+    }
+
+    // Run initial checkoff UI display & modifier colors
+    updateCheckoffUI();
+    updateModifierColors();
 
     baseInput1.addEventListener('input', syncFromUIForm1);
     Object.values(checkboxes1).forEach(cb => {
@@ -2632,12 +2856,12 @@ var require_extension_macros_html = __commonJS({
 
     btnKbUiKey.addEventListener('click', () => {
         const key = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.initialNativeKey : '';
-        vscode.postMessage({ command: 'openKeybindings', newInstance: false, commandName: 'workbench.action.openGlobalKeybindings', args: ['@key:"' + key + '"'] });
+        vscode.postMessage({ command: 'openKeybindings', newInstance: false, commandName: 'workbench.action.openGlobalKeybindings', args: ['"' + key + '"'] });
     });
 
     btnKbUiKeyNewInst.addEventListener('click', () => {
         const key = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.initialNativeKey : '';
-        vscode.postMessage({ command: 'openKeybindings', newInstance: true, commandName: 'workbench.action.openGlobalKeybindings', args: ['@key:"' + key + '"'] });
+        vscode.postMessage({ command: 'openKeybindings', newInstance: true, commandName: 'workbench.action.openGlobalKeybindings', args: ['"' + key + '"'] });
     });
 
     btnKbUiUser.addEventListener('click', () => {
@@ -2715,11 +2939,11 @@ var require_extension_macros_html = __commonJS({
     });
 
     btnKbUiKeyNew.addEventListener('click', () => {
-        vscode.postMessage({ command: 'openKeybindings', newInstance: false, commandName: 'workbench.action.openGlobalKeybindings', args: ['@key:"' + (lastValidatedNativeKey || '') + '"'] });
+        vscode.postMessage({ command: 'openKeybindings', newInstance: false, commandName: 'workbench.action.openGlobalKeybindings', args: ['"' + (lastValidatedNativeKey || '') + '"'] });
     });
 
     btnKbUiKeyNewNewInst.addEventListener('click', () => {
-        vscode.postMessage({ command: 'openKeybindings', newInstance: true, commandName: 'workbench.action.openGlobalKeybindings', args: ['@key:"' + (lastValidatedNativeKey || '') + '"'] });
+        vscode.postMessage({ command: 'openKeybindings', newInstance: true, commandName: 'workbench.action.openGlobalKeybindings', args: ['"' + (lastValidatedNativeKey || '') + '"'] });
     });
 
     btnKbUiUserNew.addEventListener('click', () => {
@@ -3038,8 +3262,28 @@ var require_extension_macros_html = __commonJS({
             </span>
             <span id="changedIndicator" style="display: none; background: #e5c07b; color: #1e1e1e; padding: 2px 6px; border-radius: 3px; font-size: 0.8em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Changed</span>
         </div>
-        <div style="margin-top: 4px; margin-bottom: 4px;">
-            <button type="button" class="secondary small" id="btnCopyBindingHeader" title="Copy Binding JSON" style="padding: 4px 8px; font-size: 0.85em; font-weight: 500;">Copy Binding</button>
+        <!-- Checkoff Row -->
+        <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+            <label style="display: inline-flex; align-items: center; gap: 6px; font-weight: 500; cursor: pointer; font-size: 0.95em;">
+                <input type="checkbox" id="chkCheckoff" style="cursor: pointer; margin: 0;"> Checkoff
+            </label>
+            <span id="lblCheckoffCount" style="opacity: 0.85; font-size: 0.9em; font-weight: 500; margin-left: 4px;">0 of 0</span>
+        </div>
+
+        <!-- Copy Binding Row (on its own line!) -->
+        <div style="margin-top: 8px; margin-bottom: 8px;">
+            <button type="button" class="secondary small" id="btnCopyBindingHeader" title="Copy Binding JSON" style="font-weight: 500; padding: 4px 8px; width: 100%; text-align: center;">Copy Binding</button>
+        </div>
+
+        <!-- Paging Row (right-aligned!) -->
+        <div style="display: flex; justify-content: flex-end; align-items: center; gap: 4px; margin-top: 4px; margin-bottom: 8px;">
+            <button type="button" class="secondary small" id="btnPageFirst" title="First item">&lt;&lt;&lt;</button>
+            <button type="button" class="secondary small" id="btnPagePrev5" title="Previous item">&lt;&lt;</button>
+            <button type="button" class="secondary small" id="btnPagePrev" title="Previous item">&lt;</button>
+            <span id="lblPageNum" style="font-size: 0.9em; font-weight: bold; margin: 0 4px; opacity: 0.85; min-width: 3.5em; text-align: center;">1 of 1</span>
+            <button type="button" class="secondary small" id="btnPageNext" title="Next item">&gt;</button>
+            <button type="button" class="secondary small" id="btnPageNext5" title="Next item">&gt;&gt;</button>
+            <button type="button" class="secondary small" id="btnPageLast" title="Last item">&gt;&gt;&gt;</button>
         </div>
         <div id="currentKeysContainer">` + formatCurrentKeys(currentKeys) + `</div>
         <div><span style="opacity: 0.7;">Current When:</span> <strong id="currentWhenClauseLabel">` + (currentWhen || "No context") + `</strong></div>
@@ -3051,6 +3295,7 @@ var require_extension_macros_html = __commonJS({
             <input type="text" id="fullShorthandInput" placeholder="e.g., INS.a E" title="Editable full binding in cas shorthand format (e.g., INS.a E). Modifying this field instantly parses and populates the individual key controls below, and vice versa." style="flex-grow: 1;">
             <button type="button" class="secondary small" id="btnResetHeader" title="Discard current unsaved changes and reset the entire form and validation state back to the original values." style="padding: 4px 8px; font-size: 0.85em; font-weight: 500;">Reset</button>
         </div>
+        <div id="statusBox" style="display: none; margin-top: 8px;"></div>
     </div>
     
     <div class="chords-grid">
@@ -3125,8 +3370,6 @@ var require_extension_macros_html = __commonJS({
         <label for="whenClause" style="font-weight: 500;">When</label>
         <input type="text" id="whenClause" placeholder="e.g., editorTextFocus" title="Specifies the context condition when the keybinding is active (e.g., editorTextFocus, terminalFocus).">
     </div>
-
-    <div id="statusBox" style="display: none;"></div>
 
     <div class="actions-group">
         <!-- Row 1: Current Helpers -->
@@ -3204,6 +3447,8 @@ var require_extension_macros_html = __commonJS({
             <!-- Align Left -->
             <div style="display: flex; gap: 8px;">
                 <button type="button" class="secondary" id="btnClear" title="Clear all input fields, checkboxes, modifier labels, and validation indicators to let you configure a clean, empty key combination.">Clear</button>
+                <button type="button" class="secondary" id="btnCloseAllKbJson" title="Close all open keybindings.json file tabs in VS Code.">Close All KB Json</button>
+                <button type="button" class="secondary" id="btnCloseAllKbUi" title="Close all open native Keyboard Shortcuts editor tabs in VS Code.">Close All KB UI</button>
                 <button type="button" class="secondary" id="btnPasteBinding" title="Read a keybinding JSON object from your system clipboard and instantly parse its properties to populate this form.">Paste Binding</button>
             </div>
             
@@ -3229,6 +3474,8 @@ var require_extension_macros_html = __commonJS({
             currentWhen: "` + escapeJS(currentWhen) + `",
             initialNativeKey: "` + escapeJS(initialNativeKey) + `"
         };
+        window.CE_ORIGINAL_ARGS = ` + JSON.stringify(originalArgs) + `;
+        window.CE_CHECKED_OFF_COMMANDS = ` + JSON.stringify(checkedOff) + `;
         ` + webviewJS + `
     </script>
 </body>
@@ -3269,7 +3516,26 @@ var require_extension_macros_validator = __commonJS({
         "home",
         "end",
         "capslock",
-        "caps"
+        "caps",
+        "pu",
+        "pd",
+        "ho",
+        "en",
+        "in",
+        "bl",
+        "br",
+        "sq",
+        "sc",
+        "co",
+        "pe",
+        "sf",
+        "sb",
+        "bq",
+        "lf",
+        "rt",
+        "dn",
+        "pause",
+        "bs"
       ];
       const isValidBaseKey = (k) => {
         const lower = k.toLowerCase();
@@ -3330,29 +3596,19 @@ var require_extension_macros_form = __commonJS({
     var fs = require("fs");
     var jsonc = (init_main(), __toCommonJS(main_exports));
     var htmlTemplate = require_extension_macros_html();
-    function findGroupForNewInstance(targetType, configPath) {
+    function findGroupForNewInstance(targetType, configPath, panelViewColumn) {
       const allGroups = vscode.window.tabGroups && vscode.window.tabGroups.all || [];
-      for (let i = 0; i < allGroups.length; i++) {
-        const group = allGroups[i];
-        let hasTarget = false;
-        for (const tab of group.tabs) {
-          if (targetType === "json") {
-            if (tab.input instanceof vscode.TabInputText && tab.input.uri.fsPath === configPath) {
-              hasTarget = true;
-              break;
-            }
-          } else {
-            if (tab.label === "Keyboard Shortcuts" || tab.label === "keybindings" || tab.input && tab.input.viewType === "keybindings") {
-              hasTarget = true;
-              break;
-            }
-          }
-        }
-        if (!hasTarget) {
-          return group.viewColumn;
+      let maxCol = 1;
+      for (const group of allGroups) {
+        if (typeof group.viewColumn === "number" && group.viewColumn > maxCol) {
+          maxCol = group.viewColumn;
         }
       }
-      return vscode.ViewColumn.Beside;
+      let targetCol = maxCol + 1;
+      if (targetCol === panelViewColumn) {
+        targetCol++;
+      }
+      return targetCol;
     }
     function findGroupForReusing(targetType, configPath, panelViewColumn) {
       const allGroups = vscode.window.tabGroups && vscode.window.tabGroups.all || [];
@@ -3368,6 +3624,11 @@ var require_extension_macros_form = __commonJS({
               return group.viewColumn;
             }
           }
+        }
+      }
+      for (const group of allGroups) {
+        if (group.viewColumn !== panelViewColumn) {
+          return group.viewColumn;
         }
       }
       if (panelViewColumn === vscode.ViewColumn.One) {
@@ -3394,6 +3655,10 @@ var require_extension_macros_form = __commonJS({
     async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
       const core = require_extension_core();
       const ui2 = require_extension_ui();
+      let checkedOff = context.globalState.get("ce-command-picker.checkedOffCommands", []);
+      if (!Array.isArray(checkedOff)) {
+        checkedOff = [];
+      }
       let fullBindings = core.loadFullKeybindingsArray();
       const existingTargets = fullBindings.filter((b) => b.command === commandItem.commandId);
       let targetToEdit = null;
@@ -3467,7 +3732,9 @@ var require_extension_macros_form = __commonJS({
         initialWhen,
         currentKeysLabel,
         currentWhenLabel,
-        sourceToFill ? sourceToFill.key : ""
+        sourceToFill ? sourceToFill.key : "",
+        originalArgs,
+        checkedOff
       );
       panel.webview.onDidReceiveMessage(
         async (message) => {
@@ -3483,7 +3750,7 @@ var require_extension_macros_form = __commonJS({
               const panelViewCol = panel.viewColumn;
               let targetCol;
               if (message.newInstance) {
-                targetCol = findGroupForNewInstance("keybindings", null);
+                targetCol = findGroupForNewInstance("keybindings", null, panelViewCol);
               } else {
                 targetCol = findGroupForReusing("keybindings", null, panelViewCol);
               }
@@ -3634,7 +3901,7 @@ var require_extension_macros_form = __commonJS({
                 const pViewCol = panel.viewColumn;
                 let targetC;
                 if (message.newInstance) {
-                  targetC = findGroupForNewInstance("json", configPath);
+                  targetC = findGroupForNewInstance("json", configPath, pViewCol);
                 } else {
                   targetC = findGroupForReusing("json", configPath, pViewCol);
                 }
@@ -3741,6 +4008,82 @@ var require_extension_macros_form = __commonJS({
                 }
               } catch (e) {
                 vscode.window.showErrorMessage("Failed to parse clipboard text as JSON.");
+              }
+              break;
+            case "toggleCheckoff":
+              try {
+                let checkedList = context.globalState.get("ce-command-picker.checkedOffCommands", []);
+                if (!Array.isArray(checkedList)) {
+                  checkedList = [];
+                }
+                const targetId = message.commandId;
+                if (message.checked) {
+                  if (!checkedList.includes(targetId)) {
+                    checkedList.push(targetId);
+                  }
+                } else {
+                  checkedList = checkedList.filter((id) => id !== targetId);
+                }
+                await context.globalState.update("ce-command-picker.checkedOffCommands", checkedList);
+              } catch (e) {
+                vscode.window.showErrorMessage(`Failed to persist checkoff: ${e.message}`);
+              }
+              break;
+            case "pageToCommand":
+              try {
+                panel.dispose();
+                const targetCmdId = message.commandId;
+                const targetItem = {
+                  commandId: targetCmdId,
+                  label: targetCmdId.replace(/^[\w-]+\./, "").replace(/([A-Z])/g, " $1").replace(/[_-]/g, " ")
+                };
+                targetItem.label = targetItem.label.charAt(0).toUpperCase() + targetItem.label.slice(1);
+                promptAssignKey(context, targetItem, originalArgs, isEditMode);
+              } catch (e) {
+                vscode.window.showErrorMessage(`Failed to page to command: ${e.message}`);
+              }
+              break;
+            case "closeAllKbJson":
+              try {
+                const configPath = core.getKeybindingsFilePath();
+                const allGroups = vscode.window.tabGroups && vscode.window.tabGroups.all || [];
+                let closedCount = 0;
+                for (const group of allGroups) {
+                  for (const tab of group.tabs) {
+                    if (tab.input instanceof vscode.TabInputText && tab.input.uri.fsPath === configPath) {
+                      await vscode.window.tabGroups.close(tab);
+                      closedCount++;
+                    }
+                  }
+                }
+                if (closedCount > 0) {
+                  vscode.window.showInformationMessage(`Closed ${closedCount} keybindings.json file tab(s).`);
+                } else {
+                  vscode.window.showInformationMessage("No keybindings.json file tabs open.");
+                }
+              } catch (e) {
+                vscode.window.showErrorMessage(`Error closing keybindings.json tabs: ${e.message}`);
+              }
+              break;
+            case "closeAllKbUi":
+              try {
+                const allGroups = vscode.window.tabGroups && vscode.window.tabGroups.all || [];
+                let closedCount = 0;
+                for (const group of allGroups) {
+                  for (const tab of group.tabs) {
+                    if (tab.label === "Keyboard Shortcuts" || tab.label === "keybindings" || tab.input && tab.input.viewType === "keybindings") {
+                      await vscode.window.tabGroups.close(tab);
+                      closedCount++;
+                    }
+                  }
+                }
+                if (closedCount > 0) {
+                  vscode.window.showInformationMessage(`Closed ${closedCount} Keyboard Shortcuts tab(s).`);
+                } else {
+                  vscode.window.showInformationMessage("No Keyboard Shortcuts tabs open.");
+                }
+              } catch (e) {
+                vscode.window.showErrorMessage(`Error closing Keyboard Shortcuts tabs: ${e.message}`);
               }
               break;
           }
