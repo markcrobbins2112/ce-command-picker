@@ -50,11 +50,13 @@ title: LOG
 ## 💾 Commit Message
 [[#^toc-commit|TOC]]
 ```text
-fix: v1.2.65 - Queue List Rendering and Safe Init whenClause Merging
+feat: v1.2.70 - Sleek UI Header Restructuring and Robust Format Toggle Engine
 
-- Removed fragile dynamic updateCheckoffUI wrapping hack inside webviewJS to fix queueList rendering runtime crashes.
-- Natively integrated renderQueueList call inside updateCheckoffUI for seamless list state updates on checkoff changes.
-- Safe-guarded the init message event listener to prevent overwriting whenClause with default editorTextFocus if it isn't specified.
+- Moved Execute command and Command title block to its own dedicated row above Key: row for superior typographical balance.
+- Relocated Edit Picker Key and Edit Picker Json buttons to the top row next to changedIndicator, aligned left.
+- Moved color-coded helper button groups inline directly after btnCopyUnifiedBinding ("Copy Binding").
+- Excised redundant bottom-row helperRowLabel and unified helpers elements to maximize layout density.
+- Fully repaired btnToggleFormat state engine to dynamically parse, sync, and validate both native key (ctrl+shift+k) and cas shorthand formats inside the unified key binding field.
 ```
 
 ## 📝 Log Entries
@@ -66,6 +68,44 @@ fix: v1.2.65 - Queue List Rendering and Safe Init whenClause Merging
   Use the template structure below:
   ...
 -->
+
+### 📅 [2026-07-10T16:20:00Z]
+#### 🎯 Primary Goals & Requirements
+- Restructure upper UI elements so that command execution rows are stacked cleanly above the main chord controls.
+- Move "Edit Picker Key" and "Edit Picker Json" into the same row as `changedIndicator` and align them to the left.
+- Place all of the custom color-coded helper buttons inline directly following the "Copy Binding" button.
+- Remove obsolete helper row labels and old trailing helper-rows.
+- Standardize format labels and fix `btnToggleFormat` behavior so that it successfully updates format state, updates display labels, and updates the main form validation context instantly.
+
+#### 🛠️ Completed Changes in this Session
+- **Sleek Layout Restructuring**: Reordered the form blocks so that the `⚡ Execute` panel is on its own row immediately preceding the main "Key:" input, increasing accessibility and padding balance.
+- **Top-Row Alignments**: Placed `btnEditInstigator` and `btnEditPickerJson` on the top row to the left, grouping them together seamlessly alongside `changedIndicator`.
+- **Inline Helpers Positioning**: Moved the entire set of colored extension configuration shortcut buttons inline right after `btnCopyUnifiedBinding` (which has been renamed to simple "Copy Binding").
+- **Robust Format Selection Toggle**: Repaired `btnToggleFormat` click event listeners and modernized `getFullNative()` and `parseNativeKey()` state handlers, so toggling format immediately refreshes the active key rendering and syncs validation states for native vs shorthand strings inside `fullShorthandInput`.
+- **Excised Redundant Rows**: Completely removed the obsolete lower helper row and labels to maximize layout density.
+
+#### 🔸 Affected Files
+- `src/extension-macros-html.js`
+- `AIMD/VERSIONS.md`
+- `AIMD/LOG.md`
+
+### 📅 [2026-07-10T16:00:00Z]
+#### 🎯 Primary Goals & Requirements
+- Consolidate helper Rows (Current and New) to a single, compact row governed by a unified toggle button.
+- Clean up panel layouts (remove redundant chord titles, right-align chord reset/clear controls, horizontal whenClause layout).
+- Introduce dedicated copy-to-clipboard actions directly next to Key 1, Key 2, and When fields.
+- Clean up duplicate `btnClear` controls to avoid duplicate ID tags and redundant actions.
+
+#### 🛠️ Completed Changes in this Session
+- **Unified Helper Row Control**: Implemented a toggle button (`btnToggleCurrentNew`) that dynamically controls helper-row behaviors, allowing "Current:" or "New:" context resolution on the same set of action buttons.
+- **Inline Copy Integration**: Installed `btnCopyChord1`, `btnCopyChord2`, and `btnCopyWhen` buttons to let users copy individual components instantly without copying the entire binding.
+- **Visual Cleanup and Grid Alignments**: Dropped the crowded "Key 1 (Main Chord)" and "Key 2" panel labels, formatted "When" input elements horizontally on one line, and aligned Chord 1 & Chord 2 inner Clear/Reset controls to the far-right of their rows.
+- **Cleaned Duplicate Clear Button**: Excised the redundant bottom row `btnClear` element, consolidating form clearance actions into the prominent header navigation block.
+
+#### 🔸 Affected Files
+- `src/extension-macros-html.js`
+- `AIMD/VERSIONS.md`
+- `AIMD/LOG.md`
 
 ### 📅 [2026-07-10T15:28:00Z]
 #### 🎯 Primary Goals & Requirements

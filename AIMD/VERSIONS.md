@@ -41,6 +41,22 @@ title: VERSIONS
 ## 🚀 Stable Releases & Milestones
 [[#^toc-stable|TOC]]
 
+### 🏷️ v1.2.70 (2026-07-10) - Sleek UI Header Restructuring, Suffix UI Alignments, and Enhanced Shorthand/Native Format Toggle State Engine
+- **Added / Enhanced:**
+  - **Restructured Header Typography & Layout**: Moved the `⚡ Execute` command row with the literal Command ID above the main `Key:` input row, resulting in a cleaner typography pairing and enhanced negative space.
+  - **Left-Aligned Edit Picker Grouping**: Relocated `btnEditInstigator` ("Edit Picker Key") and `btnEditPickerJson` ("Edit Picker Json") to the very top row alongside `changedIndicator` and aligned them to the left.
+  - **Inline Helper-Buttons Integration**: Grouped and shifted all of the color-coded "helper-buttons" (Edit Json, KB UI commands) to be placed inline right after `btnCopyUnifiedBinding` ("Copy Binding").
+  - **Completely Excised redundant helperRowLabel**: Removed the obsolete lower helper row and labels to maximize layout density and visual ergonomics.
+- **Fixed / Patched:**
+  - **Robust Format Selection State Engine (`btnToggleFormat`)**: Fixed toggle mechanics for `btnToggleFormat` by properly implementing standard string-to-token parsing and full support for both CAS shorthand and native key representations dynamically inside the unified full shorthand input box. It correctly toggles between `'Shortcode:'` and `'Native:'` modes, updates formatValue labels, and triggers validation instantly on format change.
+
+### 🏷️ v1.2.67 (2026-07-10) - Unified Copy Helpers, Inline Panel Actions, and Cleaner Form Layout
+- **Added / Enhanced:**
+  - **Unified Toggle & Single Helper Row**: Replaced the separate "Current" and "New" helper button rows with a single, highly cohesive "Unified Helpers" row. Selecting "Current:" or "New:" on `btnToggleCurrentNew` dynamically sets both the target keybinding copy actions and the underlying helper actions (Edit Json, KB UI Key) to resolve based on the active copy state.
+  - **Inline Copy Buttons**: Embedded convenient copy buttons (`btnCopyChord1`, `btnCopyChord2`, `btnCopyWhen`) directly in front of their respective form input fields, allowing instantaneous copying of individual chords and the when context clause.
+  - **Optimized Layout Hierarchy**: Removed redundant chord section headers ("Key 1 (Main Chord)", "Key 2 (Optional Second Chord)") for a more compact and elegant interface layout. Grouped and right-aligned the Reset/Clear actions inside each chord panel, and streamlined the "When" clause to lay out horizontally.
+  - **Consolidated Clean/Clear Actions**: Discarded duplicate bottom-row `btnClear` triggers, standardizing on the highly accessible header-row reset controls.
+
 ### 🏷️ v1.2.65 (2026-07-10) - Queue List Rendering Fix and Safe init Message Value Merging
 - **Fixed / Patched:**
   - **Fixed Queue List Population**: Removed the fragile dynamic function wrapping hack for `updateCheckoffUI` inside `webviewJS` that caused runtime reference/syntax execution crashes, preventing `queueList` rendering.
