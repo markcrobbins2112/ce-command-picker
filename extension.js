@@ -3649,20 +3649,49 @@ var require_extension_macros_html = __commonJS({
                 });
             });
 
+            const arrowSpan = document.createElement('span');
+            arrowSpan.textContent = '\u27A4';
+            arrowSpan.style.color = isCurrent ? 'var(--vscode-focusBorder)' : 'rgba(255, 255, 255, 0.4)';
+            arrowSpan.style.marginRight = '2px';
+            arrowSpan.style.flexShrink = '0';
+
             const txt = document.createElement('span');
             txt.className = 'queue-item-text';
             txt.textContent = cmdId;
             txt.style.overflow = 'hidden';
             txt.style.textOverflow = 'ellipsis';
             txt.style.whiteSpace = 'nowrap';
+            txt.style.color = 'var(--vscode-editor-foreground)';
+            txt.style.opacity = '1';
             if (isCurrent) {
                 txt.style.fontWeight = 'bold';
                 txt.style.color = 'var(--vscode-focusBorder)';
             }
 
             leftDiv.appendChild(chk);
+            leftDiv.appendChild(arrowSpan);
             leftDiv.appendChild(txt);
             itemEl.appendChild(leftDiv);
+
+            // Add shortcodes for keybindings in Navigation Items
+            const bindingsMap = window.CE_COMMAND_BINDINGS || {};
+            const shortcutStr = bindingsMap[cmdId] || '';
+            if (shortcutStr) {
+                const shortcutSpan = document.createElement('span');
+                shortcutSpan.textContent = shortcutStr;
+                shortcutSpan.style.marginLeft = 'auto';
+                shortcutSpan.style.marginRight = '12px';
+                shortcutSpan.style.padding = '2px 6px';
+                shortcutSpan.style.background = 'rgba(255, 255, 255, 0.05)';
+                shortcutSpan.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+                shortcutSpan.style.borderRadius = '3px';
+                shortcutSpan.style.fontSize = '0.8em';
+                shortcutSpan.style.fontFamily = 'monospace';
+                shortcutSpan.style.color = 'var(--vscode-editor-foreground)';
+                shortcutSpan.style.opacity = '1';
+                shortcutSpan.style.flexShrink = '0';
+                itemEl.appendChild(shortcutSpan);
+            }
 
             if (isCurrent) {
                 const badge = document.createElement('span');
@@ -3671,7 +3700,7 @@ var require_extension_macros_html = __commonJS({
                 badge.style.background = 'rgba(255, 255, 255, 0.1)';
                 badge.style.borderRadius = '3px';
                 badge.style.fontWeight = 'bold';
-                badge.style.marginLeft = '8px';
+                badge.style.marginLeft = shortcutStr ? '0px' : '8px';
                 badge.style.flexShrink = '0';
                 badge.textContent = 'ACTIVE';
                 itemEl.appendChild(badge);
@@ -3740,6 +3769,21 @@ var require_extension_macros_html = __commonJS({
 
     // Also set focus when the window gets focus
     window.addEventListener('focus', focusShorthandIfNoActiveFocus);
+
+    // Collapsible Keys Panel toggle
+    const btnToggleKeys = document.getElementById('btnToggleKeys');
+    const keysContent = document.getElementById('keysContent');
+    const keysToggleArrow = document.getElementById('keysToggleArrow');
+    if (btnToggleKeys && keysContent) {
+        btnToggleKeys.addEventListener('click', () => {
+            keysContent.classList.toggle('collapsed');
+            if (keysContent.classList.contains('collapsed')) {
+                keysToggleArrow.textContent = '\u25B6';
+            } else {
+                keysToggleArrow.textContent = '\u25BC';
+            }
+        });
+    }
 
     // Render queue initially
     setTimeout(renderQueueList, 200);
@@ -3833,6 +3877,9 @@ var require_extension_macros_html = __commonJS({
         body {
             transition: background-color 0.4s ease-in-out;
         }
+        body.changed-state {
+            background-color: #240d00 !important;
+        }
 
         /* Colored Buttons with Borders and Black Background */
         .custom-btn {
@@ -3857,10 +3904,12 @@ var require_extension_macros_html = __commonJS({
             transform: scale(0.95) !important;
             box-shadow: 0 0 16px currentColor !important;
             filter: brightness(1.4) !important;
+            opacity: 1.0 !important;
         }
         .custom-btn:disabled {
             opacity: 0.3 !important;
             cursor: not-allowed !important;
+            box-shadow: none !important;
         }
         
         .btn-red {
@@ -3899,17 +3948,49 @@ var require_extension_macros_html = __commonJS({
             margin: 8px 0;
             line-height: 1.4;
         }
+
+        /* Collapsible keys panel container */
+        .collapsible-container {
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.01);
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        .collapsible-header {
+            background: rgba(255, 255, 255, 0.04);
+            padding: 10px 16px;
+            font-weight: bold;
+            font-size: 1.05em;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            transition: background 0.2s ease;
+        }
+        .collapsible-header:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .collapsible-content {
+            padding: 16px;
+            display: block;
+        }
+        .collapsible-content.collapsed {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="current-info-container">
         <div style="font-weight: bold; font-size: 1.1em; margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
             <span style="display: flex; align-items: center; gap: 8px;">
-                <button type="button" class="secondary small" id="btnExecuteCommand" title="Execute Command in VS Code" style="padding: 2px 4px; font-size: 0.9em; display: inline-flex; align-items: center; justify-content: center; margin-right: 2px;">\u26A1</button>
+                <button type="button" class="secondary small" id="btnExecuteCommand" title="Execute Command in VS Code (Alt+X)" style="padding: 2px 4px; font-size: 0.9em; display: inline-flex; align-items: center; justify-content: center; margin-right: 2px;">\u26A1 E<u>x</u>ecute</button>
                 <button type="button" class="secondary small" id="btnCopyCommand" title="Copy Command ID" style="padding: 2px 4px; font-size: 0.9em; display: inline-flex; align-items: center; justify-content: center;">\u{1F4CB}</button>
                 <span id="cmdTitleLabel">Command: ` + (title || "") + `</span>
             </span>
-            <span id="changedIndicator" style="display: none; background: #e5c07b; color: #1e1e1e; padding: 2px 6px; border-radius: 3px; font-size: 0.8em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Changed</span>
+            <span id="changedIndicator" style="display: none; background: #f97316; color: #ffffff; padding: 2px 8px; border-radius: 3px; font-size: 0.85em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; align-items: center; gap: 4px;">\u26A0\uFE0F Changed</span>
         </div>
         <!-- Checkoff Row -->
         <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px;">
@@ -3919,7 +4000,7 @@ var require_extension_macros_html = __commonJS({
             <span id="lblCheckoffCount" style="opacity: 0.85; font-size: 0.9em; font-weight: 500; margin-left: 4px;">0 of 0</span>
         </div>
 
-        <!-- Copy Binding, Edit Instigator & Paging Row -->
+        <!-- Copy Binding, Edit Instigator Row -->
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; margin-bottom: 8px; flex-wrap: wrap;">
             <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1; min-width: 180px;">
                 <button type="button" class="secondary small" id="btnCopyCurrentBinding" title="Copy Current Binding JSON" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Copy Current Binding</button>
@@ -3927,25 +4008,13 @@ var require_extension_macros_html = __commonJS({
                 <button type="button" class="secondary small" id="btnEditInstigator" title="Edit the keybinding for ce-command-picker.show (the command that instigated the Menu)" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Edit Picker Key</button>
                 <button type="button" class="secondary small" id="btnEditPickerJson" title="Find and edit the keybindings.json entry for ce-command-picker.show" style="font-weight: 500; padding: 4px 8px; flex-grow: 1; text-align: center;">Edit Picker Json</button>
             </div>
-            <!-- Paging Row (right-aligned!) -->
-            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 4px;">
-                <button type="button" class="secondary small" id="btnPageFirst" title="First item">&lt;&lt;&lt;</button>
-                <button type="button" class="secondary small" id="btnPagePrevWithCheckoff" title="Page backward until a checkoff is true (checked)">&lt;&lt;[x]</button>
-                <button type="button" class="secondary small" id="btnPagePrevNoCheckoff" title="Page backward until a checkoff is false (unchecked)">&lt;&lt;[]</button>
-                <button type="button" class="secondary small" id="btnPagePrev" title="Previous item">&lt;</button>
-                <span id="lblPageNum" style="font-size: 0.9em; font-weight: bold; margin: 0 4px; opacity: 0.85; min-width: 3.5em; text-align: center;">1 of 1</span>
-                <button type="button" class="secondary small" id="btnPageNext" title="Next item">&gt;</button>
-                <button type="button" class="secondary small" id="btnPageNextNoCheckoff" title="Page forward until a checkoff is false (unchecked)">[]&gt;&gt;</button>
-                <button type="button" class="secondary small" id="btnPageNextWithCheckoff" title="Page forward until a checkoff is true (checked)">[x]&gt;&gt;</button>
-                <button type="button" class="secondary small" id="btnPageLast" title="Last item">&gt;&gt;&gt;</button>
-            </div>
         </div>
         <div id="currentKeysContainer">` + formatCurrentKeys(currentKeys) + `</div>
         <div><span style="opacity: 0.7;">Current When:</span> <strong id="currentWhenClauseLabel">` + (currentWhen || "No context") + `</strong></div>
         <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
             <span style="display: inline-flex; align-items: center; gap: 6px;">
                 <button type="button" class="secondary small" id="btnCopyKey" title="Copy Shorthand Key" style="padding: 2px 4px; font-size: 0.9em; display: inline-flex; align-items: center; justify-content: center;">\u{1F4CB}</button>
-                <span style="opacity: 0.85; font-weight: bold;">Key:</span>
+                <span style="opacity: 0.85; font-weight: bold;"><u style="text-decoration: underline;">K</u>ey:</span>
             </span>
             <input type="text" id="fullShorthandInput" placeholder="e.g., INS.a E" title="Editable full binding in cas shorthand format (e.g., INS.a E). Modifying this field instantly parses and populates the individual key controls below, and vice versa." style="flex-grow: 1;">
             <button type="button" class="secondary small" id="btnResetHeader" title="Discard current unsaved changes and reset the entire form and validation state back to the original values." style="padding: 4px 8px; font-size: 0.85em; font-weight: 500;">Reset</button>
@@ -3953,68 +4022,77 @@ var require_extension_macros_html = __commonJS({
         <div id="statusBox" style="display: none; margin-top: 8px;"></div>
     </div>
     
-    <div class="chords-grid">
-        <!-- Chord 1 Panel -->
-        <div class="chord-panel">
-            <div class="chord-header">
-                <span>Key 1 (Main Chord)</span>
-                <span style="display: inline-flex; gap: 4px;">
-                    <button type="button" class="secondary small" id="btnResetKey1" title="Reset this key combination to its original assigned value.">Reset</button>
-                    <button type="button" class="secondary small" id="btnClear1" title="Clear the Base Key, modifier checkboxes, and shortcode box for the primary chord.">Clear</button>
-                </span>
-            </div>
-            
-            <div style="display: flex; gap: 12px; align-items: end; flex-wrap: wrap;">
-                <div style="display: flex; gap: 6px; align-items: end;">
-                    <div class="form-group">
-                        <label for="baseKey" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Base Key</label>
-                        <input type="text" id="baseKey" placeholder="e.g., K, F11, ENTER" title="Specify the primary key identifier. Non-recognized keys will be highlighted with red border borders." style="width: 4em; padding: 6px 4px; text-align: center;">
-                    </div>
-                    <div class="form-group">
-                        <label for="shortcode" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Code</label>
-                        <input type="text" id="shortcode" placeholder="cas" title="Compact modifier flags: w (Windows), c (Control), a (Alt), s (Shift)" style="width: 2em; padding: 6px 4px; text-align: center;">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label style="font-weight: 500; font-size: 0.9em; opacity: 0.85; margin-bottom: 6px;">Mods</label>
-                    <div class="checkbox-group" style="display: flex; gap: 4px; align-items: center; justify-content: flex-start; margin-bottom: 2px; flex-wrap: nowrap; white-space: nowrap;">
-                        <label class="checkbox-item" title="Windows modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modW" value="w">W</label>
-                        <label class="checkbox-item" title="Control modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modC" value="c">C</label>
-                        <label class="checkbox-item" title="Alt modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modA" value="a">A</label>
-                        <label class="checkbox-item" title="Shift modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modS" value="s">S</label>
-                    </div>
-                </div>
-            </div>
+    <!-- Collapsible Keys Panel Container -->
+    <div class="collapsible-container">
+        <div class="collapsible-header" id="btnToggleKeys" title="Click to collapse/expand Keys configurations">
+            <span>Keys</span>
+            <span id="keysToggleArrow">\u25BC</span>
         </div>
-
-        <!-- Chord 2 Panel -->
-        <div class="chord-panel">
-            <div class="chord-header">
-                <span>Key 2 (Optional Second Chord)</span>
-                <span style="display: inline-flex; gap: 4px;">
-                    <button type="button" class="secondary small" id="btnResetKey2" title="Reset this key combination to its original assigned value.">Reset</button>
-                    <button type="button" class="secondary small" id="btnClear2" title="Clear the Base Key, modifier checkboxes, and shortcode box for the secondary optional chord.">Clear</button>
-                </span>
-            </div>
-            
-            <div style="display: flex; gap: 12px; align-items: end; flex-wrap: wrap;">
-                <div style="display: flex; gap: 6px; align-items: end;">
-                    <div class="form-group">
-                        <label for="baseKey2" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Base Key</label>
-                        <input type="text" id="baseKey2" placeholder="e.g., W, ESC, DOWN" title="Specify the secondary key identifier for chord combinations. Non-recognized keys will be highlighted with red border borders." style="width: 4em; padding: 6px 4px; text-align: center;">
+        <div class="collapsible-content" id="keysContent">
+            <div class="chords-grid">
+                <!-- Chord 1 Panel -->
+                <div class="chord-panel">
+                    <div class="chord-header">
+                        <span>Key 1 (Main Chord)</span>
+                        <span style="display: inline-flex; gap: 4px;">
+                            <button type="button" class="secondary small" id="btnResetKey1" title="Reset this key combination to its original assigned value.">Reset</button>
+                            <button type="button" class="custom-btn btn-red small" id="btnClear1" title="Clear the Base Key, modifier checkboxes, and shortcode box for the primary chord.">Clear</button>
+                        </span>
                     </div>
-                    <div class="form-group">
-                        <label for="shortcode2" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Code</label>
-                        <input type="text" id="shortcode2" placeholder="cas" title="Compact modifier flags: w (Windows), c (Control), a (Alt), s (Shift)" style="width: 2em; padding: 6px 4px; text-align: center;">
+                    
+                    <div style="display: flex; gap: 12px; align-items: end; flex-wrap: wrap;">
+                        <div style="display: flex; gap: 6px; align-items: end;">
+                            <div class="form-group">
+                                <label for="baseKey" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Base Key</label>
+                                <input type="text" id="baseKey" placeholder="e.g., K, F11, ENTER" title="Specify the primary key identifier. Non-recognized keys will be highlighted with red border borders." style="width: 4em; padding: 6px 4px; text-align: center;">
+                            </div>
+                            <div class="form-group">
+                                <label for="shortcode" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Code</label>
+                                <input type="text" id="shortcode" placeholder="cas" title="Compact modifier flags: w (Windows), c (Control), a (Alt), s (Shift)" style="width: 2em; padding: 6px 4px; text-align: center;">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label style="font-weight: 500; font-size: 0.9em; opacity: 0.85; margin-bottom: 6px;">Mods</label>
+                            <div class="checkbox-group" style="display: flex; gap: 4px; align-items: center; justify-content: flex-start; margin-bottom: 2px; flex-wrap: nowrap; white-space: nowrap;">
+                                <label class="checkbox-item" title="Windows modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modW" value="w">W</label>
+                                <label class="checkbox-item" title="Control modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modC" value="c">C</label>
+                                <label class="checkbox-item" title="Alt modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modA" value="a">A</label>
+                                <label class="checkbox-item" title="Shift modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modS" value="s">S</label>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label style="font-weight: 500; font-size: 0.9em; opacity: 0.85; margin-bottom: 6px;">Mods</label>
-                    <div class="checkbox-group" style="display: flex; gap: 4px; align-items: center; justify-content: flex-start; margin-bottom: 2px; flex-wrap: nowrap; white-space: nowrap;">
-                        <label class="checkbox-item" title="Windows modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modW2" value="w">W</label>
-                        <label class="checkbox-item" title="Control modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modC2" value="c">C</label>
-                        <label class="checkbox-item" title="Alt modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modA2" value="a">A</label>
-                        <label class="checkbox-item" title="Shift modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modS2" value="s">S</label>
+
+                <!-- Chord 2 Panel -->
+                <div class="chord-panel">
+                    <div class="chord-header">
+                        <span>Key 2 (Optional Second Chord)</span>
+                        <span style="display: inline-flex; gap: 4px;">
+                            <button type="button" class="secondary small" id="btnResetKey2" title="Reset this key combination to its original assigned value.">Reset</button>
+                            <button type="button" class="custom-btn btn-red small" id="btnClear2" title="Clear the Base Key, modifier checkboxes, and shortcode box for the secondary optional chord.">Clear</button>
+                        </span>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; align-items: end; flex-wrap: wrap;">
+                        <div style="display: flex; gap: 6px; align-items: end;">
+                            <div class="form-group">
+                                <label for="baseKey2" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Base Key</label>
+                                <input type="text" id="baseKey2" placeholder="e.g., W, ESC, DOWN" title="Specify the secondary key identifier for chord combinations. Non-recognized keys will be highlighted with red border borders." style="width: 4em; padding: 6px 4px; text-align: center;">
+                            </div>
+                            <div class="form-group">
+                                <label for="shortcode2" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Code</label>
+                                <input type="text" id="shortcode2" placeholder="cas" title="Compact modifier flags: w (Windows), c (Control), a (Alt), s (Shift)" style="width: 2em; padding: 6px 4px; text-align: center;">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label style="font-weight: 500; font-size: 0.9em; opacity: 0.85; margin-bottom: 6px;">Mods</label>
+                            <div class="checkbox-group" style="display: flex; gap: 4px; align-items: center; justify-content: flex-start; margin-bottom: 2px; flex-wrap: nowrap; white-space: nowrap;">
+                                <label class="checkbox-item" title="Windows modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modW2" value="w">W</label>
+                                <label class="checkbox-item" title="Control modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modC2" value="c">C</label>
+                                <label class="checkbox-item" title="Alt modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modA2" value="a">A</label>
+                                <label class="checkbox-item" title="Shift modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modS2" value="s">S</label>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -4046,102 +4124,130 @@ var require_extension_macros_html = __commonJS({
             </div>
         </div>
 
-        <!-- Row 1: Current Helpers -->
-        <div class="helper-row">
+        <!-- Row 1: Current Helpers (Reordered & Color-coded) -->
+        <div class="helper-row" style="margin-bottom: 8px;">
             <span class="helper-row-label">Current:</span>
             <div class="helper-buttons" style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                <!-- Edit Json (cyan) -->
                 <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="secondary small" id="btnEditJsonNewInst" title="Open Edit Json as a new instance in a new group" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
-                    <button type="button" class="secondary small" id="btnEditJson" title="Open the user keybindings.json configuration file and highlight the exact location of the current active binding record in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">Edit Json</button>
+                    <button type="button" class="custom-btn btn-cyan small" id="btnEditJsonNewInst" title="Open Edit Json as a new instance in a new group" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
+                    <button type="button" class="custom-btn btn-cyan small" id="btnEditJson" title="Open the user keybindings.json configuration file and highlight the exact location of the current active binding record in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">Edit Json</button>
                 </span>
+                <!-- KB UI Cmd (red) -->
                 <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="secondary small" id="btnKbUiCmdNewInst" title="Open Keyboard Shortcuts for command as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
-                    <button type="button" class="secondary small" id="btnKbUiCmd" title="Open the native VS Code Keyboard Shortcuts panel with a search filter focused specifically on the command ID of this action in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Cmd</button>
+                    <button type="button" class="custom-btn btn-red small" id="btnKbUiCmdNewInst" title="Open Keyboard Shortcuts for command as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
+                    <button type="button" class="custom-btn btn-red small" id="btnKbUiCmd" title="Open the native VS Code Keyboard Shortcuts panel with a search filter focused specifically on the command ID of this action in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Cmd</button>
                 </span>
+                <!-- KB UI Key (blue) -->
                 <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="secondary small" id="btnKbUiKeyNewInst" title="Open Keyboard Shortcuts for key as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
-                    <button type="button" class="secondary small" id="btnKbUiKey" title="Open the native VS Code Keyboard Shortcuts panel pre-filtered for the current keyboard shortcut assignment in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Key</button>
+                    <button type="button" class="custom-btn btn-blue small" id="btnKbUiKeyNewInst" title="Open Keyboard Shortcuts for key as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
+                    <button type="button" class="custom-btn btn-blue small" id="btnKbUiKey" title="Open the native VS Code Keyboard Shortcuts panel pre-filtered for the current keyboard shortcut assignment in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Key</button>
                 </span>
+                <!-- KB UI Ext (green) -->
+                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
+                    <button type="button" class="custom-btn btn-green small" id="btnKbUiExtNewInst" title="Open extension-specific keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
+                    <button type="button" class="custom-btn btn-green small" id="btnKbUiExt" title="Open the native VS Code Keyboard Shortcuts panel showing only the keybindings contributed by the extension namespace of this command in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Ext</button>
+                </span>
+                <!-- KB UI Default (yellow) -->
+                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
+                    <button type="button" class="custom-btn btn-yellow small" id="btnKbUiDefaultNewInst" title="Open default built-in keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
+                    <button type="button" class="custom-btn btn-yellow small" id="btnKbUiDefault" title="Open the native VS Code Keyboard Shortcuts panel displaying all default built-in keybindings in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Default</button>
+                </span>
+                <!-- KB UI Extension (orange) -->
+                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
+                    <button type="button" class="custom-btn btn-orange small" id="btnKbUiExtensionNewInst" title="Open extension keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
+                    <button type="button" class="custom-btn btn-orange small" id="btnKbUiExtension" title="Open the native VS Code Keyboard Shortcuts panel filtering to show keybindings contributed by extensions in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Extension</button>
+                </span>
+                <!-- KB UI User (secondary) -->
                 <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
                     <button type="button" class="secondary small" id="btnKbUiUserNewInst" title="Open custom User keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
                     <button type="button" class="secondary small" id="btnKbUiUser" title="Open the native VS Code Keyboard Shortcuts panel displaying only your custom user-configured keybindings in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI User</button>
                 </span>
-                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="secondary small" id="btnKbUiDefaultNewInst" title="Open default built-in keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
-                    <button type="button" class="secondary small" id="btnKbUiDefault" title="Open the native VS Code Keyboard Shortcuts panel displaying all default built-in keybindings in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Default</button>
-                </span>
-                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="secondary small" id="btnKbUiExtensionNewInst" title="Open extension keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
-                    <button type="button" class="secondary small" id="btnKbUiExtension" title="Open the native VS Code Keyboard Shortcuts panel filtering to show keybindings contributed by extensions in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Extension</button>
-                </span>
-                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="secondary small" id="btnKbUiExtNewInst" title="Open extension-specific keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
-                    <button type="button" class="secondary small" id="btnKbUiExt" title="Open the native VS Code Keyboard Shortcuts panel showing only the keybindings contributed by the extension namespace of this command in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Ext</button>
-                </span>
             </div>
         </div>
 
-        <!-- Row 2: New Helpers -->
+        <!-- Row 2: New Helpers (Reordered & Color-coded) -->
         <div class="helper-row" style="margin-bottom: 8px;">
             <span class="helper-row-label">New:</span>
             <div class="helper-buttons" style="display: flex; gap: 4px; align-items: center; flex-wrap: wrap;">
+                <!-- Edit Json (cyan) -->
                 <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="secondary small" id="btnEditJsonNewNewInst" title="Open Edit Json as a new instance in a new group" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
-                    <button type="button" class="secondary small" id="btnEditJsonNew" title="Open keybindings.json file and look up or highlight entries matching the newly configured key combination and context in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">Edit Json</button>
+                    <button type="button" class="custom-btn btn-cyan small" id="btnEditJsonNewNewInst" title="Open Edit Json as a new instance in a new group" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
+                    <button type="button" class="custom-btn btn-cyan small" id="btnEditJsonNew" title="Open keybindings.json file and look up or highlight entries matching the newly configured key combination and context in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">Edit Json</button>
                 </span>
+                <!-- KB UI Cmd (red) -->
                 <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="secondary small" id="btnKbUiCmdNewNewInst" title="Open Keyboard Shortcuts for command as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
-                    <button type="button" class="secondary small" id="btnKbUiCmdNew" title="Open the native VS Code Keyboard Shortcuts panel filtering specifically for this action's command in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Cmd</button>
+                    <button type="button" class="custom-btn btn-red small" id="btnKbUiCmdNewNewInst" title="Open Keyboard Shortcuts for command as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
+                    <button type="button" class="custom-btn btn-red small" id="btnKbUiCmdNew" title="Open the native VS Code Keyboard Shortcuts panel filtering specifically for this action's command in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Cmd</button>
                 </span>
+                <!-- KB UI Key (blue) -->
                 <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="secondary small" id="btnKbUiKeyNewNewInst" title="Open Keyboard Shortcuts for new key as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
-                    <button type="button" class="secondary small" id="btnKbUiKeyNew" title="Open the native VS Code Keyboard Shortcuts panel with search pre-filled for the new key combination typed in the form in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Key</button>
+                    <button type="button" class="custom-btn btn-blue small" id="btnKbUiKeyNewNewInst" title="Open Keyboard Shortcuts for new key as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
+                    <button type="button" class="custom-btn btn-blue small" id="btnKbUiKeyNew" title="Open the native VS Code Keyboard Shortcuts panel with search pre-filled for the new key combination typed in the form in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Key</button>
                 </span>
+                <!-- KB UI Ext (green) -->
+                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
+                    <button type="button" class="custom-btn btn-green small" id="btnKbUiExtNewNewInst" title="Open extension-specific keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
+                    <button type="button" class="custom-btn btn-green small" id="btnKbUiExtNew" title="Open the native VS Code Keyboard Shortcuts panel filtered specifically to the extension package that contributes this command in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Ext</button>
+                </span>
+                <!-- KB UI Default (yellow) -->
+                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
+                    <button type="button" class="custom-btn btn-yellow small" id="btnKbUiDefaultNewNewInst" title="Open default built-in keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
+                    <button type="button" class="custom-btn btn-yellow small" id="btnKbUiDefaultNew" title="Open the native VS Code Keyboard Shortcuts panel to view default VS Code keyboard mappings in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Default</button>
+                </span>
+                <!-- KB UI Extension (orange) -->
+                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
+                    <button type="button" class="custom-btn btn-orange small" id="btnKbUiExtensionNewNewInst" title="Open extension keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
+                    <button type="button" class="custom-btn btn-orange small" id="btnKbUiExtensionNew" title="Open the native VS Code Keyboard Shortcuts panel showing extension-supplied default bindings in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Extension</button>
+                </span>
+                <!-- KB UI User (secondary) -->
                 <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
                     <button type="button" class="secondary small" id="btnKbUiUserNewNewInst" title="Open custom User keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
                     <button type="button" class="secondary small" id="btnKbUiUserNew" title="Open the native VS Code Keyboard Shortcuts panel displaying custom user keybinding modifications in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI User</button>
-                </span>
-                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="secondary small" id="btnKbUiDefaultNewNewInst" title="Open default built-in keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
-                    <button type="button" class="secondary small" id="btnKbUiDefaultNew" title="Open the native VS Code Keyboard Shortcuts panel to view default VS Code keyboard mappings in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Default</button>
-                </span>
-                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="secondary small" id="btnKbUiExtensionNewNewInst" title="Open extension keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
-                    <button type="button" class="secondary small" id="btnKbUiExtensionNew" title="Open the native VS Code Keyboard Shortcuts panel showing extension-supplied default bindings in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Extension</button>
-                </span>
-                <span style="display: inline-flex; align-items: center; background: rgba(255,255,255,0.03); border-radius: 4px; padding: 2px;">
-                    <button type="button" class="secondary small" id="btnKbUiExtNewNewInst" title="Open extension-specific keybindings as a new instance" style="padding: 2px 4px; border-radius: 3px; font-size: 0.9em; margin-right: 2px;">\u2795</button>
-                    <button type="button" class="secondary small" id="btnKbUiExtNew" title="Open the native VS Code Keyboard Shortcuts panel filtered specifically to the extension package that contributes this command in another group." style="padding: 2px 6px; border-radius: 3px; font-size: 0.85em;">KB UI Ext</button>
                 </span>
             </div>
         </div>
 
         <!-- Row 3: Standard Actions -->
-        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 12px; flex-wrap: wrap; gap: 12px;">
             <!-- Align Left -->
-            <div style="display: flex; gap: 8px;">
-                <button type="button" class="secondary" id="btnClear" title="Clear all input fields, checkboxes, modifier labels, and validation indicators to let you configure a clean, empty key combination.">Clear</button>
-                <button type="button" class="secondary" id="btnCloseAllKbJson" title="Close all open keybindings.json file tabs in VS Code.">Close All KB Json</button>
-                <button type="button" class="secondary" id="btnCloseAllKbUi" title="Close all open native Keyboard Shortcuts editor tabs in VS Code.">Close All KB UI</button>
-                <button type="button" class="secondary" id="btnPasteBinding" title="Read a keybinding JSON object from your system clipboard and instantly parse its properties to populate this form.">Paste Binding</button>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" class="custom-btn btn-red" id="btnClear" title="Clear all input fields, checkboxes, modifier labels, and validation indicators to let you configure a clean, empty key combination.">Clear</button>
+                <button type="button" class="custom-btn btn-cyan" id="btnCloseAllKbJson" title="Close all open keybindings.json file tabs in VS Code.">Close All KB Json</button>
+                <button type="button" class="custom-btn btn-purple" id="btnCloseAllKbUi" title="Close all open native Keyboard Shortcuts editor tabs in VS Code.">Close All KB UI</button>
+                <button type="button" class="custom-btn btn-yellow" id="btnPasteBinding" title="Read a keybinding JSON object from your system clipboard and instantly parse its properties to populate this form.">Paste Binding</button>
             </div>
             
             <!-- Align Right -->
-            <div style="display: flex; gap: 8px;">
-                <button type="button" class="secondary" id="btnCancel" title="Close this configuration view and return to the main command picker menu.">Cancel</button>
-                <button type="button" class="secondary" id="btnClone" disabled title="Unbind and remove this keyboard shortcut mapping.">Unbind</button>
-                <button type="button" class="secondary" id="btnSaveClone" disabled title="Add the newly configured key combination as an additional secondary shortcut for this action, preserving existing bindings.">Add</button>
-                <button type="button" id="btnSubmit" disabled title="Save and apply the updated key combination assignment for this action (replacing any matched existing binding).">Save</button>
-                <button type="button" id="btnDone" title="Close this configuration view. Warns if there are unsaved changes.">Done</button>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" class="custom-btn btn-orange" id="btnCancel" title="Close this configuration view and return to the main command picker menu.">Cancel</button>
+                <button type="button" class="custom-btn btn-red" id="btnClone" disabled title="Unbind and remove this keyboard shortcut mapping.">Unbind</button>
+                <button type="button" class="custom-btn btn-green" id="btnSaveClone" disabled title="Add the newly configured key combination as an additional secondary shortcut for this action, preserving existing bindings.">Add</button>
+                <button type="button" class="custom-btn btn-green" id="btnSubmit" disabled title="Save and apply the updated key combination assignment for this action (replacing any matched existing binding).">Save</button>
+                <button type="button" class="secondary" id="btnDone" title="Close this configuration view. Warns if there are unsaved changes.">Done</button>
             </div>
         </div>
     </div>
 
     <!-- Command Queue Section with Finder -->
     <div class="queue-container" style="margin-top: 24px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
-        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <span style="font-weight: bold; font-size: 1.05em; opacity: 0.95;">Command Queue Navigation</span>
-            <span id="queueCountLabel" style="font-size: 0.85em; opacity: 0.7;">0 items</span>
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+            <span style="font-weight: bold; font-size: 1.05em; opacity: 0.95; display: flex; align-items: center; gap: 8px;">
+                Command Queue Navigation
+                <span id="queueCountLabel" style="font-size: 0.8em; opacity: 0.7; font-weight: normal;">0 items</span>
+            </span>
+            <!-- Paging Row (moved to Command Queue Navigation Title Bar) -->
+            <div style="display: flex; align-items: center; gap: 4px;">
+                <button type="button" class="secondary small" id="btnPageFirst" title="First item">&lt;&lt;&lt;</button>
+                <button type="button" class="secondary small" id="btnPagePrevWithCheckoff" title="Page backward until a checkoff is true (checked)">&lt;&lt;[x]</button>
+                <button type="button" class="secondary small" id="btnPagePrevNoCheckoff" title="Page backward until a checkoff is false (unchecked)">&lt;&lt;[]</button>
+                <button type="button" class="secondary small" id="btnPagePrev" title="Previous item">&lt;</button>
+                <span id="lblPageNum" style="font-size: 0.9em; font-weight: bold; margin: 0 4px; opacity: 0.85; min-width: 3.5em; text-align: center;">1 of 1</span>
+                <button type="button" class="secondary small" id="btnPageNext" title="Next item">&gt;</button>
+                <button type="button" class="secondary small" id="btnPageNextNoCheckoff" title="Page forward until a checkoff is false (unchecked)">[]&gt;&gt;</button>
+                <button type="button" class="secondary small" id="btnPageNextWithCheckoff" title="Page forward until a checkoff is true (checked)">[x]&gt;&gt;</button>
+                <button type="button" class="secondary small" id="btnPageLast" title="Last item">&gt;&gt;&gt;</button>
+            </div>
         </div>
         <div style="margin-bottom: 8px;">
             <input type="text" id="queueFinderInput" placeholder="Filter command queue..." style="width: 100%; box-sizing: border-box; background: var(--vscode-input-background); color: var(--vscode-input-foreground); border: 1px solid var(--vscode-input-border); padding: 6px 10px; border-radius: 4px; font-family: inherit;" title="Type here to filter the command queue list below.">
@@ -4301,8 +4407,12 @@ var require_extension_macros_form = __commonJS({
         await vscode.commands.executeCommand("workbench.action.focusFirstEditorGroup");
       }
     }
-    async function handleOpenHelper(targetType, configPath, panelViewCol, newInstance, preferredDirection, openAction) {
-      await focusViewColumn(panelViewCol);
+    async function handleOpenHelper(targetType, configPath, panel, newInstance, preferredDirection, openAction) {
+      const panelViewCol = panel.viewColumn;
+      if (panel && typeof panel.reveal === "function") {
+        panel.reveal(panelViewCol);
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
       let focusCmd = "workbench.action.focusRightGroup";
       let splitCmd = "workbench.action.newGroupRight";
       if (preferredDirection === "up") {
@@ -4321,14 +4431,14 @@ var require_extension_macros_form = __commonJS({
         await openAction(vscode.ViewColumn.Active);
       } else {
         await vscode.commands.executeCommand(focusCmd);
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 100));
         let activeGroup = vscode.window.tabGroups.activeTabGroup;
-        let targetCol = activeGroup.viewColumn;
+        let targetCol = activeGroup ? activeGroup.viewColumn : vscode.ViewColumn.Active;
         if (targetCol === panelViewCol) {
           await vscode.commands.executeCommand(splitCmd);
           await new Promise((resolve) => setTimeout(resolve, 100));
           activeGroup = vscode.window.tabGroups.activeTabGroup;
-          targetCol = activeGroup.viewColumn;
+          targetCol = activeGroup ? activeGroup.viewColumn : vscode.ViewColumn.Active;
         }
         await focusViewColumn(targetCol);
         await openAction(targetCol);
@@ -4444,7 +4554,7 @@ var require_extension_macros_form = __commonJS({
               }
               break;
             case "openKeybindings":
-              await handleOpenHelper("keybindings", null, panel.viewColumn, message.newInstance, message.preferredDirection, async (vCol) => {
+              await handleOpenHelper("keybindings", null, panel, message.newInstance, message.preferredDirection, async (vCol) => {
                 if (message.args) {
                   await vscode.commands.executeCommand(message.commandName, ...message.args);
                 } else {
@@ -4679,7 +4789,7 @@ var require_extension_macros_form = __commonJS({
                   }
                 }
                 const doc = await vscode.workspace.openTextDocument(configPath);
-                await handleOpenHelper("json", configPath, panel.viewColumn, message.newInstance, message.preferredDirection, async (vCol) => {
+                await handleOpenHelper("json", configPath, panel, message.newInstance, message.preferredDirection, async (vCol) => {
                   const editor = await vscode.window.showTextDocument(doc, vCol);
                   if (bestMatchNode) {
                     const targetPos = doc.positionAt(bestMatchNode.offset);

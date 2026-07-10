@@ -21,9 +21,13 @@ async function focusViewColumn(column) {
     }
 }
 
-async function handleOpenHelper(targetType, configPath, panelViewCol, newInstance, preferredDirection, openAction) {
-    // 1. Focus the webview's group first so any relative action starts from here
-    await focusViewColumn(panelViewCol);
+async function handleOpenHelper(targetType, configPath, panel, newInstance, preferredDirection, openAction) {
+    const panelViewCol = panel.viewColumn;
+    // 1. Reveal/focus the panel first to ensure its editor group is active in VS Code
+    if (panel && typeof panel.reveal === 'function') {
+        panel.reveal(panelViewCol);
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
 
     // Determine focus and split commands
     let focusCmd = 'workbench.action.focusRightGroup';
@@ -40,17 +44,17 @@ async function handleOpenHelper(targetType, configPath, panelViewCol, newInstanc
     }
 
     if (newInstance) {
-        // Create a new split in the preferred direction
+        // Create a new split in the preferred direction relative to the active group
         await vscode.commands.executeCommand(splitCmd);
         await new Promise(resolve => setTimeout(resolve, 100));
         await openAction(vscode.ViewColumn.Active);
     } else {
         // Let's try to focus the existing group in that direction
         await vscode.commands.executeCommand(focusCmd);
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise(resolve => setTimeout(resolve, 100));
         
         let activeGroup = vscode.window.tabGroups.activeTabGroup;
-        let targetCol = activeGroup.viewColumn;
+        let targetCol = activeGroup ? activeGroup.viewColumn : vscode.ViewColumn.Active;
 
         if (targetCol === panelViewCol) {
             // We didn't change group (there's no group in that direction)
@@ -58,10 +62,10 @@ async function handleOpenHelper(targetType, configPath, panelViewCol, newInstanc
             await vscode.commands.executeCommand(splitCmd);
             await new Promise(resolve => setTimeout(resolve, 100));
             activeGroup = vscode.window.tabGroups.activeTabGroup;
-            targetCol = activeGroup.viewColumn;
+            targetCol = activeGroup ? activeGroup.viewColumn : vscode.ViewColumn.Active;
         }
 
-        // Now open the file in targetCol
+        // Now open the file/shortcuts in targetCol
         await focusViewColumn(targetCol);
         await openAction(targetCol);
     }
@@ -197,7 +201,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                     break;
 
                 case 'openKeybindings':
-                    await handleOpenHelper('keybindings', null, panel.viewColumn, message.newInstance, message.preferredDirection, async (vCol) => {
+                    await handleOpenHelper('keybindings', null, panel, message.newInstance, message.preferredDirection, async (vCol) => {
                         if (message.args) {
                             await vscode.commands.executeCommand(message.commandName, ...message.args);
                         } else {
@@ -451,7 +455,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                         }
 
                         const doc = await vscode.workspace.openTextDocument(configPath);
-                        await handleOpenHelper('json', configPath, panel.viewColumn, message.newInstance, message.preferredDirection, async (vCol) => {
+                        await handleOpenHelper('json', configPath, panel, message.newInstance, message.preferredDirection, async (vCol) => {
                             const editor = await vscode.window.showTextDocument(doc, vCol);
                             if (bestMatchNode) {
                                 const targetPos = doc.positionAt(bestMatchNode.offset);
