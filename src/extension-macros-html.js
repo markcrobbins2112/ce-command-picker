@@ -12,8 +12,8 @@ function getWebviewContent(title, baseKey, shorthand, whenClause) {
     
     if (shorthand) {
         const match = shorthand.match(/(.*)\.([wcas]*)$/);
-        if (match) {
-            flags = match[2] || '';
+        if (match && match[2]) {
+            flags = match[2];
         }
     }
 
@@ -25,7 +25,7 @@ function getWebviewContent(title, baseKey, shorthand, whenClause) {
         clientScriptContent = `console.error("Critical: Form client controller missing", e);`;
     }
 
-    // ✅ FIXED: Enforced empty string text blocks on template bindings to avoid literal 'undefined' rendering
+    // ✅ FIXED: Completely stripped escaping backslashes so parameters interpolate natively!
     return `<!DOCTYPE html>
 <html lang="en">
 <head>

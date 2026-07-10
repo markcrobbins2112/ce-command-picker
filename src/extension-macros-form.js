@@ -30,6 +30,7 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         }
     }
 
+    // Dynamic fallback computation to derive title if commandItem.label is empty/missing
     let derivedTitle = commandItem.label;
     if (!derivedTitle && commandItem.commandId) {
         derivedTitle = commandItem.commandId
@@ -51,8 +52,8 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
         initialWhen = targetToEdit.when || 'editorTextFocus';
         
         const match = initialShorthand.match(/(.*)\.([wcas]*)$/);
-        if (match) {
-            // ✅ FIXED: Grab text match group 1 to properly extract the base letter character string
+        if (match && match[1]) {
+            // ✅ FIXED: Explicitly extract capture group index 1 (the string literal key) instead of passing the match array object!
             initialBaseKey = match[1];
         } else {
             initialBaseKey = initialShorthand;

@@ -2342,11 +2342,11 @@ var require_extension_ui = __commonJS({
           vscode.window.showWarningMessage("CE Command Picker requires an array argument of command IDs.");
           return;
         }
-        renderPrimaryMenu(args);
+        renderPrimaryMenu(context, args);
       });
       context.subscriptions.push(disposable);
     }
-    function renderPrimaryMenu(targetCommandIds) {
+    function renderPrimaryMenu(context, targetCommandIds) {
       const fullBindings = core.loadFullKeybindingsArray();
       const quickPick = vscode.window.createQuickPick();
       const pickerItems = [];
@@ -2370,8 +2370,8 @@ var require_extension_ui = __commonJS({
       quickPick.placeholder = core.getEditMode() ? "[EDIT MODE IS ACTIVE] Select target to change configurations..." : "Select a command to execute...";
       quickPick.title = core.getEditMode() ? "CE Command Picker (Editing Framework)" : "CE Command Picker";
       quickPick.onDidChangeActive((activeItems) => {
-        if (activeItems && activeItems.length > 0 && !activeItems[0].isControlItem) {
-          quickPick.title = activeItems[0].commandId;
+        if (activeItems && activeItems.length > 0 && !activeItems.isControlItem) {
+          quickPick.title = activeItems.commandId;
         } else {
           quickPick.title = core.getEditMode() ? "CE Command Picker (Editing Framework)" : "CE Command Picker";
         }
@@ -2384,13 +2384,13 @@ var require_extension_ui = __commonJS({
           core.setEditMode(!core.getEditMode());
           quickPick.hide();
           quickPick.dispose();
-          renderPrimaryMenu(targetCommandIds);
+          renderPrimaryMenu(context, targetCommandIds);
           return;
         }
         quickPick.hide();
         quickPick.dispose();
         if (core.getEditMode()) {
-          showSecondaryActionMenu(selection, targetCommandIds);
+          showSecondaryActionMenu(context, selection, targetCommandIds);
         } else {
           vscode.commands.executeCommand(selection.commandId);
         }
@@ -2398,7 +2398,7 @@ var require_extension_ui = __commonJS({
       quickPick.onDidHide(() => quickPick.dispose());
       quickPick.show();
     }
-    function showSecondaryActionMenu(commandItem, originalArgs) {
+    function showSecondaryActionMenu(context, commandItem, originalArgs) {
       const secondaryQuickPick = vscode.window.createQuickPick();
       secondaryQuickPick.items = [
         { label: "$(arrow-left) Back", detail: "Exit edit profile and return to main picker list", actionKey: "BACK" },
@@ -2420,7 +2420,7 @@ var require_extension_ui = __commonJS({
         secondaryQuickPick.dispose();
         switch (action.actionKey) {
           case "BACK":
-            renderPrimaryMenu(originalArgs);
+            renderPrimaryMenu(context, originalArgs);
             break;
           case "EXECUTE":
             vscode.commands.executeCommand(commandItem.commandId);
@@ -2428,32 +2428,34 @@ var require_extension_ui = __commonJS({
           case "COPY_CMD":
             await vscode.env.clipboard.writeText(commandItem.commandId);
             vscode.window.showInformationMessage(`Copied: ${commandItem.commandId}`);
-            renderPrimaryMenu(originalArgs);
+            renderPrimaryMenu(context, originalArgs);
             break;
           case "COPY_BIND":
             const matches = core.loadFullKeybindingsArray().filter((b) => b.command === commandItem.commandId);
             await vscode.env.clipboard.writeText(JSON.stringify(matches, null, 4));
             vscode.window.showInformationMessage(`Copied ${matches.length} layout block object profiles.`);
-            renderPrimaryMenu(originalArgs);
+            renderPrimaryMenu(context, originalArgs);
             break;
           case "ASSIGN_KEY":
-            formMacro.promptAssignKey(commandItem, originalArgs, false);
+            formMacro.promptAssignKey(context, commandItem, originalArgs, false);
             break;
           case "EDIT_BINDING":
-            formMacro.promptAssignKey(commandItem, originalArgs, true);
+            formMacro.promptAssignKey(context, commandItem, originalArgs, true);
             break;
           case "REMOVE_KEY":
-            purgeMacro.promptRemoveKey(commandItem, originalArgs);
+            purgeMacro.promptRemoveKey(context, commandItem, originalArgs);
             break;
           case "GOTO_JSON":
-            navMacro.navigateToBindingJson(commandItem, originalArgs);
+            navMacro.navigateToBindingJson(context, commandItem, originalArgs);
             break;
         }
       });
       secondaryQuickPick.onDidHide(() => secondaryQuickPick.dispose());
       secondaryQuickPick.show();
     }
-    module2.exports = { activate: activate2, renderPrimaryMenu };
+    function deactivate2() {
+    }
+    module2.exports = { activate: activate2, deactivate: deactivate2, renderPrimaryMenu };
   }
 });
 

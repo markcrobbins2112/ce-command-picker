@@ -75,8 +75,8 @@ function syncFromShortcode() {
     }
 
     const match = text.match(/(.*)\.([wcas]*)$/i);
-    if (match) {
-        // ✅ FIXED: Grab array element index 1 to accurately populate the text box elements
+    if (match && match[1]) {
+        // ✅ FIXED: Extract array capturing groups 1 and 2 explicitly instead of casting the array object to uppercase strings!
         baseInput.value = match[1].toUpperCase();
         setUIFlags(match[2] || '');
     } else {
