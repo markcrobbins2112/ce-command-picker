@@ -56,14 +56,15 @@ title: TASKS
 -->
 ## 💬 Incoming tasks from chat
 [[#^toc-chat|TOC]]
-- [x] Add dynamic "Changed" indicator badge to show if form is no longer equal to the original "Current" state
-- [x] Implement bidirectional "Key:" shorthand text field after 'Current When' linked natively to underlying chord panels
-- [x] Rework Chord panel layouts to conform to strict format: Base Key | Code | Mods [W] [C] [A] [S]
-- [x] Restructure Button layout into three distinctive rows:
-  - [x] Row 1 (Current): Edit Json, KB UI Cmd, KB UI Key, KB UI User, KB UI Default, KB UI Extension, KB UI Ext
-  - [x] Row 2 (New): same helper actions dynamically updating with active form/input values
-  - [x] Row 3 (Standard): Left (Reset, Clear, Copy, Paste) & Right (Cancel, Unbind, Add, Save)
-- [x] Put exhaustive HTML tooltips on all helper and control buttons
+- [x] Rename 'Action:' to 'Command:' in form panel
+- [x] Add inline copy icon button before 'Command:' to copy command ID
+- [x] Put 'Copy Binding' helper button next to 'Command:' header and remove from bottom row
+- [x] Implement robust 'Changed' indicator normalization to hide badge on initial load
+- [x] Put 'Reset' helper button after 'Key:' shorthand input field and remove from bottom row
+- [x] Put copy icon button before 'Key:' label to copy shorthand string
+- [x] Group Base Key (width 4em) and Code (width 2em) inputs in tight container
+- [x] Format Mods checkbox-group with tight style and flex-wrap: nowrap
+- [x] Rename Context Clause label to simple 'When' label
 - [x] Synchronize and complete entire AIMD documentation suite
 
 <!-- 

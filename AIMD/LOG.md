@@ -50,14 +50,17 @@ title: LOG
 ## 💾 Commit Message
 [[#^toc-commit|TOC]]
 ```text
-feat: redesign keybinding layout with bidirectional shorthand key, changed indicator, and dual-row native helpers
+feat: reorganize form layout with compact chord inputs, relocated copy/reset controls, and When label
 
-- Implemented layout with Base Key, Code, and Mods [W][C][A][S] aligned cleanly in responsive panels
-- Added a bidirectional shorthand "Key:" string input field with instant bidirectional sync
-- Added a visual "Changed" badge indicator displaying when settings differ from current state
-- Divided shortcut helpers into Row 1 "Current" and Row 2 "New" for precise native shortcuts UI links
-- Put exhaustive, rich HTML tooltips on all available action and helper buttons
-- Packaged and compiled extension bundle successfully via build.js pipeline
+- Renamed 'Action:' to 'Command:' and added copy icon button for Command ID
+- Placed 'Copy Binding' helper next to Command heading and removed from bottom row
+- Placed 'Reset' helper next to Key shorthand field and removed from bottom row
+- Placed copy icon button before 'Key:' shorthand label
+- Grouped Base Key (width 4em) and Code (width 2em) controls in nested flex groups
+- Formatted Mods checkbox-group into tight, nowrap layout
+- Renamed Context Clause label to simple 'When'
+- Implemented state normalization in changed check to prevent badge display on load
+- Packaged extension bundle successfully as version 1.2.45
 ```
 
 ## 📝 Log Entries
@@ -69,6 +72,35 @@ feat: redesign keybinding layout with bidirectional shorthand key, changed indic
   Use the template structure below:
   ...
 -->
+
+### 📅 [2026-07-10T08:42:00Z]
+#### 🎯 Primary Goals & Requirements
+- Rename 'Action:' to 'Command:' in form panel.
+- Add copy icon button preceding 'Command:' to copy command ID.
+- Add 'Copy Binding' helper next to Command heading and remove from bottom row.
+- Put 'Reset' helper next to shorthand Key input and remove from bottom row.
+- Put copy icon button preceding 'Key:' shorthand label.
+- Group Base Key (width 4em) and Code (width 2em) controls in a tight nested flex container.
+- Format Mods checkbox-group as tight, nowrap layouts.
+- Rename Context Clause label to simple 'When' label.
+- Implement robust state normalization in hasBindingChanged() to prevent showing changed indicator on load.
+
+#### 🛠️ Completed Changes in this Session
+- **Relocated Helpers**: Moved Reset and Copy Binding helper actions directly up into the active header panel alongside shorthand and command displays, keeping standard buttons focused on primary submit/cancel actions.
+- **Copy Buttons**: Integrated inline copy icons utilizing system message clipboard posts for instant CLI / JSON copies.
+- **Form Layout Tightening**: Grouped Base Key (4em) and Code (2em) fields closely together, styled Mods checkbox items as tight nowrap units, and simplified contextual clause constraint labels to 'When'.
+- **Changed Indicator Normalization**: Standardized state comparison logic using lowercase normalizations, resolving transient key variations on initial page setups.
+- **Packaging**: Automatically compiled code blocks via build pipeline, packaging distribution to version v1.2.45 successfully.
+
+#### 🔸 Affected Files
+- `/src/extension-macros-html.js`
+- `/src/extension-macros-form.js`
+- `/AIMD/TASKS.md`
+- `/AIMD/VERSIONS.md`
+- `/AIMD/LOG.md`
+
+#### 🤖 Next Steps, Concerns and Suggestions
+- Verify in real user workflows for layout constraints on small screens.
 
 ### 📅 [2026-07-10T08:15:00Z]
 #### 🎯 Primary Goals & Requirements

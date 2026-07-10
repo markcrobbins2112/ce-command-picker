@@ -315,6 +315,15 @@ async function promptAssignKey(context, commandItem, originalArgs, isEditMode) {
                     }
                     break;
 
+                case 'copyToClipboard':
+                    if (message.value) {
+                        await vscode.env.clipboard.writeText(message.value);
+                        if (message.infoMsg) {
+                            vscode.window.showInformationMessage(message.infoMsg);
+                        }
+                    }
+                    break;
+
                 case 'pasteBinding':
                     try {
                         const text = await vscode.env.clipboard.readText();

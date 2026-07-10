@@ -1886,11 +1886,13 @@ var require_extension_macros_html = __commonJS({
     const btnClear1 = document.getElementById('btnClear1');
     const btnClear2 = document.getElementById('btnClear2');
     
-    // Left side actions
-    const btnReset = document.getElementById('btnReset');
+    // Left side actions and copies
+    const btnReset = document.getElementById('btnResetHeader');
     const btnClear = document.getElementById('btnClear');
-    const btnCopyBinding = document.getElementById('btnCopyBinding');
+    const btnCopyBinding = document.getElementById('btnCopyBindingHeader');
     const btnPasteBinding = document.getElementById('btnPasteBinding');
+    const btnCopyCommand = document.getElementById('btnCopyCommand');
+    const btnCopyKey = document.getElementById('btnCopyKey');
 
     // Row 1 (Current)
     const btnEditJson = document.getElementById('btnEditJson');
@@ -1972,18 +1974,33 @@ var require_extension_macros_html = __commonJS({
         return html;
     }
 
+    function normalizeBaseKey(k) {
+        const lower = (k || '').toLowerCase().trim();
+        if (lower === 'ins' || lower === 'insert') return 'insert';
+        if (lower === 'del' || lower === 'delete') return 'delete';
+        if (lower === 'esc' || lower === 'escape') return 'escape';
+        if (lower === 'pgup' || lower === 'pageup') return 'pageup';
+        if (lower === 'pgdn' || lower === 'pagedown') return 'pagedown';
+        if (lower === 'caps' || lower === 'capslock') return 'capslock';
+        return lower;
+    }
+
+    function normalizeFlags(f) {
+        return (f || '').toLowerCase().split('').sort().join('').trim();
+    }
+
     function hasBindingChanged() {
         if (!window.CE_INITIAL_STATE) return false;
-        const initialB1 = (window.CE_INITIAL_STATE.chord1Base || '').toLowerCase().trim();
-        const initialF1 = (window.CE_INITIAL_STATE.chord1Flags || '').toLowerCase().trim();
-        const initialB2 = (window.CE_INITIAL_STATE.chord2Base || '').toLowerCase().trim();
-        const initialF2 = (window.CE_INITIAL_STATE.chord2Flags || '').toLowerCase().trim();
+        const initialB1 = normalizeBaseKey(window.CE_INITIAL_STATE.chord1Base);
+        const initialF1 = normalizeFlags(window.CE_INITIAL_STATE.chord1Flags);
+        const initialB2 = normalizeBaseKey(window.CE_INITIAL_STATE.chord2Base);
+        const initialF2 = normalizeFlags(window.CE_INITIAL_STATE.chord2Flags);
         const initialWhen = (window.CE_INITIAL_STATE.whenClause || '').trim();
 
-        const currentB1 = baseInput1.value.toLowerCase().trim();
-        const currentF1 = shortcodeInput1.value.toLowerCase().trim();
-        const currentB2 = baseInput2.value.toLowerCase().trim();
-        const currentF2 = shortcodeInput2.value.toLowerCase().trim();
+        const currentB1 = normalizeBaseKey(baseInput1.value);
+        const currentF1 = normalizeFlags(shortcodeInput1.value);
+        const currentB2 = normalizeBaseKey(baseInput2.value);
+        const currentF2 = normalizeFlags(shortcodeInput2.value);
         const currentWhen = whenInput.value.trim();
 
         return (
@@ -2635,6 +2652,30 @@ var require_extension_macros_html = __commonJS({
         btnReset.addEventListener('click', resetToInitial);
     }
 
+    if (btnCopyCommand) {
+        btnCopyCommand.addEventListener('click', () => {
+            const cmd = window.CE_INITIAL_STATE ? window.CE_INITIAL_STATE.commandId : '';
+            if (!cmd) return;
+            vscode.postMessage({
+                command: 'copyToClipboard',
+                value: cmd,
+                infoMsg: 'Copied command ID to clipboard.'
+            });
+        });
+    }
+
+    if (btnCopyKey) {
+        btnCopyKey.addEventListener('click', () => {
+            const textValue = getFullShorthand();
+            if (!textValue) return;
+            vscode.postMessage({
+                command: 'copyToClipboard',
+                value: textValue,
+                infoMsg: 'Copied key to clipboard.'
+            });
+        });
+    }
+
     if (window.CE_INITIAL_STATE) {
         resetToInitial();
         const container = document.getElementById('currentKeysContainer');
@@ -2740,15 +2781,23 @@ var require_extension_macros_html = __commonJS({
 </head>
 <body>
     <div class="current-info-container">
-        <div style="font-weight: bold; font-size: 1.1em; margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between;">
-            <span>Action: ` + (title || "") + `</span>
+        <div style="font-weight: bold; font-size: 1.1em; margin-bottom: 2px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+            <span style="display: flex; align-items: center; gap: 8px;">
+                <button type="button" class="secondary small" id="btnCopyCommand" title="Copy Command ID" style="padding: 2px 4px; font-size: 0.9em; display: inline-flex; align-items: center; justify-content: center;">\u{1F4CB}</button>
+                <span>Command: ` + (title || "") + `</span>
+                <button type="button" class="secondary small" id="btnCopyBindingHeader" title="Copy Binding JSON" style="padding: 2px 6px; font-size: 0.85em; font-weight: 500;">Copy Binding</button>
+            </span>
             <span id="changedIndicator" style="display: none; background: #e5c07b; color: #1e1e1e; padding: 2px 6px; border-radius: 3px; font-size: 0.8em; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">Changed</span>
         </div>
         <div id="currentKeysContainer">` + formatCurrentKeys(currentKeys) + `</div>
         <div><span style="opacity: 0.7;">Current When:</span> <strong id="currentWhenClauseLabel">` + (currentWhen || "No context") + `</strong></div>
         <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
-            <span style="opacity: 0.85; font-weight: bold;">Key:</span>
-            <input type="text" id="fullShorthandInput" placeholder="e.g., INS.a E" title="Editable full binding in cas shorthand format (e.g., INS.a E). Modifying this field instantly parses and populates the individual key controls below, and vice versa.">
+            <span style="display: inline-flex; align-items: center; gap: 6px;">
+                <button type="button" class="secondary small" id="btnCopyKey" title="Copy Shorthand Key" style="padding: 2px 4px; font-size: 0.9em; display: inline-flex; align-items: center; justify-content: center;">\u{1F4CB}</button>
+                <span style="opacity: 0.85; font-weight: bold;">Key:</span>
+            </span>
+            <input type="text" id="fullShorthandInput" placeholder="e.g., INS.a E" title="Editable full binding in cas shorthand format (e.g., INS.a E). Modifying this field instantly parses and populates the individual key controls below, and vice versa." style="flex-grow: 1;">
+            <button type="button" class="secondary small" id="btnResetHeader" title="Discard current unsaved changes and reset the entire form and validation state back to the original values." style="padding: 4px 8px; font-size: 0.85em; font-weight: 500;">Reset</button>
         </div>
     </div>
     
@@ -2760,22 +2809,24 @@ var require_extension_macros_html = __commonJS({
                 <button type="button" class="secondary small" id="btnClear1" title="Clear the Base Key, modifier checkboxes, and shortcode box for the primary chord.">Clear</button>
             </div>
             
-            <div style="display: grid; grid-template-columns: 2fr 1fr 2fr; gap: 12px; align-items: end;">
-                <div class="form-group">
-                    <label for="baseKey" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Base Key</label>
-                    <input type="text" id="baseKey" placeholder="e.g., K, F11, ENTER, LEFT" title="Specify the primary key identifier. Non-recognized keys will be highlighted with red border borders.">
-                </div>
-                <div class="form-group">
-                    <label for="shortcode" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Code</label>
-                    <input type="text" id="shortcode" placeholder="cas" title="Compact modifier flags: w (Windows), c (Control), a (Alt), s (Shift)">
+            <div style="display: flex; gap: 12px; align-items: end; flex-wrap: wrap;">
+                <div style="display: flex; gap: 6px; align-items: end;">
+                    <div class="form-group">
+                        <label for="baseKey" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Base Key</label>
+                        <input type="text" id="baseKey" placeholder="e.g., K, F11, ENTER" title="Specify the primary key identifier. Non-recognized keys will be highlighted with red border borders." style="width: 4em; padding: 6px 4px; text-align: center;">
+                    </div>
+                    <div class="form-group">
+                        <label for="shortcode" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Code</label>
+                        <input type="text" id="shortcode" placeholder="cas" title="Compact modifier flags: w (Windows), c (Control), a (Alt), s (Shift)" style="width: 2em; padding: 6px 4px; text-align: center;">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label style="font-weight: 500; font-size: 0.9em; opacity: 0.85; margin-bottom: 6px;">Mods</label>
-                    <div class="checkbox-group" style="display: flex; gap: 6px; align-items: center; justify-content: flex-start; margin-bottom: 2px;">
-                        <label class="checkbox-item" title="Windows modifier key flag"><input type="checkbox" id="modW" value="w">W</label>
-                        <label class="checkbox-item" title="Control modifier key flag"><input type="checkbox" id="modC" value="c">C</label>
-                        <label class="checkbox-item" title="Alt modifier key flag"><input type="checkbox" id="modA" value="a">A</label>
-                        <label class="checkbox-item" title="Shift modifier key flag"><input type="checkbox" id="modS" value="s">S</label>
+                    <div class="checkbox-group" style="display: flex; gap: 4px; align-items: center; justify-content: flex-start; margin-bottom: 2px; flex-wrap: nowrap; white-space: nowrap;">
+                        <label class="checkbox-item" title="Windows modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modW" value="w">W</label>
+                        <label class="checkbox-item" title="Control modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modC" value="c">C</label>
+                        <label class="checkbox-item" title="Alt modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modA" value="a">A</label>
+                        <label class="checkbox-item" title="Shift modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modS" value="s">S</label>
                     </div>
                 </div>
             </div>
@@ -2788,22 +2839,24 @@ var require_extension_macros_html = __commonJS({
                 <button type="button" class="secondary small" id="btnClear2" title="Clear the Base Key, modifier checkboxes, and shortcode box for the secondary optional chord.">Clear</button>
             </div>
             
-            <div style="display: grid; grid-template-columns: 2fr 1fr 2fr; gap: 12px; align-items: end;">
-                <div class="form-group">
-                    <label for="baseKey2" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Base Key</label>
-                    <input type="text" id="baseKey2" placeholder="e.g., W, ESC, DOWN" title="Specify the secondary key identifier for chord combinations. Non-recognized keys will be highlighted with red border borders.">
-                </div>
-                <div class="form-group">
-                    <label for="shortcode2" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Code</label>
-                    <input type="text" id="shortcode2" placeholder="cas" title="Compact modifier flags: w (Windows), c (Control), a (Alt), s (Shift)">
+            <div style="display: flex; gap: 12px; align-items: end; flex-wrap: wrap;">
+                <div style="display: flex; gap: 6px; align-items: end;">
+                    <div class="form-group">
+                        <label for="baseKey2" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Base Key</label>
+                        <input type="text" id="baseKey2" placeholder="e.g., W, ESC, DOWN" title="Specify the secondary key identifier for chord combinations. Non-recognized keys will be highlighted with red border borders." style="width: 4em; padding: 6px 4px; text-align: center;">
+                    </div>
+                    <div class="form-group">
+                        <label for="shortcode2" style="font-weight: 500; font-size: 0.9em; opacity: 0.85;">Code</label>
+                        <input type="text" id="shortcode2" placeholder="cas" title="Compact modifier flags: w (Windows), c (Control), a (Alt), s (Shift)" style="width: 2em; padding: 6px 4px; text-align: center;">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label style="font-weight: 500; font-size: 0.9em; opacity: 0.85; margin-bottom: 6px;">Mods</label>
-                    <div class="checkbox-group" style="display: flex; gap: 6px; align-items: center; justify-content: flex-start; margin-bottom: 2px;">
-                        <label class="checkbox-item" title="Windows modifier key flag"><input type="checkbox" id="modW2" value="w">W</label>
-                        <label class="checkbox-item" title="Control modifier key flag"><input type="checkbox" id="modC2" value="c">C</label>
-                        <label class="checkbox-item" title="Alt modifier key flag"><input type="checkbox" id="modA2" value="a">A</label>
-                        <label class="checkbox-item" title="Shift modifier key flag"><input type="checkbox" id="modS2" value="s">S</label>
+                    <div class="checkbox-group" style="display: flex; gap: 4px; align-items: center; justify-content: flex-start; margin-bottom: 2px; flex-wrap: nowrap; white-space: nowrap;">
+                        <label class="checkbox-item" title="Windows modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modW2" value="w">W</label>
+                        <label class="checkbox-item" title="Control modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modC2" value="c">C</label>
+                        <label class="checkbox-item" title="Alt modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modA2" value="a">A</label>
+                        <label class="checkbox-item" title="Shift modifier key flag" style="gap: 2px; font-size: 0.9em;"><input type="checkbox" id="modS2" value="s">S</label>
                     </div>
                 </div>
             </div>
@@ -2811,7 +2864,7 @@ var require_extension_macros_html = __commonJS({
     </div>
 
     <div class="form-group" style="margin-top: 8px;">
-        <label for="whenClause" style="font-weight: 500;">Context Clause Constraint (When)</label>
+        <label for="whenClause" style="font-weight: 500;">When</label>
         <input type="text" id="whenClause" placeholder="e.g., editorTextFocus" title="Specifies the context condition when the keybinding is active (e.g., editorTextFocus, terminalFocus).">
     </div>
 
@@ -2850,9 +2903,7 @@ var require_extension_macros_html = __commonJS({
         <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 12px;">
             <!-- Align Left -->
             <div style="display: flex; gap: 8px;">
-                <button type="button" class="secondary" id="btnReset" title="Discard current unsaved changes and reset the entire form and validation state back to the original values.">Reset</button>
                 <button type="button" class="secondary" id="btnClear" title="Clear all input fields, checkboxes, modifier labels, and validation indicators to let you configure a clean, empty key combination.">Clear</button>
-                <button type="button" class="secondary" id="btnCopyBinding" title="Copy the current key combination, command ID, and context clause to your system clipboard formatted as a valid VS Code keybindings JSON object.">Copy Binding</button>
                 <button type="button" class="secondary" id="btnPasteBinding" title="Read a keybinding JSON object from your system clipboard and instantly parse its properties to populate this form.">Paste Binding</button>
             </div>
             
@@ -3243,6 +3294,14 @@ var require_extension_macros_form = __commonJS({
               if (message.value) {
                 await vscode.env.clipboard.writeText(message.value);
                 vscode.window.showInformationMessage("Copied keybinding JSON block to clipboard.");
+              }
+              break;
+            case "copyToClipboard":
+              if (message.value) {
+                await vscode.env.clipboard.writeText(message.value);
+                if (message.infoMsg) {
+                  vscode.window.showInformationMessage(message.infoMsg);
+                }
               }
               break;
             case "pasteBinding":

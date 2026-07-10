@@ -41,6 +41,17 @@ title: VERSIONS
 ## 🚀 Stable Releases & Milestones
 [[#^toc-stable|TOC]]
 
+### 🏷️ v1.2.45 (2026-07-10) - Form Layout Grouping and Action Relocations
+- **Added / Enhanced:**
+  - Renamed 'Action:' to 'Command:' in web form panel.
+  - Placed inline icon buttons to copy Command ID (next to Command label) and Shorthand Key (next to Key label).
+  - Placed 'Copy Binding' helper next to Command heading and 'Reset' helper next to Shorthand input, and removed both from the bottom button row.
+  - Restructured Base Key and Code input controls into a tight nested flex container (Base Key width 4em, Code width 2em).
+  - Wrapped Mods checkbox controls into a tight nowrap container style.
+  - Renamed context constraint label to simple 'When'.
+- **Fixed / Patched:**
+  - Standardized state comparisons in 'Changed' indicator to prevent showing badge on initial load.
+
 ### 🏷️ v1.2.42 (2026-07-10) - Bidirectional Shorthand Key Input & Layout Redesign
 - **Added / Enhanced:**
   - Redesigned Key UI panel layouts to exact visual specifications: Base Key | Code | Mods [W] [C] [A] [S].
